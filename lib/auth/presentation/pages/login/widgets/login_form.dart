@@ -125,6 +125,7 @@ class _LoginFormState extends State<LoginForm> {
               if (_formKey.currentState!.validate()) {
                 // TODO: Implementar login logic
                 _handleLogin();
+                context.go(AppRoutesConstant.home);
               }
             },
           ),
