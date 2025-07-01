@@ -8,7 +8,6 @@ import 'package:safy/home/presentation/widgets/danger_zone_overlay.dart';
 import 'package:safy/home/presentation/widgets/navigation_fab.dart';
 import 'package:safy/home/presentation/widgets/weather_widget.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -17,72 +16,88 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final MapController _mapController;
+  // MapController se inicializa pero no se usa hasta que el mapa esté listo
+  final MapController _mapController = MapController();
   List<Marker> markers = [];
   List<Marker> dangerMarkers = [];
-  int markerCount = 0;
   bool _showDangerZones = true;
-  late LatLng _initialLocation;
   bool _isLoading = true;
+  bool _mapReady = false; // Nuevo flag para saber si el mapa está listo
+  late LatLng _initialLocation;
 
   @override
   void initState() {
     super.initState();
-    _mapController = MapController();
-    _setInitialLocation();
-    _loadDangerZones();
+    _initializeLocation();
   }
 
-  Future<void> _setInitialLocation() async {
+  Future<void> _initializeLocation() async {
     try {
       final position = await _determinePosition();
-      final currentLatLng = LatLng(position.latitude, position.longitude);
-
-      setState(() {
-        _initialLocation = currentLatLng;
-        markers.add(
-          Marker(
-            point: currentLatLng,
-            width: 40,
-            height: 40,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.my_location,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-        );
-        _isLoading = false;
-      });
-
-      _mapController.move(currentLatLng, 15.0);
+      _initialLocation = LatLng(position.latitude, position.longitude);
+      
+      // Crear marcador de ubicación actual
+      _createCurrentLocationMarker(_initialLocation);
+      
     } catch (e) {
       print("❌ Error al obtener ubicación: $e");
-      // Tuxtla Gutiérrez, Chiapas como valor por defecto
-      _initialLocation = LatLng(16.7569, -93.1292);
-      setState(() {
-        _isLoading = false;
-      });
-      _mapController.move(_initialLocation, 13.0);
+      _initialLocation = LatLng(16.7569, -93.1292); // Tuxtla por defecto
+      _createCurrentLocationMarker(_initialLocation);
+    }
+
+    // Cargar zonas de peligro
+    _loadDangerZones();
+    
+    setState(() => _isLoading = false);
+    
+    // Mover el mapa después de que esté renderizado
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_mapReady && mounted) {
+        _moveToCurrentLocation();
+      }
+    });
+  }
+
+  void _createCurrentLocationMarker(LatLng location) {
+    markers.add(
+      Marker(
+        point: location,
+        width: 40,
+        height: 40,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.my_location,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _moveToCurrentLocation() {
+    if (_mapReady && mounted) {
+      try {
+        _mapController.move(_initialLocation, 15.0);
+      } catch (e) {
+        print("Error moviendo mapa: $e");
+      }
     }
   }
 
   Future<void> _loadDangerZones() async {
-    // Simular zonas peligrosas alrededor de Tuxtla Gutiérrez
     final dangerZones = [
       {'lat': 16.7500, 'lng': -93.1300, 'reports': 5, 'type': 'high'},
       {'lat': 16.7600, 'lng': -93.1250, 'reports': 3, 'type': 'medium'},
@@ -90,77 +105,69 @@ class _HomeScreenState extends State<HomeScreen> {
       {'lat': 16.7650, 'lng': -93.1350, 'reports': 2, 'type': 'low'},
     ];
 
-    setState(() {
-      dangerMarkers = dangerZones.map((zone) {
-        Color zoneColor;
-        double zoneRadius;
-        
-        switch (zone['type']) {
-          case 'high':
-            zoneColor = Colors.red;
-            zoneRadius = 25;
-            break;
-          case 'medium':
-            zoneColor = Colors.orange;
-            zoneRadius = 20;
-            break;
-          default:
-            zoneColor = Colors.yellow;
-            zoneRadius = 15;
-        }
+    dangerMarkers = dangerZones.map((zone) {
+      Color zoneColor;
+      double zoneRadius;
 
-        return Marker(
-          point: LatLng(zone['lat'] as double, zone['lng'] as double),
-          width: zoneRadius * 2,
-          height: zoneRadius * 2,
-          child: Container(
-            decoration: BoxDecoration(
-              color: zoneColor.withOpacity(0.3),
-              shape: BoxShape.circle,
-              border: Border.all(color: zoneColor, width: 2),
-            ),
-            child: Center(
-              child: Text(
-                '${zone['reports']}',
-                style: TextStyle(
-                  color: zoneColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
+      switch (zone['type']) {
+        case 'high':
+          zoneColor = Colors.red;
+          zoneRadius = 25;
+          break;
+        case 'medium':
+          zoneColor = Colors.orange;
+          zoneRadius = 20;
+          break;
+        default:
+          zoneColor = Colors.yellow;
+          zoneRadius = 15;
+      }
+
+      return Marker(
+        point: LatLng(zone['lat'] as double, zone['lng'] as double),
+        width: zoneRadius * 2,
+        height: zoneRadius * 2,
+        child: Container(
+          decoration: BoxDecoration(
+            color: zoneColor.withOpacity(0.3),
+            shape: BoxShape.circle,
+            border: Border.all(color: zoneColor, width: 2),
+          ),
+          child: Center(
+            child: Text(
+              '${zone['reports']}',
+              style: TextStyle(
+                color: zoneColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
               ),
             ),
           ),
-        );
-      }).toList();
-    });
+        ),
+      );
+    }).toList();
   }
 
   Future<Position> _determinePosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw 'Los servicios de ubicación están desactivados.';
-    }
+    if (!serviceEnabled) throw 'Los servicios de ubicación están desactivados.';
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        throw 'Permiso de ubicación denegado.';
-      }
+      if (permission == LocationPermission.denied) throw 'Permiso de ubicación denegado.';
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw 'Permisos permanentemente denegados.';
+      throw 'Permisos de ubicación permanentemente denegados.';
     }
 
-    return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+    return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
   }
 
   void _onNavigationTap(String type) {
     switch (type) {
       case 'add':
-        // Navegar a crear reporte
         Navigator.pushNamed(context, '/create-report');
         break;
       case 'walk':
@@ -177,15 +184,53 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _setNavigationMode(String mode) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Modo de navegación: $mode'),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text('Modo de navegación: $mode')),
     );
+  }
+
+  void _centerOnCurrentLocation() async {
+    if (!_mapReady) return;
+    
+    try {
+      final position = await _determinePosition();
+      final currentLatLng = LatLng(position.latitude, position.longitude);
+      _mapController.move(currentLatLng, 15.0);
+      
+      // Actualizar marcador de ubicación actual
+      setState(() {
+        markers.removeWhere((marker) => marker.point == _initialLocation);
+        _initialLocation = currentLatLng;
+        _createCurrentLocationMarker(currentLatLng);
+      });
+      
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  bool _shouldShowDangerWarning() {
+    return false; // lógica personalizada futura
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Cargando mapa...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       drawer: const AppDrawer(),
       body: ResponsiveLayout(
@@ -199,14 +244,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMobileLayout() {
     return Stack(
       children: [
-        // Mapa principal
+        // 🌍 Mapa principal
         FlutterMap(
           mapController: _mapController,
           options: MapOptions(
-            initialCenter: _isLoading ? LatLng(16.7569, -93.1292) : _initialLocation,
-            initialZoom: _isLoading ? 10 : 15,
+            initialCenter: _initialLocation,
+            initialZoom: 15,
             minZoom: 3,
             maxZoom: 18,
+            onMapReady: () {
+              setState(() {
+                _mapReady = true;
+              });
+              // Mover a ubicación actual una vez que el mapa esté listo
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _moveToCurrentLocation();
+              });
+            },
           ),
           children: [
             TileLayer(
@@ -218,14 +272,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
 
-        // Weather widget en la parte superior
+        // 🌤 Widget de clima
         const Positioned(
           top: 50,
           left: 16,
           child: WeatherWidget(),
         ),
 
-        // Botón de centrar ubicación
+        // 🎯 Botón para centrar ubicación
         Positioned(
           top: 50,
           right: 16,
@@ -237,64 +291,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // FAB de navegación
-        Positioned(
-          bottom: 100,
-          right: 16,
-          child: NavigationFab(onNavigationTap: _onNavigationTap),
-        ),
-
-        // Información de la app en la parte inferior
-        Positioned(
-          bottom: 20,
-          left: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Safy',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Colors.grey[300],
-                  child: const Icon(Icons.person, size: 20),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Overlay de zona peligrosa si está detectada
+        // 🚨 Overlay si hay zonas peligrosas detectadas
         if (_shouldShowDangerWarning())
           const DangerZoneOverlay(),
 
-        // Loading indicator
-        if (_isLoading)
-          Container(
-            color: Colors.black.withOpacity(0.3),
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          ),
+        // 🧭 Panel deslizable inferior (NavigationFab actualizado)
+        NavigationFab(onNavigationTap: _onNavigationTap),
       ],
     );
   }
@@ -302,15 +304,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTabletLayout() {
     return Row(
       children: [
-        // Drawer siempre visible en tablet
-        const SizedBox(
-          width: 300,
-          child: AppDrawer(),
-        ),
-        // Mapa ocupa el resto del espacio
-        Expanded(
-          child: _buildMobileLayout(),
-        ),
+        const SizedBox(width: 300, child: AppDrawer()),
+        Expanded(child: _buildMobileLayout()),
       ],
     );
   }
@@ -318,20 +313,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // Sidebar permanente en desktop
-        const SizedBox(
-          width: 350,
-          child: AppDrawer(),
-        ),
-        // Mapa principal
-        Expanded(
-          child: _buildMobileLayout(),
-        ),
-        // Panel de controles a la derecha
-        SizedBox(
-          width: 250,
-          child: _buildControlPanel(),
-        ),
+        const SizedBox(width: 350, child: AppDrawer()),
+        Expanded(child: _buildMobileLayout()),
+        SizedBox(width: 250, child: _buildControlPanel()),
       ],
     );
   }
@@ -343,29 +327,14 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Controles',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          const Text('Controles', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          
-          // Toggle para zonas peligrosas
           SwitchListTile(
             title: const Text('Mostrar zonas peligrosas'),
             value: _showDangerZones,
-            onChanged: (value) {
-              setState(() {
-                _showDangerZones = value;
-              });
-            },
+            onChanged: (value) => setState(() => _showDangerZones = value),
           ),
-          
           const Divider(),
-          
-          // Botones de navegación vertical
           ListTile(
             leading: const Icon(Icons.directions_walk),
             title: const Text('Caminar'),
@@ -384,22 +353,5 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-  }
-
-  void _centerOnCurrentLocation() async {
-    try {
-      final position = await _determinePosition();
-      final currentLatLng = LatLng(position.latitude, position.longitude);
-      _mapController.move(currentLatLng, 15.0);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  }
-
-  bool _shouldShowDangerWarning() {
-    // Lógica para determinar si mostrar advertencia de zona peligrosa
-    return false; // Por ahora false
   }
 }

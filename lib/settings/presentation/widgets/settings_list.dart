@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 import 'package:safy/shared/widget/settings_section.dart';
 import 'package:safy/shared/widget/settings_tile.dart';
 
@@ -18,8 +20,7 @@ class SettingsList extends StatelessWidget {
               title: 'Edit Profil',
               icon: Icons.account_circle,
               onTap: () {
-                // context.push('/edit-profile');
-                print('Navigate to Edit Profile');
+                 context.go(AppRoutesConstant.editProfile);
               },
             ),
             SettingsTile(

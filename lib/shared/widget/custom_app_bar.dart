@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -26,19 +27,25 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           color: Colors.black87,
         ),
       ),
-      leading: showBackButton
-          ? IconButton(
-              icon: const Icon(Icons.close, color: Colors.black87),
-              onPressed: () => context.pop(),
-            )
-          : null,
+      leading:
+          showBackButton
+              ? IconButton(
+                icon: const Icon(Icons.close, color: Colors.black87),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go(
+                      AppRoutesConstant.home,
+                    ); // o donde quieras redirigir
+                  }
+                },
+              )
+              : null,
       actions: actions,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
-        child: Container(
-          height: 1,
-          color: Colors.grey[200],
-        ),
+        child: Container(height: 1, color: Colors.grey[200]),
       ),
     );
   }

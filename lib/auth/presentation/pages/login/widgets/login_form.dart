@@ -41,15 +41,17 @@ class _LoginFormState extends State<LoginForm> {
               if (value == null || value.isEmpty) {
                 return 'Email is required';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
                 return 'Enter a valid email';
               }
               return null;
             },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Password field
           CustomTextField(
             controller: _passwordController,
@@ -77,9 +79,9 @@ class _LoginFormState extends State<LoginForm> {
               return null;
             },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Remember me y Forgot password
           Row(
             children: [
@@ -94,10 +96,7 @@ class _LoginFormState extends State<LoginForm> {
                     },
                     activeColor: const Color(0xFF2196F3),
                   ),
-                  const Text(
-                    'Remember me',
-                    style: TextStyle(fontSize: 14),
-                  ),
+                  const Text('Remember me', style: TextStyle(fontSize: 14)),
                 ],
               ),
               const Spacer(),
@@ -107,17 +106,14 @@ class _LoginFormState extends State<LoginForm> {
                 },
                 child: const Text(
                   'Forgot password?',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF2196F3),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF2196F3)),
                 ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Login button
           CustomButton(
             text: 'Log in',
@@ -125,23 +121,22 @@ class _LoginFormState extends State<LoginForm> {
               if (_formKey.currentState!.validate()) {
                 // TODO: Implementar login logic
                 _handleLogin();
-                context.go(AppRoutesConstant.home);
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  context.go(AppRoutesConstant.home);
+                });
               }
             },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Botón para ir al registro
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
                 "Don't have an account? ",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.black54),
               ),
               TextButton(
                 onPressed: () {

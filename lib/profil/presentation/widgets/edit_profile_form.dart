@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:safy/auth/presentation/pages/login/widgets/custom_button.dart';
 import 'package:safy/auth/presentation/pages/register/widgets/job_selector.dart';
+import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 import 'package:safy/shared/widget/custom_text_field.dart';
 import 'package:safy/shared/widget/profile_avatar.dart';
 
@@ -154,6 +155,7 @@ class _EditProfileFormState extends State<EditProfileForm> {
       ),
     );
     
-    context.pop();
+    context.go(AppRoutesConstant.settings);
+
   }
 }
