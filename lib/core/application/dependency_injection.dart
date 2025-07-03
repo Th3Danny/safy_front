@@ -22,7 +22,7 @@ Future<void> setupDependencyInjection() async {
   );
   
   sl.registerLazySingleton<Dio>(
-    () => DioConfig.createPublicDio(),
+    () => DioConfig.createDio(),
     instanceName: 'public',
   );
 
