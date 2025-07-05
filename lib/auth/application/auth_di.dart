@@ -13,48 +13,32 @@ import 'package:safy/auth/presentation/viewmodels/register_viewmodel.dart';
 import 'package:safy/core/session/session_manager.dart';
 import 'package:safy/core/session/token_refresh_service.dart';
 
-// Core
-
-
-// Data layer
-
-
-// Domain layer
-
-
-
-// Presentation layer
 
 
 final sl = GetIt.instance;
 
 Future<void> setupAuthDependencies() async {
-  // ===== CORE DEPENDENCIES =====
-  
-  // Session Manager (singleton)
+
   sl.registerLazySingleton<SessionManager>(() => SessionManager.instance);
 
-  // ===== DATA LAYER =====
-  
-  // Auth API Client - usar Dio autenticado
+ 
   sl.registerLazySingleton<AuthApiClient>(
     () => AuthApiClient(sl<Dio>(instanceName: 'authenticated')),
   );
 
   // Initialize Token Refresh Service
   TokenRefreshService.initialize(sl<AuthApiClient>());
-  sl.registerLazySingleton<TokenRefreshService>(() => TokenRefreshService.instance);
+  sl.registerLazySingleton<TokenRefreshService>(
+    () => TokenRefreshService.instance,
+  );
 
   // Auth Repository
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(
-      sl<AuthApiClient>(),
-      sl<SessionManager>(),
-    ),
+    () => AuthRepositoryImpl(sl<AuthApiClient>(), sl<SessionManager>()),
   );
 
   // ===== DOMAIN LAYER (USE CASES) =====
-  
+
   sl.registerLazySingleton<SignInUseCase>(
     () => SignInUseCase(sl<AuthRepository>()),
   );
@@ -72,10 +56,8 @@ Future<void> setupAuthDependencies() async {
   );
 
   // ===== PRESENTATION LAYER (VIEW MODELS) =====
-  
-  sl.registerFactory<LoginViewModel>(
-    () => LoginViewModel(sl<SignInUseCase>()),
-  );
+
+  sl.registerFactory<LoginViewModel>(() => LoginViewModel(sl<SignInUseCase>()));
 
   sl.registerFactory<RegisterViewModel>(
     () => RegisterViewModel(sl<SignUpUseCase>()),
@@ -89,5 +71,5 @@ Future<void> setupAuthDependencies() async {
     ),
   );
 
-  print('[AuthDI] ✅ Dependencias de autenticación registradas');
+  print('[AuthDI]  Dependencias de autenticación registradas');
 }

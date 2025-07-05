@@ -1,7 +1,7 @@
-// lib/features/home/presentation/widgets/tablet_map_layout.dart
+
 import 'package:flutter/material.dart';
 import 'package:safy/home/presentation/layout/mobile_map_layout.dart';
-import 'package:safy/home/presentation/widgets/app_drawer.dart';
+
 
 
 class TabletMapLayout extends StatelessWidget {
@@ -12,10 +12,7 @@ class TabletMapLayout extends StatelessWidget {
     return Row(
       children: [
         // Drawer lateral fijo para tablet
-        const SizedBox(
-          width: 300,
-          child: AppDrawer(),
-        ),
+       
         
         // Área principal del mapa
         const Expanded(

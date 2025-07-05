@@ -16,7 +16,7 @@ class TokenRefreshService {
   final AuthApiClient _authApiClient;
   Timer? _refreshTimer;
 
-  // ✅ Constructor que recibe AuthApiClient
+  //  Constructor que recibe AuthApiClient
   TokenRefreshService._(this._authApiClient);
 
   /// Inicializar el servicio con el API client

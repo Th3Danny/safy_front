@@ -1,83 +1,88 @@
+import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
-import 'package:provider/provider.dart';
-import 'package:provider/single_child_widget.dart';
-import 'package:safy/core/network/domian/config/dio_config.dart';
 import 'package:safy/home/data/datasources/danger_zone_api_client.dart';
+import 'package:safy/home/data/datasources/nominatim_api_client.dart';
+import 'package:safy/home/data/datasources/openroute_service_api_client.dart';
 import 'package:safy/home/data/datasources/route_api_client.dart';
 import 'package:safy/home/data/repositories/danger_zone_repository_impl.dart';
+import 'package:safy/home/data/repositories/places_repository_impl.dart';
 import 'package:safy/home/data/repositories/route_repository_impl.dart';
 import 'package:safy/home/domain/repositories/danger_zone_repository.dart';
+import 'package:safy/home/domain/repositories/places_repository.dart';
 import 'package:safy/home/domain/repositories/route_repository.dart';
-import 'package:safy/home/domain/usecases/calculate_safe_routes_use_case.dart';
+import 'package:safy/home/domain/usecases/calculate_route_use_case.dart';
 import 'package:safy/home/domain/usecases/check_danger_zones_use_case.dart';
 import 'package:safy/home/domain/usecases/get_current_location_use_case.dart';
 import 'package:safy/home/domain/usecases/get_danger_zones_use_case.dart';
+import 'package:safy/home/domain/usecases/search_places_use_case.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 
-// Core
+Future<void> setupMapsDependencies() async {
+  // ===== DATA LAYER =====
+  
+  // API Clients
+  GetIt.instance.registerLazySingleton<RouteApiClient>(
+    () => RouteApiClient(GetIt.instance<Dio>(instanceName: 'public')),
+  );
+  
+  GetIt.instance.registerLazySingleton<DangerZoneApiClient>(
+    () => DangerZoneApiClient(GetIt.instance<Dio>(instanceName: 'authenticated')),
+  );
 
-// Data Sources
+  // Nuevos API Clients
+  GetIt.instance.registerLazySingleton<NominatimApiClient>(
+    () => NominatimApiClient(GetIt.instance<Dio>(instanceName: 'public')),
+  );
+  
+  GetIt.instance.registerLazySingleton<OpenRouteServiceApiClient>(
+    () => OpenRouteServiceApiClient(GetIt.instance<Dio>(instanceName: 'public')),
+  );
+  
+  // ===== REPOSITORIES =====
+  
+  GetIt.instance.registerLazySingleton<RouteRepository>(
+    () => RouteRepositoryImpl(GetIt.instance<RouteApiClient>()),
+  );
+  
+  GetIt.instance.registerLazySingleton<DangerZoneRepository>(
+    () => DangerZoneRepositoryImpl(GetIt.instance<DangerZoneApiClient>()),
+  );
 
-// Repositories
+  // Nuevo repositorio
+  GetIt.instance.registerLazySingleton<PlacesRepository>(
+    () => PlacesRepositoryImpl(GetIt.instance<NominatimApiClient>()),
+  );
+  
+  // ===== DOMAIN LAYER (USE CASES) =====
+  
+  GetIt.instance.registerLazySingleton<CalculateRouteUseCase>(
+    () => CalculateRouteUseCase(GetIt.instance<RouteRepository>()),
+  );
+  
+  GetIt.instance.registerLazySingleton<GetCurrentLocationUseCase>(
+    () => GetCurrentLocationUseCase(),
+  );
+  
+  GetIt.instance.registerLazySingleton<CheckDangerZonesUseCase>(
+    () => CheckDangerZonesUseCase(GetIt.instance<DangerZoneRepository>()),
+  );
+  
+  GetIt.instance.registerLazySingleton<GetDangerZonesUseCase>(
+    () => GetDangerZonesUseCase(GetIt.instance<DangerZoneRepository>()),
+  );
 
-// Use Cases
-
-// Presentation
-
-class MapsInjector {
-  static List<SingleChildWidget> getDependencies() {
-    return [
-      // ===== CORE DEPENDENCIES =====
-      Provider<Dio>(create: (_) => DioConfig.createDio()),
-
-      // ===== DATA SOURCES =====
-      Provider<RouteApiClient>(
-        create: (context) => RouteApiClient(context.read<Dio>()),
-      ),
-
-      Provider<DangerZoneApiClient>(
-        create: (context) => DangerZoneApiClient(context.read<Dio>()),
-      ),
-
-      // ===== REPOSITORIES =====
-      Provider<RouteRepository>(
-        create:
-            (context) => RouteRepositoryImpl(context.read<RouteApiClient>()),
-      ),
-
-      Provider<DangerZoneRepository>(
-        create:
-            (context) =>
-                DangerZoneRepositoryImpl(context.read<DangerZoneApiClient>()),
-      ),
-
-      // ===== USE CASES =====
-      Provider<CalculateSafeRoutesUseCase>(
-        create:
-            (context) => CalculateSafeRoutesUseCase(
-              context.read<RouteRepository>(),
-              context.read<DangerZoneRepository>(),
-            ),
-      ),
-
-      Provider<GetCurrentLocationUseCase>(
-        create: (_) => GetCurrentLocationUseCase(),
-      ),
-
-      Provider<CheckDangerZonesUseCase>(
-        create:
-            (context) =>
-                CheckDangerZonesUseCase(context.read<DangerZoneRepository>()),
-      ),
-      Provider<GetDangerZonesUseCase>(
-        create:
-            (context) =>
-                GetDangerZonesUseCase(context.read<DangerZoneRepository>()),
-      ),
-
-      // ===== VIEW MODELS =====
-      
-      ChangeNotifierProvider<MapViewModel>(create: (context) => MapViewModel()),
-    ];
-  }
+  // Nuevos casos de uso
+  GetIt.instance.registerLazySingleton<SearchPlacesUseCase>(
+    () => SearchPlacesUseCase(GetIt.instance<PlacesRepository>()),
+  );
+  
+  // ===== PRESENTATION LAYER (VIEW MODELS) =====
+  
+  GetIt.instance.registerFactory<MapViewModel>(
+    () => MapViewModel(
+      searchPlacesUseCase: GetIt.instance<SearchPlacesUseCase>(),
+    ),
+  );
+  
+  print('[MapsDI] ✅ Dependencias de mapas registradas');
 }

@@ -87,12 +87,12 @@ class AuthApiClient {
         throw const AccountNotActiveException();
       }
 
-      // ✅ Cast explícito a String para el ID
+      //  Cast explícito a String para el ID
       final userId = user['id'] as String;
       
       // Generar tokens simulados
-      final accessToken = _generateMockJWT(userId, 3600); // 1 hora
-      final refreshToken = _generateMockJWT(userId, 86400 * 7); // 7 días
+      final accessToken = _generateMockJWT(userId, 3600); 
+      final refreshToken = _generateMockJWT(userId, 86400 * 7); 
 
       // Simular respuesta exitosa
       final response = {
@@ -121,12 +121,12 @@ class AuthApiClient {
       // Validaciones
       await _validateRegistration(requestDto);
 
-      // ✅ Generar ID como String directamente
+      //  Generar ID como String directamente
       final newUserId = _generateId(); // Ya retorna String
 
       // Crear nuevo usuario
       final newUser = <String, dynamic>{
-        'id': newUserId, // ✅ Directamente String
+        'id': newUserId, //  Directamente String
         'name': requestDto.name.trim(),
         'last_name': requestDto.lastName.trim(),
         'second_last_name': requestDto.secondLastName?.trim(),

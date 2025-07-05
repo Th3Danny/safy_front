@@ -68,7 +68,7 @@ class SessionManager {
     print('[SessionManager] Tokens actualizados');
   }
 
-  /// ✅ Actualizar usuario con UserInfoEntity
+  ///  Actualizar usuario con UserInfoEntity
   Future<void> updateUser(UserInfoEntity user) async {
     if (_currentSession == null) {
       throw Exception('No hay sesión activa para actualizar');

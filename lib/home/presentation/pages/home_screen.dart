@@ -4,7 +4,6 @@ import 'package:safy/home/presentation/layout/mobile_map_layout.dart';
 import 'package:safy/home/presentation/layout/responsive_layout.dart';
 import 'package:safy/home/presentation/layout/tablet_map_layout.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
-import 'package:safy/home/presentation/widgets/app_drawer.dart';
 import 'package:safy/home/presentation/widgets/desktop_map_layout.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,14 +19,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _mapViewModel = context.read()<MapViewModel>();
+    _mapViewModel = context.read<MapViewModel>();
     _mapViewModel.initializeMap();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const AppDrawer(),
+  
       body: Consumer<MapViewModel>(
         builder: (context, mapViewModel, child) {
           if (mapViewModel.isLoading) {

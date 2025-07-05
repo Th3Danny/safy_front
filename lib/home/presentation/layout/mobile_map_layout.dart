@@ -5,10 +5,9 @@ import 'package:safy/home/presentation/widgets/danger_zone_overlay.dart';
 import 'package:safy/home/presentation/widgets/map_controls_widget.dart';
 import 'package:safy/home/presentation/widgets/map_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_fab.dart';
+import 'package:safy/home/presentation/widgets/place_search_widget.dart';
 import 'package:safy/home/presentation/widgets/route_options_widget.dart';
 import 'package:safy/home/presentation/widgets/route_search_widget.dart';
-import 'package:safy/home/presentation/widgets/weather_widget.dart';
-
 
 class MobileMapLayout extends StatelessWidget {
   const MobileMapLayout({super.key});
@@ -22,14 +21,7 @@ class MobileMapLayout extends StatelessWidget {
             children: [
               // 🌍 Mapa principal
               const MapWidget(),
-
-              // 🌤 Widget de clima
-              const Positioned(
-                top: 50,
-                left: 16,
-                child: WeatherWidget(),
-              ),
-
+              
               // 🎯 Controles del mapa
               Positioned(
                 top: 50,
@@ -41,18 +33,28 @@ class MobileMapLayout extends StatelessWidget {
                 ),
               ),
 
-              // 🔍 Búsqueda de rutas
+              // 🔍 Widget de búsqueda de lugares (NUEVO - siempre visible)
               const Positioned(
-                top: 120,
+                top: 50,
                 left: 16,
-                right: 16,
-                child: RouteSearchWidget(),
+                right: 80, // Espacio para los controles del mapa
+                child: PlaceSearchWidget(),
               ),
+
+              // 🔍 Búsqueda de rutas (cuando no hay rutas calculadas)
+              if (mapViewModel.routeOptions.isEmpty && 
+                  (mapViewModel.startPoint != null || mapViewModel.endPoint != null))
+                const Positioned(
+                  top: 180, // Ajustado para dar espacio al PlaceSearchWidget
+                  left: 16,
+                  right: 16,
+                  child: RouteSearchWidget(),
+                ),
 
               // 📋 Opciones de ruta (cuando hay rutas calculadas)
               if (mapViewModel.routeOptions.isNotEmpty)
                 Positioned(
-                  top: 200,
+                  top: 180, // Ajustado para dar espacio al PlaceSearchWidget
                   left: 16,
                   right: 16,
                   child: RouteOptionsWidget(
@@ -117,7 +119,7 @@ class MobileMapLayout extends StatelessWidget {
   }
 
   void _handleNavigationTap(BuildContext context, String type) {
-    final mapViewModel = context.read()<MapViewModel>();
+    final mapViewModel = context.read<MapViewModel>(); // 👈 Arreglado el error de sintaxis
     
     switch (type) {
       case 'add':
