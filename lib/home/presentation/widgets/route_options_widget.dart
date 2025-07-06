@@ -1,7 +1,5 @@
-// lib/features/home/presentation/widgets/route_options_widget.dart
 import 'package:flutter/material.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
-
 
 class RouteOptionsWidget extends StatefulWidget {
   final List<RouteOption> routes;
@@ -32,17 +30,18 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutBack,
-    ));
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
+    );
 
     // Encontrar la ruta recomendada como seleccionada por defecto
-    _selectedRouteIndex = widget.routes.indexWhere((route) => route.isRecommended);
+    _selectedRouteIndex = widget.routes.indexWhere(
+      (route) => route.isRecommended,
+    );
     if (_selectedRouteIndex == -1) _selectedRouteIndex = 0;
 
     _animationController.forward();
@@ -76,12 +75,10 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
           children: [
             // Header con título y botón cerrar
             _buildHeader(),
-            
+
             // Lista de rutas
-            Flexible(
-              child: _buildRoutesList(),
-            ),
-            
+            Flexible(child: _buildRoutesList()),
+
             // Botones de acción
             _buildActionButtons(),
           ],
@@ -133,7 +130,7 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
       itemBuilder: (context, index) {
         final route = widget.routes[index];
         final isSelected = index == _selectedRouteIndex;
-        
+
         return GestureDetector(
           onTap: () => _selectRoute(index, route),
           child: AnimatedContainer(
@@ -189,9 +186,9 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
               ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Información principal de la ruta
         Row(
           children: [
@@ -203,7 +200,7 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
                 'Distancia',
               ),
             ),
-            
+
             // Tiempo
             Expanded(
               child: _buildInfoItem(
@@ -212,16 +209,14 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
                 'Tiempo',
               ),
             ),
-            
+
             // Seguridad
-            Expanded(
-              child: _buildSafetyInfo(route),
-            ),
+            Expanded(child: _buildSafetyInfo(route)),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Descripción de la ruta
         _buildRouteDescription(route),
       ],
@@ -235,18 +230,9 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
@@ -254,11 +240,7 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
   Widget _buildSafetyInfo(RouteOption route) {
     return Column(
       children: [
-        Icon(
-          Icons.security,
-          size: 20,
-          color: route.safetyColor,
-        ),
+        Icon(Icons.security, size: 20, color: route.safetyColor),
         const SizedBox(height: 4),
         Text(
           '${route.safetyLevel.toInt()}%',
@@ -284,13 +266,13 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
     String description;
     switch (route.name) {
       case 'Ruta Directa':
-        description = 'La ruta más corta, pero puede pasar por zonas de riesgo';
+        description = 'Ruta real más directa por caminos existentes';
         break;
       case 'Ruta Segura':
         description = 'Evita zonas peligrosas, priorizando tu seguridad';
         break;
       case 'Ruta Alternativa':
-        description = 'Por avenidas principales con mayor vigilancia';
+        description = 'Ruta alternativa por diferentes caminos';
         break;
       default:
         description = 'Ruta calculada según tus preferencias';
@@ -304,11 +286,7 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            size: 16,
-            color: Colors.grey[600],
-          ),
+          Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -327,7 +305,7 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
 
   Widget _buildActionButtons() {
     final selectedRoute = widget.routes[_selectedRouteIndex];
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -350,17 +328,14 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
                 ),
                 Text(
                   '${selectedRoute.distance.toStringAsFixed(1)} km • ${selectedRoute.duration} min',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // Botón de iniciar navegación
           ElevatedButton.icon(
             onPressed: () => _startNavigation(selectedRoute),
@@ -387,7 +362,7 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
   void _startNavigation(RouteOption route) {
     // Aquí podrías agregar lógica para iniciar navegación paso a paso
     widget.onRouteSelected(route);
-    
+
     // Mostrar mensaje de confirmación
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

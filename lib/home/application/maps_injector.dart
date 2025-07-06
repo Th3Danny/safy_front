@@ -5,19 +5,24 @@ import 'package:safy/home/data/datasources/nominatim_api_client.dart';
 import 'package:safy/home/data/datasources/openroute_service_api_client.dart';
 import 'package:safy/home/data/datasources/route_api_client.dart';
 import 'package:safy/home/data/repositories/danger_zone_repository_impl.dart';
+import 'package:safy/home/data/repositories/open_route_repository_impl.dart';
 import 'package:safy/home/data/repositories/places_repository_impl.dart';
 import 'package:safy/home/data/repositories/route_repository_impl.dart';
 import 'package:safy/home/domain/repositories/danger_zone_repository.dart';
+import 'package:safy/home/domain/repositories/open_route_repository.dart';
 import 'package:safy/home/domain/repositories/places_repository.dart';
 import 'package:safy/home/domain/repositories/route_repository.dart';
 import 'package:safy/home/domain/usecases/calculate_route_use_case.dart';
 import 'package:safy/home/domain/usecases/check_danger_zones_use_case.dart';
 import 'package:safy/home/domain/usecases/get_current_location_use_case.dart';
 import 'package:safy/home/domain/usecases/get_danger_zones_use_case.dart';
+import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 
 Future<void> setupMapsDependencies() async {
+  print('[MapsDI] 🗺️ Configurando dependencias de mapas...');
+  
   // ===== DATA LAYER =====
   
   // API Clients
@@ -34,8 +39,8 @@ Future<void> setupMapsDependencies() async {
     () => NominatimApiClient(GetIt.instance<Dio>(instanceName: 'public')),
   );
   
-  GetIt.instance.registerLazySingleton<OpenRouteServiceApiClient>(
-    () => OpenRouteServiceApiClient(GetIt.instance<Dio>(instanceName: 'public')),
+  GetIt.instance.registerLazySingleton<OSRMApiClient >(
+    () => OSRMApiClient (GetIt.instance<Dio>(instanceName: 'public')),
   );
   
   // ===== REPOSITORIES =====
@@ -48,9 +53,14 @@ Future<void> setupMapsDependencies() async {
     () => DangerZoneRepositoryImpl(GetIt.instance<DangerZoneApiClient>()),
   );
 
-  // Nuevo repositorio
+  // Repositorios nuevos
   GetIt.instance.registerLazySingleton<PlacesRepository>(
     () => PlacesRepositoryImpl(GetIt.instance<NominatimApiClient>()),
+  );
+  
+  // Repositorio de OpenRouteService
+  GetIt.instance.registerLazySingleton<OpenRouteRepository>(
+    () => OpenRouteRepositoryImpl(GetIt.instance<OSRMApiClient >()),
   );
   
   // ===== DOMAIN LAYER (USE CASES) =====
@@ -71,18 +81,25 @@ Future<void> setupMapsDependencies() async {
     () => GetDangerZonesUseCase(GetIt.instance<DangerZoneRepository>()),
   );
 
-  // Nuevos casos de uso
+  // Casos de uso nuevos
   GetIt.instance.registerLazySingleton<SearchPlacesUseCase>(
     () => SearchPlacesUseCase(GetIt.instance<PlacesRepository>()),
   );
   
+  // 👈 IMPORTANTE: GetOpenRouteUseCase ANTES del MapViewModel
+  GetIt.instance.registerLazySingleton<GetOpenRouteUseCase>(
+    () => GetOpenRouteUseCase(GetIt.instance<OpenRouteRepository>()),
+  );
+  
   // ===== PRESENTATION LAYER (VIEW MODELS) =====
   
+  // 👈 CORREGIDO: Ahora incluye GetOpenRouteUseCase
   GetIt.instance.registerFactory<MapViewModel>(
     () => MapViewModel(
       searchPlacesUseCase: GetIt.instance<SearchPlacesUseCase>(),
+      getOpenRouteUseCase: GetIt.instance<GetOpenRouteUseCase>(), 
     ),
   );
   
-  print('[MapsDI] ✅ Dependencias de mapas registradas');
+  print('[MapsDI] ✅ Dependencias de mapas registradas exitosamente');
 }

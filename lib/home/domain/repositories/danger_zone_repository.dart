@@ -1,5 +1,4 @@
 
-
 import 'package:safy/home/domain/entities/danger_zone.dart';
 import 'package:safy/home/domain/entities/location.dart';
 

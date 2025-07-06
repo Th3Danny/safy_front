@@ -1,4 +1,4 @@
-// lib/features/home/presentation/widgets/danger_zone_overlay.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';

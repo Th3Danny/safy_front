@@ -1,58 +1,56 @@
 import 'package:dio/dio.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:safy/home/data/dtos/openroute_service_dto.dart';
 
-class OpenRouteServiceApiClient {
-  final Dio _dio;
-  static const String _baseUrl = 'https://api.openrouteservice.org/v2';
+class OSRMApiClient {
+  final Dio dio;
   
-  // Nota: Necesitarás registrarte en OpenRouteService para obtener una API key
-  static const String _apiKey = 'TU_API_KEY_AQUI'; // Reemplaza con tu API key
-
-  OpenRouteServiceApiClient(this._dio);
-
-  Future<OpenRouteServiceDto> calculateRoute(
-    LatLng start,
-    LatLng end, {
-    String profile = 'foot-walking', // foot-walking, driving-car, cycling-regular
+  OSRMApiClient(this.dio);
+  
+  Future<List<List<double>>> getRouteCoordinates({
+    required List<double> start,
+    required List<double> end,
+    String profile = 'foot',
   }) async {
     try {
-      final body = {
-        'coordinates': [
-          [start.longitude, start.latitude],
-          [end.longitude, end.latitude],
-        ],
-        'format': 'json',
-        'instructions': true,
-        'language': 'es',
-      };
-
-      final response = await _dio.post(
-        '$_baseUrl/directions/$profile/json',
-        data: body,
-        options: Options(
-          headers: {
-            'Authorization': _apiKey,
-            'Content-Type': 'application/json',
-          },
-        ),
+      print('🌐 Llamando a OSRM: $start -> $end');
+      
+      // OSRM espera lon,lat formato
+      final startCoord = '${start[0]},${start[1]}';
+      final endCoord = '${end[0]},${end[1]}';
+      
+      final response = await dio.get(
+        'http://router.project-osrm.org/route/v1/$profile/$startCoord;$endCoord',
+        queryParameters: {
+          'overview': 'full',
+          'geometries': 'geojson',
+        },
       );
-
-      if (response.statusCode == 200) {
-        return OpenRouteServiceDto.fromJson(response.data);
-      } else {
-        throw Exception('Error calculando ruta: ${response.statusCode}');
+      
+      print('📊 Respuesta de OSRM: ${response.statusCode}');
+      
+      if (response.data == null) {
+        throw Exception('Respuesta vacía de OSRM');
       }
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 403) {
-        throw Exception('API key inválida o límite excedido');
-      } else if (e.type == DioExceptionType.connectionTimeout) {
-        throw Exception('Tiempo de conexión agotado');
-      } else {
-        throw Exception('Error de red: ${e.message}');
+      
+      final routes = response.data['routes'] as List?;
+      if (routes == null || routes.isEmpty) {
+        throw Exception('No se encontraron rutas en la respuesta');
       }
+      
+      final geometry = routes[0]['geometry']['coordinates'] as List?;
+      if (geometry == null) {
+        throw Exception('No se encontró geometría en la respuesta');
+      }
+      
+      final coordinates = List<List<double>>.from(
+        geometry.map((coord) => List<double>.from(coord as List)),
+      );
+      
+      print('✅ Coordenadas obtenidas: ${coordinates.length} puntos');
+      return coordinates;
+      
     } catch (e) {
-      throw Exception('Error inesperado: $e');
+      print('❌ Error en OSRM: $e');
+      rethrow;
     }
   }
 }

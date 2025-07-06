@@ -25,17 +25,18 @@ class RouteDto {
   final Map<String, dynamic> summary;
   final List<List<double>> geometry;
   final List<Map<String, dynamic>> segments;
-
+  
   RouteDto({
     required this.summary,
     required this.geometry,
     required this.segments,
   });
-
+  
   factory RouteDto.fromJson(Map<String, dynamic> json) {
+    // Corregir el manejo de la geometría
     final geometryList = json['geometry'] as List<dynamic>? ?? [];
     final segmentsList = json['segments'] as List<dynamic>? ?? [];
-    
+        
     return RouteDto(
       summary: json['summary'] as Map<String, dynamic>? ?? {},
       geometry: geometryList
@@ -48,12 +49,13 @@ class RouteDto {
           .toList(),
     );
   }
-
+  
   RouteResult toDomainEntity() {
+    // Convertir coordenadas correctamente: [lon, lat] -> LatLng(lat, lon)
     final coordinates = geometry
-        .map((coord) => LatLng(coord[1], coord[0])) // [lon, lat] -> LatLng(lat, lon)
+        .map((coord) => LatLng(coord[1], coord[0]))
         .toList();
-
+    
     final steps = <RouteStep>[];
     for (final segment in segments) {
       final segmentSteps = segment['steps'] as List<dynamic>? ?? [];
@@ -68,7 +70,7 @@ class RouteDto {
         ));
       }
     }
-
+    
     return RouteResult(
       coordinates: coordinates,
       distance: (summary['distance'] as num?)?.toDouble() ?? 0.0,

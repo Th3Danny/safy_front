@@ -1,4 +1,4 @@
-// lib/features/home/presentation/widgets/route_search_widget.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
@@ -372,14 +372,16 @@ class _RouteSearchWidgetState extends State<RouteSearchWidget>
   }
 
   void _clearPoint(MapViewModel mapViewModel, bool isStart) {
-    if (isStart) {
-      // Implementar lógica para limpiar solo el punto de inicio
-      _startController.clear();
-    } else {
-      // Implementar lógica para limpiar solo el punto de destino
-      _endController.clear();
-    }
+  if (isStart) {
+    // Limpiar solo el punto de inicio
+    mapViewModel.clearStartPoint();
+    _startController.clear();
+  } else {
+    // Limpiar solo el punto de destino
+    mapViewModel.clearEndPoint();
+    _endController.clear();
   }
+}
 
   void _swapPoints(MapViewModel mapViewModel) {
     final tempStart = mapViewModel.startPoint;
