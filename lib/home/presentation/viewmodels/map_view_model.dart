@@ -5,15 +5,19 @@ import 'package:latlong2/latlong.dart';
 import 'package:safy/home/domain/entities/place.dart';
 import 'package:safy/home/domain/entities/location.dart';
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
+import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
 
 class MapViewModel extends ChangeNotifier {
-  // Casos de uso (agregar al constructor)
+  // Casos de uso
   final SearchPlacesUseCase? _searchPlacesUseCase;
+  final GetOpenRouteUseCase? _getOpenRouteUseCase;
 
   // Constructor actualizado
   MapViewModel({
     SearchPlacesUseCase? searchPlacesUseCase,
-  }) : _searchPlacesUseCase = searchPlacesUseCase;
+    GetOpenRouteUseCase? getOpenRouteUseCase,
+  }) : _searchPlacesUseCase = searchPlacesUseCase,
+       _getOpenRouteUseCase = getOpenRouteUseCase;
 
   // MapController
   final MapController _mapController = MapController();
@@ -56,7 +60,7 @@ class MapViewModel extends ChangeNotifier {
   List<RouteOption> _routeOptions = [];
   List<RouteOption> get routeOptions => _routeOptions;
 
-  // ========== NUEVAS PROPIEDADES PARA BÚSQUEDA ==========
+  // Propiedades para búsqueda
   bool _isSearching = false;
   bool get isSearching => _isSearching;
 
@@ -73,8 +77,6 @@ class MapViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  // ========== MÉTODOS EXISTENTES (mantener todos) ==========
-  
   // Inicialización del mapa
   Future<void> initializeMap() async {
     try {
@@ -126,10 +128,10 @@ class MapViewModel extends ChangeNotifier {
 
   // Crear marcador de ubicación actual
   void _createCurrentLocationMarker() {
-    // Remover solo el marcador de ubicación actual, mantener otros
-    _markers.removeWhere((marker) => 
-      marker.key?.toString().contains('current_location') == true);
-    
+    _markers.removeWhere(
+      (marker) => marker.key?.toString().contains('current_location') == true,
+    );
+
     _markers.add(
       Marker(
         key: const Key('current_location'),
@@ -149,11 +151,7 @@ class MapViewModel extends ChangeNotifier {
               ),
             ],
           ),
-          child: const Icon(
-            Icons.my_location,
-            color: Colors.white,
-            size: 20,
-          ),
+          child: const Icon(Icons.my_location, color: Colors.white, size: 20),
         ),
       ),
     );
@@ -169,51 +167,51 @@ class MapViewModel extends ChangeNotifier {
       {'lat': 16.7520, 'lng': -93.1280, 'reports': 4, 'type': 'medium'},
     ];
 
-    _dangerMarkers = dangerZones.map((zone) {
-      Color zoneColor;
-      double zoneRadius;
+    _dangerMarkers =
+        dangerZones.map((zone) {
+          Color zoneColor;
+          double zoneRadius;
 
-      switch (zone['type']) {
-        case 'high':
-          zoneColor = Colors.red;
-          zoneRadius = 25;
-          break;
-        case 'medium':
-          zoneColor = Colors.orange;
-          zoneRadius = 20;
-          break;
-        default:
-          zoneColor = Colors.yellow;
-          zoneRadius = 15;
-      }
+          switch (zone['type']) {
+            case 'high':
+              zoneColor = Colors.red;
+              zoneRadius = 25;
+              break;
+            case 'medium':
+              zoneColor = Colors.orange;
+              zoneRadius = 20;
+              break;
+            default:
+              zoneColor = Colors.yellow;
+              zoneRadius = 15;
+          }
 
-      return Marker(
-        point: LatLng(zone['lat'] as double, zone['lng'] as double),
-        width: zoneRadius * 2,
-        height: zoneRadius * 2,
-        child: Container(
-          decoration: BoxDecoration(
-            color: zoneColor.withOpacity(0.3),
-            shape: BoxShape.circle,
-            border: Border.all(color: zoneColor, width: 2),
-          ),
-          child: Center(
-            child: Text(
-              '${zone['reports']}',
-              style: TextStyle(
-                color: zoneColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+          return Marker(
+            point: LatLng(zone['lat'] as double, zone['lng'] as double),
+            width: zoneRadius * 2,
+            height: zoneRadius * 2,
+            child: Container(
+              decoration: BoxDecoration(
+                color: zoneColor.withOpacity(0.3),
+                shape: BoxShape.circle,
+                border: Border.all(color: zoneColor, width: 2),
+              ),
+              child: Center(
+                child: Text(
+                  '${zone['reports']}',
+                  style: TextStyle(
+                    color: zoneColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      );
-    }).toList();
+          );
+        }).toList();
   }
 
-  // ========== NUEVOS MÉTODOS PARA BÚSQUEDA ==========
-
+  // Métodos para búsqueda
   Future<void> searchPlaces(String query) async {
     if (query.trim().isEmpty) {
       _searchResults.clear();
@@ -232,7 +230,7 @@ class MapViewModel extends ChangeNotifier {
           latitude: _currentLocation.latitude,
           longitude: _currentLocation.longitude,
         );
-        
+
         _searchResults = await _searchPlacesUseCase!.execute(
           query,
           nearLocation: currentLoc,
@@ -261,28 +259,22 @@ class MapViewModel extends ChangeNotifier {
   void selectPlace(Place place) {
     _selectedDestination = place;
     final placeLatLng = LatLng(place.latitude, place.longitude);
-    
-    // Mover el mapa al lugar seleccionado
+
     _mapController.move(placeLatLng, 15.0);
-    
-    // Agregar marcador del destino
     _addDestinationMarker(placeLatLng, place.displayName);
-    
-    // Establecer como destino usando tu método existente
     setEndPoint(placeLatLng);
-    
-    // Usar ubicación actual como punto de inicio si no está establecido
+
     if (_startPoint == null) {
       setStartPoint(_currentLocation);
     }
-    
+
     notifyListeners();
   }
 
   void _addDestinationMarker(LatLng location, String name) {
-    // Remover marcador de destino anterior
-    _markers.removeWhere((marker) => 
-      marker.key?.toString().contains('destination') == true);
+    _markers.removeWhere(
+      (marker) => marker.key?.toString().contains('destination') == true,
+    );
 
     _markers.add(
       Marker(
@@ -301,8 +293,6 @@ class MapViewModel extends ChangeNotifier {
       ),
     );
   }
-
-  // ========== MÉTODOS EXISTENTES (mantener exactamente igual) ==========
 
   // Funciones del mapa
   void onMapReady() {
@@ -344,6 +334,27 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearStartPoint() {
+    _startPoint = null;
+    _markers.removeWhere(
+      (marker) => marker.key?.toString().contains('start') == true,
+    );
+    _createCurrentLocationMarker();
+    notifyListeners();
+  }
+
+  void clearEndPoint() {
+    _endPoint = null;
+    _selectedDestination = null;
+    _markers.removeWhere(
+      (marker) =>
+          marker.key?.toString().contains('end') == true ||
+          marker.key?.toString().contains('destination') == true,
+    );
+    _createCurrentLocationMarker();
+    notifyListeners();
+  }
+
   void setEndPoint(LatLng point) {
     _endPoint = point;
     _addRouteMarker(point, Colors.red, Icons.stop, 'end');
@@ -354,9 +365,9 @@ class MapViewModel extends ChangeNotifier {
   }
 
   void _addRouteMarker(LatLng point, Color color, IconData icon, String type) {
-    // Remover marcador anterior del mismo tipo
-    _markers.removeWhere((marker) => 
-      marker.key?.toString().contains(type) == true);
+    _markers.removeWhere(
+      (marker) => marker.key?.toString().contains(type) == true,
+    );
 
     _markers.add(
       Marker(
@@ -376,65 +387,141 @@ class MapViewModel extends ChangeNotifier {
     );
   }
 
-  // Calcular rutas seguras (mantener tu implementación existente)
+  // Calcular ruta real usando OpenRouteService
+  Future<List<LatLng>> _calculateRealRoute(LatLng start, LatLng end) async {
+    try {
+      if (_getOpenRouteUseCase != null) {
+        final coordinates = await _getOpenRouteUseCase!.call(
+          start: [start.longitude, start.latitude],
+          end: [end.longitude, end.latitude],
+        );
+
+        return coordinates.map((coord) => LatLng(coord[1], coord[0])).toList();
+      }
+    } catch (e) {
+      print('Error calculating real route: $e');
+    }
+
+    // Fallback a ruta directa
+    return [start, end];
+  }
+
+  // Calcular rutas seguras
   Future<void> calculateRoutes() async {
     if (_startPoint == null || _endPoint == null) return;
 
     try {
       _routeOptions.clear();
-      
-      // Ruta directa (puede ser peligrosa)
-      final directRoute = _calculateDirectRoute(_startPoint!, _endPoint!);
-      final directSafety = _calculateRouteSafety(directRoute);
-      
-      _routeOptions.add(RouteOption(
-        name: 'Ruta Directa',
-        points: directRoute,
-        distance: _calculateDistance(directRoute),
-        duration: _calculateDuration(directRoute, _selectedTransportMode),
-        safetyLevel: directSafety,
-        isRecommended: false,
-      ));
+
+      // Ruta real usando OpenRouteService
+      final realRoute = await _calculateRealRoute(_startPoint!, _endPoint!);
+      final realSafety = _calculateRouteSafety(realRoute);
+
+      _routeOptions.add(
+        RouteOption(
+          name: 'Ruta Directa',
+          points: realRoute,
+          distance: _calculateDistance(realRoute),
+          duration: _calculateDuration(realRoute, _selectedTransportMode),
+          safetyLevel: realSafety,
+          isRecommended: realSafety >= 70,
+        ),
+      );
 
       // Ruta segura (evita zonas peligrosas)
-      final safeRoute = _calculateSafeRoute(_startPoint!, _endPoint!);
+      final safeRoute = await _calculateSafeRouteReal(_startPoint!, _endPoint!);
       final safeSafety = _calculateRouteSafety(safeRoute);
-      
-      _routeOptions.add(RouteOption(
-        name: 'Ruta Segura',
-        points: safeRoute,
-        distance: _calculateDistance(safeRoute),
-        duration: _calculateDuration(safeRoute, _selectedTransportMode),
-        safetyLevel: safeSafety,
-        isRecommended: true,
-      ));
+
+      _routeOptions.add(
+        RouteOption(
+          name: 'Ruta Segura',
+          points: safeRoute,
+          distance: _calculateDistance(safeRoute),
+          duration: _calculateDuration(safeRoute, _selectedTransportMode),
+          safetyLevel: safeSafety,
+          isRecommended: true,
+        ),
+      );
 
       // Ruta alternativa
-      final altRoute = _calculateAlternativeRoute(_startPoint!, _endPoint!);
+      final altRoute = await _calculateAlternativeRouteReal(
+        _startPoint!,
+        _endPoint!,
+      );
       final altSafety = _calculateRouteSafety(altRoute);
-      
-      _routeOptions.add(RouteOption(
-        name: 'Ruta Alternativa',
-        points: altRoute,
-        distance: _calculateDistance(altRoute),
-        duration: _calculateDuration(altRoute, _selectedTransportMode),
-        safetyLevel: altSafety,
-        isRecommended: false,
-      ));
+
+      _routeOptions.add(
+        RouteOption(
+          name: 'Ruta Alternativa',
+          points: altRoute,
+          distance: _calculateDistance(altRoute),
+          duration: _calculateDuration(altRoute, _selectedTransportMode),
+          safetyLevel: altSafety,
+          isRecommended: false,
+        ),
+      );
 
       // Establecer la ruta recomendada como actual
       final recommendedRoute = _routeOptions.firstWhere(
         (route) => route.isRecommended,
         orElse: () => _routeOptions.first,
       );
-      
+
       selectRoute(recommendedRoute);
-      
     } catch (e) {
       _errorMessage = 'Error calculando rutas: $e';
     }
-    
+
     notifyListeners();
+  }
+
+  // Métodos mejorados para calcular rutas reales
+  Future<List<LatLng>> _calculateSafeRouteReal(LatLng start, LatLng end) async {
+    // Intentar calcular una ruta que evite zonas peligrosas
+    // Por ahora, usamos la ruta real y si pasa por zonas peligrosas, añadimos puntos de desvío
+    final directRoute = await _calculateRealRoute(start, end);
+
+    // Si la ruta pasa por zonas muy peligrosas, crear puntos de desvío
+    if (_calculateRouteSafety(directRoute) < 50) {
+      final midLat = (start.latitude + end.latitude) / 2;
+      final midLng = (start.longitude + end.longitude) / 2;
+      final safePoint = LatLng(midLat + 0.002, midLng - 0.002);
+
+      final firstSegment = await _calculateRealRoute(start, safePoint);
+      final secondSegment = await _calculateRealRoute(safePoint, end);
+
+      // Combinar segmentos evitando duplicar puntos
+      final combinedRoute = <LatLng>[
+        ...firstSegment,
+        ...secondSegment.skip(
+          1,
+        ), // Saltar el primer punto para evitar duplicación
+      ];
+
+      return combinedRoute;
+    }
+
+    return directRoute;
+  }
+
+  Future<List<LatLng>> _calculateAlternativeRouteReal(
+    LatLng start,
+    LatLng end,
+  ) async {
+    // Crear un punto intermedio para generar una ruta alternativa
+    final midLat = (start.latitude + end.latitude) / 2;
+    final midLng = (start.longitude + end.longitude) / 2;
+    final altPoint = LatLng(midLat - 0.001, midLng + 0.003);
+
+    try {
+      final firstSegment = await _calculateRealRoute(start, altPoint);
+      final secondSegment = await _calculateRealRoute(altPoint, end);
+
+      return [...firstSegment, ...secondSegment.skip(1)];
+    } catch (e) {
+      // Si falla, usar la ruta directa
+      return await _calculateRealRoute(start, end);
+    }
   }
 
   void selectRoute(RouteOption route) {
@@ -442,31 +529,7 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Algoritmos de cálculo de rutas (mantener exactamente igual)
-  List<LatLng> _calculateDirectRoute(LatLng start, LatLng end) {
-    return [start, end];
-  }
-
-  List<LatLng> _calculateSafeRoute(LatLng start, LatLng end) {
-    final points = <LatLng>[start];
-    final midLat = (start.latitude + end.latitude) / 2;
-    final midLng = (start.longitude + end.longitude) / 2;
-    final safePoint = LatLng(midLat + 0.002, midLng - 0.002);
-    points.add(safePoint);
-    points.add(end);
-    return points;
-  }
-
-  List<LatLng> _calculateAlternativeRoute(LatLng start, LatLng end) {
-    final points = <LatLng>[start];
-    final midLat = (start.latitude + end.latitude) / 2;
-    final midLng = (start.longitude + end.longitude) / 2;
-    points.add(LatLng(midLat - 0.001, midLng + 0.003));
-    points.add(LatLng(midLat + 0.001, midLng + 0.001));
-    points.add(end);
-    return points;
-  }
-
+  // Algoritmos de cálculo de seguridad y distancia
   double _calculateRouteSafety(List<LatLng> route) {
     double safetyScore = 1.0;
     for (final point in route) {
@@ -496,11 +559,7 @@ class MapViewModel extends ChangeNotifier {
 
   int _calculateDuration(List<LatLng> route, String transportMode) {
     final distance = _calculateDistance(route);
-    final speeds = {
-      'walk': 5.0,
-      'car': 40.0,
-      'bus': 25.0,
-    };
+    final speeds = {'walk': 5.0, 'car': 40.0, 'bus': 25.0};
     final speed = speeds[transportMode] ?? 5.0;
     return (distance / speed * 60).round();
   }
@@ -511,13 +570,14 @@ class MapViewModel extends ChangeNotifier {
     _selectedDestination = null;
     _currentRoute.clear();
     _routeOptions.clear();
-    
-    // Remover marcadores de ruta y destino
-    _markers.removeWhere((marker) => 
-      marker.key?.toString().contains('start') == true ||
-      marker.key?.toString().contains('end') == true ||
-      marker.key?.toString().contains('destination') == true);
-    
+
+    _markers.removeWhere(
+      (marker) =>
+          marker.key?.toString().contains('start') == true ||
+          marker.key?.toString().contains('end') == true ||
+          marker.key?.toString().contains('destination') == true,
+    );
+
     _createCurrentLocationMarker();
     notifyListeners();
   }
@@ -529,16 +589,15 @@ class MapViewModel extends ChangeNotifier {
 
   Future<void> centerOnCurrentLocation() async {
     if (!_mapReady) return;
-    
+
     try {
       final position = await _determinePosition();
       final newLocation = LatLng(position.latitude, position.longitude);
-      
+
       _currentLocation = newLocation;
       _mapController.move(newLocation, 15.0);
       _createCurrentLocationMarker();
       notifyListeners();
-      
     } catch (e) {
       _errorMessage = 'Error: $e';
       notifyListeners();
@@ -552,7 +611,7 @@ class MapViewModel extends ChangeNotifier {
   }
 }
 
-// Mantener tu clase RouteOption exactamente igual
+// Clase RouteOption
 class RouteOption {
   final String name;
   final List<LatLng> points;

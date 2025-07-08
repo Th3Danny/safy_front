@@ -7,7 +7,6 @@ import 'package:safy/home/presentation/widgets/map_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_fab.dart';
 import 'package:safy/home/presentation/widgets/place_search_widget.dart';
 import 'package:safy/home/presentation/widgets/route_options_widget.dart';
-import 'package:safy/home/presentation/widgets/route_search_widget.dart';
 
 class MobileMapLayout extends StatelessWidget {
   const MobileMapLayout({super.key});
@@ -41,15 +40,7 @@ class MobileMapLayout extends StatelessWidget {
                 child: PlaceSearchWidget(),
               ),
 
-              // 🔍 Búsqueda de rutas (cuando no hay rutas calculadas)
-              if (mapViewModel.routeOptions.isEmpty && 
-                  (mapViewModel.startPoint != null || mapViewModel.endPoint != null))
-                const Positioned(
-                  top: 180, // Ajustado para dar espacio al PlaceSearchWidget
-                  left: 16,
-                  right: 16,
-                  child: RouteSearchWidget(),
-                ),
+              
 
               // 📋 Opciones de ruta (cuando hay rutas calculadas)
               if (mapViewModel.routeOptions.isNotEmpty)

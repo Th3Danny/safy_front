@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:safy/home/presentation/widgets/place_search_widget.dart';
 import 'package:safy/home/presentation/widgets/route_options_widget.dart';
-import 'package:safy/home/presentation/widgets/route_search_widget.dart';
+
 
 class MapOverlayWidgets extends StatelessWidget {
   const MapOverlayWidgets({super.key});
@@ -18,10 +18,7 @@ class MapOverlayWidgets extends StatelessWidget {
               // Widget de búsqueda de lugares (siempre visible)
               const PlaceSearchWidget(),
               
-              // Widget de búsqueda de rutas (cuando no hay rutas calculadas)
-              if (mapViewModel.routeOptions.isEmpty && 
-                  (mapViewModel.startPoint != null || mapViewModel.endPoint != null))
-                const RouteSearchWidget(),
+              
               
               const Spacer(),
               
