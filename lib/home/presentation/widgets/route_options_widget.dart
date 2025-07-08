@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
+import 'package:get_it/get_it.dart';
 
 class RouteOptionsWidget extends StatefulWidget {
   final List<RouteOption> routes;
@@ -360,10 +361,12 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
   }
 
   void _startNavigation(RouteOption route) {
-    // Aquí podrías agregar lógica para iniciar navegación paso a paso
     widget.onRouteSelected(route);
 
-    // Mostrar mensaje de confirmación
+    // Iniciar navegación en tiempo real
+    final mapViewModel = GetIt.instance<MapViewModel>();
+    mapViewModel.startNavigation();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -377,7 +380,10 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
         action: SnackBarAction(
           label: 'DETENER',
           textColor: Colors.white,
-          onPressed: widget.onClearRoute,
+          onPressed: () {
+            mapViewModel.stopNavigation();
+            widget.onClearRoute();
+          },
         ),
       ),
     );
