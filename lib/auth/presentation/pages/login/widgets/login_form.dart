@@ -18,7 +18,7 @@ class _LoginFormState extends State<LoginForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // ✅ Obtener ViewModel de GetIt
+  // Obtener ViewModel de GetIt
   late final LoginViewModel _loginViewModel;
 
   @override
@@ -45,7 +45,7 @@ class _LoginFormState extends State<LoginForm> {
     if (mounted) {
       setState(() {});
 
-      // ✅ Navegar al home si login fue exitoso
+      // Navegar al home si login fue exitoso
       if (_loginViewModel.lastSuccessfulSession != null) {
         Future.microtask(() {
           context.go(AppRoutesConstant.home);
@@ -60,7 +60,7 @@ class _LoginFormState extends State<LoginForm> {
       key: _formKey,
       child: Column(
         children: [
-          // ✅ Mostrar error si existe
+          //  Mostrar error si existe
           if (_loginViewModel.hasError) ...[
             Container(
               width: double.infinity,
@@ -123,8 +123,8 @@ class _LoginFormState extends State<LoginForm> {
             hint: 'Add your password',
             obscureText:
                 !_loginViewModel
-                    .isPasswordVisible, // ✅ Usar estado del ViewModel
-            onChanged: _loginViewModel.setPassword, // ✅ Conectar con ViewModel
+                    .isPasswordVisible, //  Usar estado del ViewModel
+            onChanged: _loginViewModel.setPassword, //  Conectar con ViewModel
             suffixIcon: IconButton(
               icon: Icon(
                 _loginViewModel.isPasswordVisible
@@ -134,7 +134,7 @@ class _LoginFormState extends State<LoginForm> {
               ),
               onPressed:
                   _loginViewModel
-                      .togglePasswordVisibility, // ✅ Usar método del ViewModel
+                      .togglePasswordVisibility, // Usar método del ViewModel
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -157,11 +157,11 @@ class _LoginFormState extends State<LoginForm> {
                   Checkbox(
                     value:
                         _loginViewModel
-                            .rememberMe, // ✅ Usar estado del ViewModel
+                            .rememberMe, //  Usar estado del ViewModel
                     onChanged:
                         (value) => _loginViewModel.setRememberMe(
                           value ?? false,
-                        ), // ✅ Conectar
+                        ), //  Conectar
                     activeColor: const Color(0xFF2196F3),
                   ),
                   const Text('Remember me', style: TextStyle(fontSize: 14)),
@@ -187,17 +187,17 @@ class _LoginFormState extends State<LoginForm> {
             text:
                 _loginViewModel.isLoading
                     ? 'Logging in...'
-                    : 'Log in', // ✅ Texto dinámico
+                    : 'Log in', //  Texto dinámico
             onPressed:
                 _loginViewModel.canSubmit
                     ? () async {
-                      // ✅ Deshabilitar si no puede enviar
+                      //  Deshabilitar si no puede enviar
                       if (_formKey.currentState!.validate()) {
-                        // ✅ Sincronizar controladores con ViewModel (por si acaso)
+                        //  Sincronizar controladores con ViewModel (por si acaso)
                         _loginViewModel.setEmail(_emailController.text);
                         _loginViewModel.setPassword(_passwordController.text);
 
-                        // ✅ Ejecutar login real
+                        //  Ejecutar login real
                         final success = await _loginViewModel.signIn();
 
                         // La navegación se maneja en _onViewModelChanged
@@ -209,7 +209,7 @@ class _LoginFormState extends State<LoginForm> {
                     : null,
             isLoading:
                 _loginViewModel
-                    .isLoading, // ✅ Mostrar loading si el CustomButton lo soporta
+                    .isLoading, //  Mostrar loading si el CustomButton lo soporta
           ),
 
           const SizedBox(height: 16),
