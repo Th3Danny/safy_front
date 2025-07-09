@@ -513,7 +513,7 @@ class MapViewModel extends ChangeNotifier {
   bool _isNavigating = false;
   bool get isNavigating => _isNavigating;
 
-  // AGREGAR ESTE MÉTODO SIMPLE ✅
+  // AGREGAR ESTE MÉTODO SIMPLE 
   void startNavigation() {
   if (_currentRoute.isEmpty) return;
   

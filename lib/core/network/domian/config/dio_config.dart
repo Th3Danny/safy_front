@@ -52,7 +52,7 @@ class DioConfig {
   static String _getBaseUrl() {
     if (kDebugMode) {
       // URL para desarrollo local
-      return 'http://localhost:3000';
+      return 'http://192.168.100.9:8085';
     } else {
       // URL para producción
       return 'https://api.safy.app';

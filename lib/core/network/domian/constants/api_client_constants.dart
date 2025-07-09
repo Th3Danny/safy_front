@@ -1,6 +1,6 @@
 class ApiConstants {
   // Base URLs - cambiar cuando tengas tu API real
-  static const String baseUrl = 'https://api.safy.app'; 
+  static const String baseUrl = 'http://192.168.100.9:8085'; 
   static const String apiVersion = '/api/v1';
   static const String fullUrl = '$baseUrl$apiVersion';
 

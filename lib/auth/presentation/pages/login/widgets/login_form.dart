@@ -242,46 +242,6 @@ class _LoginFormState extends State<LoginForm> {
               ),
             ],
           ),
-
-          // ✅ Mostrar credenciales de prueba en desarrollo
-          if (const bool.fromEnvironment('dart.vm.product') == false) ...[
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                border: Border.all(color: Colors.blue.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '🔧 Credenciales de prueba:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'yazmin@example.com | 123456',
-                    style: TextStyle(fontSize: 11),
-                  ),
-                  const Text(
-                    'julian@example.com | 123456',
-                    style: TextStyle(fontSize: 11),
-                  ),
-                  const Text(
-                    'gerson@example.com | 123456',
-                    style: TextStyle(fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
