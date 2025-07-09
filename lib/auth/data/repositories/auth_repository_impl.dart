@@ -26,7 +26,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final requestDto = LoginRequestDto(
         email: email,
         password: password,
-       
+        //rememberMe: rememberMe,
       );
 
       final response = await _apiClient.signIn(requestDto);
@@ -37,7 +37,7 @@ class AuthRepositoryImpl implements AuthRepository {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn,
-       
+       // rememberMe: rememberMe,
       );
 
       return _sessionManager.currentSession!;
