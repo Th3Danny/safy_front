@@ -134,16 +134,15 @@ class SessionManager {
       final user = UserInfoEntity(
         id: userMap['id'] ?? '',
         name: userMap['name'] ?? '',
-        lastName: userMap['last_name'] ?? '',
-        secondLastName: userMap['second_last_name'],
+        lastName: userMap['lastname'] ?? '',
+        secondLastName: userMap['second_lastname'],
         username: userMap['username'] ?? '',
         email: userMap['email'] ?? '',
-        age: userMap['age'] ?? 0,
-        gender: userMap['gender'] ?? '',
-        jobType: userMap['job_type'] ?? '',
-        profileImageUrl: userMap['profile_image_url'],
+        phoneNumber: userMap['phone_number'] ?? '',
+        role: userMap['role'] ?? '',
+        verified: userMap['verified'] ?? false,
         isActive: userMap['is_active'] ?? true,
-        createdAt: DateTime.tryParse(userMap['created_at'] ?? '') ?? DateTime.now(),
+      
       );
 
       final tokenPayload = getTokenPayload(accessToken);
@@ -189,12 +188,11 @@ class SessionManager {
           'second_last_name': _currentSession!.user.secondLastName,
           'username': _currentSession!.user.username,
           'email': _currentSession!.user.email,
-          'age': _currentSession!.user.age,
-          'gender': _currentSession!.user.gender,
-          'job_type': _currentSession!.user.jobType,
-          'profile_image_url': _currentSession!.user.profileImageUrl,
+          'phone_number': _currentSession!.user.phoneNumber,
+          'role': _currentSession!.user.role, 
+          'verified': _currentSession!.user.verified,
           'is_active': _currentSession!.user.isActive,
-          'created_at': _currentSession!.user.createdAt.toIso8601String(),
+      
         };
         
         await _prefs!.setString(ApiConstants.userDataKey, jsonEncode(userMap));

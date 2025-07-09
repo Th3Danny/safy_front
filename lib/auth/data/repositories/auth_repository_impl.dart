@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:safy/auth/data/datasources/auth_data_source.dart';
+import 'package:safy/auth/data/dtos/auth_request_dto.dart';
 import 'package:safy/auth/data/dtos/refresh_token_dto.dart';
 import 'package:safy/auth/domain/entities/auth_session.dart';
 import 'package:safy/auth/domain/entities/user.dart';
@@ -25,7 +26,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final requestDto = LoginRequestDto(
         email: email,
         password: password,
-        rememberMe: rememberMe,
+       
       );
 
       final response = await _apiClient.signIn(requestDto);
@@ -36,7 +37,7 @@ class AuthRepositoryImpl implements AuthRepository {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn,
-        rememberMe: rememberMe,
+       
       );
 
       return _sessionManager.currentSession!;

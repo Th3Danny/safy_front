@@ -7,12 +7,10 @@ class UserDto {
   final String? secondLastName;
   final String username;
   final String email;
-  final int age;
-  final String gender;
-  final String jobType;
-  final String? profileImageUrl;
+  final String phoneNumber;
+  final String role;
+  final bool verified;
   final bool isActive;
-  final DateTime createdAt;
 
   const UserDto({
     required this.id,
@@ -21,47 +19,40 @@ class UserDto {
     this.secondLastName,
     required this.username,
     required this.email,
-    required this.age,
-    required this.gender,
-    required this.jobType,
-    this.profileImageUrl,
+    required this.phoneNumber,
+    required this.role,
+    required this.verified,
     required this.isActive,
-    required this.createdAt,
   });
 
   factory UserDto.fromJson(Map<String, dynamic> json) {
     return UserDto(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
-      lastName: json['last_name'] ?? '',
-      secondLastName: json['second_last_name'],
+      lastName: json['lastname'] ?? '',
+      secondLastName: json['second_lastname'],
       username: json['username'] ?? '',
       email: json['email'] ?? '',
-      age: json['age'] ?? 0,
-      gender: json['gender'] ?? '',
-      jobType: json['job_type'] ?? '',
-      profileImageUrl: json['profile_image_url'],
-      isActive: json['is_active'] ?? true,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      phoneNumber: json['phone_number'] ?? '',
+      role: json['role'] ?? '',
+      verified: json['verified'] ?? false,
+      isActive: json['active'] ?? true,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
-    'last_name': lastName,
-    if (secondLastName != null) 'second_last_name': secondLastName,
+    'lastname': lastName,
+    if (secondLastName != null) 'second_lastname': secondLastName,
     'username': username,
     'email': email,
-    'age': age,
-    'gender': gender,
-    'job_type': jobType,
-    if (profileImageUrl != null) 'profile_image_url': profileImageUrl,
-    'is_active': isActive,
-    'created_at': createdAt.toIso8601String(),
+    'phone_number': phoneNumber,
+    'role': role,
+    'verified': verified,
+    'active': isActive,
   };
 
-  // 🎯 Método directo para convertir UserDto a UserInfoEntity
   UserInfoEntity toDomainEntity() {
     return UserInfoEntity(
       id: id,
@@ -70,12 +61,10 @@ class UserDto {
       secondLastName: secondLastName,
       username: username,
       email: email,
-      age: age,
-      gender: gender,
-      jobType: jobType,
-      profileImageUrl: profileImageUrl,
+      phoneNumber: phoneNumber,
+      role: role,
+      verified: verified,
       isActive: isActive,
-      createdAt: createdAt,
     );
   }
 }

@@ -12,11 +12,10 @@ class LoginRequestDto {
   Map<String, dynamic> toJson() => {
     'email': email.trim().toLowerCase(),
     'password': password,
-    'remember_me': rememberMe,
   };
 
   @override
-  String toString() => 'LoginRequestDto(email: $email, rememberMe: $rememberMe)';
+  String toString() => 'LoginRequestDto(email: $email)';
 }
 
 class RegisterRequestDto {
@@ -46,9 +45,9 @@ class RegisterRequestDto {
 
   Map<String, dynamic> toJson() => {
     'name': name.trim(),
-    'last_name': lastName.trim(),
+    'lastname': lastName.trim(),
     if (secondLastName != null && secondLastName!.isNotEmpty) 
-      'second_last_name': secondLastName!.trim(),
+      'second_lastname': secondLastName!.trim(),
     'username': username.trim().toLowerCase(),
     'age': age,
     'gender': gender,

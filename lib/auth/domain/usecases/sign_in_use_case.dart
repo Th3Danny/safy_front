@@ -26,7 +26,7 @@ class SignInUseCase {
     return await _repository.signIn(
       email: email.trim().toLowerCase(),
       password: password,
-      rememberMe: rememberMe,
+      
     );
   }
 }

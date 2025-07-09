@@ -86,7 +86,7 @@ class LoginViewModel extends ChangeNotifier {
       final session = await _signInUseCase.execute(
         email: _email,
         password: _password,
-        rememberMe: _rememberMe,
+    
       );
 
       _lastSuccessfulSession = session;

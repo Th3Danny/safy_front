@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -83,6 +84,10 @@ class MapViewModel extends ChangeNotifier {
       await _determineCurrentLocation();
       await _loadDangerZones();
       _createCurrentLocationMarker();
+
+      // 👈 NUEVO: Iniciar seguimiento de ubicación siempre
+      _startLocationTracking();
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -126,6 +131,27 @@ class MapViewModel extends ChangeNotifier {
     );
   }
 
+  // Seguimiento de ubicación (siempre activo)
+  void _startLocationTracking() {
+  final locationSettings = LocationSettings(
+    accuracy: LocationAccuracy.high,
+    distanceFilter: 1, // 👈 Cada 1 metros (muy frecuente pero no continuo)
+    // ❌ NO usar timeLimit - causa timeout
+  );
+
+  _positionStream = Geolocator.getPositionStream(
+    locationSettings: locationSettings,
+  ).listen(
+    (Position position) {
+      print('📍 Ubicación actualizada: ${position.latitude}, ${position.longitude}');
+      _updateCurrentPosition(position);
+    },
+    onError: (error) {
+      print('Error en tracking de ubicación: $error');
+    },
+  );
+}
+
   // Crear marcador de ubicación actual
   void _createCurrentLocationMarker() {
     _markers.removeWhere(
@@ -136,22 +162,29 @@ class MapViewModel extends ChangeNotifier {
       Marker(
         key: const Key('current_location'),
         point: _currentLocation,
-        width: 40,
-        height: 40,
+        width: 30,
+        height: 30,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.blue,
+            color:
+                _isNavigating ? Colors.green : Colors.blue, // 👈 Color dinámico
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 3),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.3),
-                blurRadius: 6,
+                blurRadius: 3,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: const Icon(Icons.my_location, color: Colors.white, size: 20),
+          child: Icon(
+            _isNavigating
+                ? Icons.navigation
+                : Icons.my_location, // 👈 Ícono dinámico
+            color: Colors.white,
+            size: 20,
+          ),
         ),
       ),
     );
@@ -475,6 +508,61 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Nuevas propiedades
+  StreamSubscription<Position>? _positionStream;
+  bool _isNavigating = false;
+  bool get isNavigating => _isNavigating;
+
+  // AGREGAR ESTE MÉTODO SIMPLE 
+  void startNavigation() {
+  if (_currentRoute.isEmpty) return;
+  
+  _isNavigating = true;
+  
+  // Reiniciar tracking con mayor precisión
+  _positionStream?.cancel();
+  _startLocationTracking();
+  
+  notifyListeners();
+}
+
+  // Método para actualizar posición
+  void _updateCurrentPosition(Position position) {
+    final newLocation = LatLng(position.latitude, position.longitude);
+
+    // Actualizar ubicación actual
+    _currentLocation = newLocation;
+
+    // Actualizar marcador de ubicación
+    _createCurrentLocationMarker();
+
+    // Centrar mapa en nueva ubicación (opcional)
+    if (_mapReady) {
+      _mapController.move(newLocation, _mapController.camera.zoom);
+    }
+
+    notifyListeners();
+  }
+
+  // Método para detener navegación
+  void stopNavigation() {
+  _isNavigating = false;
+  
+  // Reiniciar tracking con menor frecuencia
+  _positionStream?.cancel();
+  _startLocationTracking();
+  
+  notifyListeners();
+}
+
+  // Actualizar dispose
+  @override
+  void dispose() {
+    _positionStream?.cancel();
+    _mapController.dispose();
+    super.dispose();
+  }
+
   // Métodos mejorados para calcular rutas reales
   Future<List<LatLng>> _calculateSafeRouteReal(LatLng start, LatLng end) async {
     // Intentar calcular una ruta que evite zonas peligrosas
@@ -602,12 +690,6 @@ class MapViewModel extends ChangeNotifier {
       _errorMessage = 'Error: $e';
       notifyListeners();
     }
-  }
-
-  @override
-  void dispose() {
-    _mapController.dispose();
-    super.dispose();
   }
 }
 
