@@ -37,10 +37,10 @@ class _RegisterForm01State extends State<RegisterForm01> {
     
     _registerViewModel.addListener(_onViewModelChanged);
 
-    // ✅ Ir a la página 0 sin notificar (evita setState durante initState)
+    //  Ir a la página 0 sin notificar (evita setState durante initState)
     _registerViewModel.goToPage(0);
     
-    // 🔧 Cargar datos después del primer frame para evitar setState durante build
+    //  Cargar datos después del primer frame para evitar setState durante build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadExistingData();
       setState(() {
@@ -60,7 +60,7 @@ class _RegisterForm01State extends State<RegisterForm01> {
     super.dispose();
   }
 
-  // ✅ Cargar datos existentes del ViewModel a los controladores
+  //  Cargar datos existentes del ViewModel a los controladores
   void _loadExistingData() {
     // Cargar datos sin disparar callbacks
     _nameController.text = _registerViewModel.name;

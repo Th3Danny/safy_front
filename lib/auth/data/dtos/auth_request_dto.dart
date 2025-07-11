@@ -45,11 +45,11 @@ class RegisterRequestDto {
   });
 
   Map<String, dynamic> toJson() => {
-    'username': username.trim().toLowerCase(),
     'name': name.trim(),
     'lastname': lastName.trim(),
     if (secondLastName != null && secondLastName!.isNotEmpty) 
       'second_lastname': secondLastName!.trim(),
+    'username': username.trim().toLowerCase(),
     'age': age,
     'gender': gender,
     'job_type': jobType,

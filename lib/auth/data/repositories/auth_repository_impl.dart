@@ -22,7 +22,7 @@ class AuthRepositoryImpl implements AuthRepository {
     bool rememberMe = false,
   }) async {
     try {
-      // ✅ SINTAXIS CORRECTA: new palabra clave opcional, pero es un constructor
+      //  SINTAXIS CORRECTA: new palabra clave opcional, pero es un constructor
       final requestDto = LoginRequestDto(
         email: email,
         password: password,
@@ -37,7 +37,7 @@ class AuthRepositoryImpl implements AuthRepository {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
         expiresIn: response.expiresIn,
-       // rememberMe: rememberMe,
+        rememberMe: rememberMe,
       );
 
       return _sessionManager.currentSession!;
@@ -65,7 +65,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String confirmPassword,
   }) async {
     try {
-      // ✅ SINTAXIS CORRECTA: Constructor de RegisterRequestDto
+      //  SINTAXIS CORRECTA: Constructor de RegisterRequestDto
       final requestDto = RegisterRequestDto(
         name: name,
         lastName: lastName,

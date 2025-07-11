@@ -73,13 +73,13 @@ class _RegisterForm02State extends State<RegisterForm02> {
     
     // Si los datos están vacíos, hay un problema
     if (_registerViewModel.name.isEmpty) {
-      print('❌ ERROR: Los datos del Form1 se perdieron!');
-      print('❌ Posibles causas:');
+      print(' ERROR: Los datos del Form1 se perdieron!');
+      print(' Posibles causas:');
       print('   1. GetIt no está configurado como singleton');
       print('   2. Se está creando una nueva instancia');
       print('   3. Los datos se están limpiando en algún lugar');
     } else {
-      print('✅ Los datos del Form1 están presentes');
+      print(' Los datos del Form1 están presentes');
     }
     print('===========================================');
   }
@@ -128,17 +128,17 @@ class _RegisterForm02State extends State<RegisterForm02> {
       _registerViewModel.printCurrentState();
       print('=======================================');
 
-      // ✅ Verificar que se puede enviar
+      //  Verificar que se puede enviar
       if (_registerViewModel.canSubmit) {
         final success = await _registerViewModel.signUp();
         
         if (success) {
-          print('✅ Registro exitoso desde register_form_02.dart');
+          print(' Registro exitoso desde register_form_02.dart');
         } else {
-          print('❌ Error en el registro desde register_form_02.dart');
+          print(' Error en el registro desde register_form_02.dart');
         }
       } else {
-        print('❌ No se puede enviar: canSubmit = false');
+        print(' No se puede enviar: canSubmit = false');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Por favor completa todos los campos correctamente'),
