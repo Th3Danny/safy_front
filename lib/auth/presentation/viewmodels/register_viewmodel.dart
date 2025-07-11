@@ -8,7 +8,9 @@ import '../../domain/value_objects/gender.dart';
 class RegisterViewModel extends ChangeNotifier {
   final SignUpUseCase _signUpUseCase;
 
-  RegisterViewModel(this._signUpUseCase);
+  RegisterViewModel(this._signUpUseCase) {
+    print('[RegisterViewModel] Constructor llamado - hashCode: ${this.hashCode}');
+  }
 
   // Estado del formulario - Página 1 (Datos personales)
   String _name = '';
@@ -56,80 +58,120 @@ class RegisterViewModel extends ChangeNotifier {
   int get currentPage => _currentPage;
   AuthSession? get lastSuccessfulSession => _lastSuccessfulSession;
   bool get hasError => _errorMessage != null;
-  
-  // Validaciones de página
+
+  // 🔧 Validaciones de página mejoradas
   bool get canGoToNextPage {
-    return _name.isNotEmpty && 
-           _lastName.isNotEmpty && 
-           _username.isNotEmpty && 
-           _age >= 13;
+    final isValid = _name.isNotEmpty &&
+        _lastName.isNotEmpty &&
+        _username.isNotEmpty &&
+        _username.length >= 3 &&
+        _age >= 13;
+    
+    return isValid;
   }
 
   bool get canSubmit {
-    return canGoToNextPage &&
-           _email.isNotEmpty &&
-           _password.isNotEmpty &&
-           _confirmPassword.isNotEmpty &&
-           !_isLoading;
+    final isValid = _email.isNotEmpty &&
+        _password.isNotEmpty &&
+        _confirmPassword.isNotEmpty &&
+        _password == _confirmPassword &&
+        !_isLoading;
+    
+    return isValid;
   }
 
   // Setters - Página 1
   void setName(String name) {
-    _name = name;
-    _clearFieldError('name');
-    notifyListeners();
+    final trimmedName = name.trim();
+    if (_name != trimmedName) {
+      _name = trimmedName;
+      _clearFieldError('name');
+      print('[RegisterViewModel] setName: "$_name" (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   void setLastName(String lastName) {
-    _lastName = lastName;
-    _clearFieldError('lastName');
-    notifyListeners();
+    final trimmedLastName = lastName.trim();
+    if (_lastName != trimmedLastName) {
+      _lastName = trimmedLastName;
+      _clearFieldError('lastName');
+      print('[RegisterViewModel] setLastName: "$_lastName" (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   void setSecondLastName(String secondLastName) {
-    _secondLastName = secondLastName;
-    notifyListeners();
+    final trimmedSecondLastName = secondLastName.trim();
+    if (_secondLastName != trimmedSecondLastName) {
+      _secondLastName = trimmedSecondLastName;
+      print('[RegisterViewModel] setSecondLastName: "$_secondLastName" (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   void setUsername(String username) {
-    _username = username;
-    _clearFieldError('username');
-    notifyListeners();
+    final trimmedUsername = username.trim().toLowerCase();
+    if (_username != trimmedUsername) {
+      _username = trimmedUsername;
+      _clearFieldError('username');
+      print('[RegisterViewModel] setUsername: "$_username" (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   void setAge(int age) {
-    _age = age;
-    _clearFieldError('age');
-    notifyListeners();
+    if (_age != age && age >= 13 && age <= 120) {
+      _age = age;
+      _clearFieldError('age');
+      print('[RegisterViewModel] setAge: $_age (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   void setGender(Gender gender) {
-    _selectedGender = gender;
-    notifyListeners();
+    if (_selectedGender != gender) {
+      _selectedGender = gender;
+      print('[RegisterViewModel] setGender: ${_selectedGender.value} (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   // Setters - Página 2
   void setJobType(JobType jobType) {
-    _selectedJobType = jobType;
-    notifyListeners();
+    if (_selectedJobType != jobType) {
+      _selectedJobType = jobType;
+      print('[RegisterViewModel] setJobType: ${_selectedJobType.value} (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   void setEmail(String email) {
-    _email = email;
-    _clearFieldError('email');
-    notifyListeners();
+    final trimmedEmail = email.trim().toLowerCase();
+    if (_email != trimmedEmail) {
+      _email = trimmedEmail;
+      _clearFieldError('email');
+      print('[RegisterViewModel] setEmail: "$_email" (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   void setPassword(String password) {
-    _password = password;
-    _clearFieldError('password');
-    notifyListeners();
+    if (_password != password) {
+      _password = password;
+      _clearFieldError('password');
+      print('[RegisterViewModel] setPassword: "${password.isNotEmpty ? "***" : ""}" (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   void setConfirmPassword(String confirmPassword) {
-    _confirmPassword = confirmPassword;
-    _clearFieldError('confirmPassword');
-    notifyListeners();
+    if (_confirmPassword != confirmPassword) {
+      _confirmPassword = confirmPassword;
+      _clearFieldError('confirmPassword');
+      print('[RegisterViewModel] setConfirmPassword: "${confirmPassword.isNotEmpty ? "***" : ""}" (hashCode: ${this.hashCode})');
+      notifyListeners();
+    }
   }
 
   void togglePasswordVisibility() {
@@ -142,50 +184,65 @@ class RegisterViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Navegación entre páginas
+  // 🔧 Navegación entre páginas - SIN notifyListeners automático
   void nextPage() {
     if (_currentPage < 1 && canGoToNextPage) {
       _currentPage++;
-      _clearError();
-      notifyListeners();
+      _clearError(); // SOLO limpiar errores, NO datos
+      print('[RegisterViewModel] nextPage: $_currentPage (hashCode: ${this.hashCode})');
+      // 🔧 NO llamar notifyListeners() aquí para evitar setState durante navegación
+    } else {
+      print('[RegisterViewModel] nextPage: No se puede avanzar. canGoToNextPage: $canGoToNextPage (hashCode: ${this.hashCode})');
     }
   }
 
   void previousPage() {
     if (_currentPage > 0) {
       _currentPage--;
-      _clearError();
-      notifyListeners();
+      _clearError(); // SOLO limpiar errores, NO datos
+      print('[RegisterViewModel] previousPage: $_currentPage (hashCode: ${this.hashCode})');
+      // 🔧 NO llamar notifyListeners() aquí para evitar setState durante navegación
     }
   }
 
+  // 🔧 goToPage SIN notifyListeners para evitar conflictos durante initState
   void goToPage(int page) {
     if (page >= 0 && page <= 1) {
       _currentPage = page;
-      _clearError();
-      notifyListeners();
+      _clearError(); // SOLO limpiar errores, NO datos
+      print('[RegisterViewModel] goToPage: $_currentPage (hashCode: ${this.hashCode})');
+      // 🔍 Imprimir estado actual después del cambio de página
+      printCurrentState();
+      // 🔧 NO llamar notifyListeners() aquí para evitar setState durante initState
     }
   }
 
-  // Limpiar errores
+  // 🔧 Método para forzar rebuild después de navegación (llamar desde UI)
+  void notifyPageChange() {
+    notifyListeners();
+  }
+
+  // Limpiar errores - NO notificar automáticamente
   void _clearError() {
     if (_errorMessage != null) {
       _errorMessage = null;
-      notifyListeners();
     }
   }
 
   void _clearFieldError(String field) {
     if (_fieldErrors.containsKey(field)) {
       _fieldErrors.remove(field);
-      notifyListeners();
     }
   }
 
-  void clearError() => _clearError();
+  void clearError() {
+    _clearError();
+    notifyListeners();
+  }
 
   // Limpiar formulario completo
   void clearForm() {
+    print('[RegisterViewModel] clearForm: Limpiando formulario (hashCode: ${this.hashCode})');
     _name = '';
     _lastName = '';
     _secondLastName = '';
@@ -201,6 +258,7 @@ class RegisterViewModel extends ChangeNotifier {
     _currentPage = 0;
     _errorMessage = null;
     _fieldErrors.clear();
+    _lastSuccessfulSession = null;
     notifyListeners();
   }
 
@@ -209,15 +267,41 @@ class RegisterViewModel extends ChangeNotifier {
     return _fieldErrors[field];
   }
 
+  // 🔍 Método para imprimir estado actual (debug)
+  void printCurrentState() {
+    print('=== REGISTER VIEWMODEL STATE (hashCode: ${this.hashCode}) ===');
+    print('Page: $_currentPage');
+    print('Name: "$_name"');
+    print('LastName: "$_lastName"');
+    print('SecondLastName: "$_secondLastName"');
+    print('Username: "$_username"');
+    print('Age: $_age');
+    print('Gender: ${_selectedGender.value}');
+    print('JobType: ${_selectedJobType.value}');
+    print('Email: "$_email"');
+    print('Password: "${_password.isNotEmpty ? "***" : ""}"');
+    print('ConfirmPassword: "${_confirmPassword.isNotEmpty ? "***" : ""}"');
+    print('canGoToNextPage: $canGoToNextPage');
+    print('canSubmit: $canSubmit');
+    print('===============================');
+  }
+
   // Método principal de registro
   Future<bool> signUp() async {
-    if (!canSubmit) return false;
+    if (!canSubmit) {
+      print('[RegisterViewModel] signUp: No se puede enviar. canSubmit: $canSubmit (hashCode: ${this.hashCode})');
+      return false;
+    }
 
     _setLoading(true);
     _clearError();
     _fieldErrors.clear();
 
     try {
+      // 🔍 Imprimir estado antes de enviar
+      print('[RegisterViewModel] Intentando registrar con los siguientes datos (hashCode: ${this.hashCode}):');
+      printCurrentState();
+      
       final session = await _signUpUseCase.execute(
         name: _name,
         lastName: _lastName,
@@ -232,10 +316,9 @@ class RegisterViewModel extends ChangeNotifier {
       );
 
       _lastSuccessfulSession = session;
-      
-      print('[RegisterViewModel] Registro exitoso para: ${session.user.username}');
-      return true;
 
+      print('[RegisterViewModel] Registro exitoso para: ${session.user.username} (hashCode: ${this.hashCode})');
+      return true;
     } on ValidationException catch (e) {
       _handleValidationError(e);
       return false;
@@ -252,7 +335,7 @@ class RegisterViewModel extends ChangeNotifier {
       return false;
     } catch (e) {
       _setError('Error inesperado durante el registro. Intenta nuevamente.');
-      print('[RegisterViewModel] Error inesperado: $e');
+      print('[RegisterViewModel] Error inesperado: $e (hashCode: ${this.hashCode})');
       return false;
     } finally {
       _setLoading(false);
@@ -273,17 +356,20 @@ class RegisterViewModel extends ChangeNotifier {
 
   void _handleValidationError(ValidationException e) {
     _fieldErrors = Map<String, String>.from(
-      e.fieldErrors.map((key, errors) => MapEntry(key, errors.first))
+      e.fieldErrors.map((key, errors) => MapEntry(key, errors.first)),
     );
-    
+
     // Si hay errores en la primera página, regresar a ella
     final page1Fields = ['name', 'lastName', 'username', 'age'];
-    final hasPage1Errors = page1Fields.any((field) => _fieldErrors.containsKey(field));
-    
+    final hasPage1Errors = page1Fields.any(
+      (field) => _fieldErrors.containsKey(field),
+    );
+
     if (hasPage1Errors && _currentPage == 1) {
       _currentPage = 0;
+      print('[RegisterViewModel] Errores en página 1, regresando... (hashCode: ${this.hashCode})');
     }
 
     _setError(e.message);
   }
-} 
+}
