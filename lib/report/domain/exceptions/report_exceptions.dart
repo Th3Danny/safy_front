@@ -30,6 +30,7 @@ class ReportValidationException extends ReportExceptions {
 
   ReportValidationException(
     String message,
+    
     this.fieldErrors,
   ) : super(message, code: 'VALIDATION_ERROR');
 

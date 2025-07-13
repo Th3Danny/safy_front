@@ -7,18 +7,23 @@ import 'package:safy/home/domain/entities/place.dart';
 import 'package:safy/home/domain/entities/location.dart';
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
 import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
+import 'package:safy/report/domain/entities/report.dart';
+import 'package:safy/report/domain/usecases/get_reports_for_map_use_case.dart';
 
 class MapViewModel extends ChangeNotifier {
   // Casos de uso
   final SearchPlacesUseCase? _searchPlacesUseCase;
   final GetOpenRouteUseCase? _getOpenRouteUseCase;
+  final GetReportsForMapUseCase? _getReportsForMapUseCase;
 
   // Constructor actualizado
   MapViewModel({
     SearchPlacesUseCase? searchPlacesUseCase,
     GetOpenRouteUseCase? getOpenRouteUseCase,
+    GetReportsForMapUseCase? getReportsForMapUseCase,
   }) : _searchPlacesUseCase = searchPlacesUseCase,
-       _getOpenRouteUseCase = getOpenRouteUseCase;
+       _getOpenRouteUseCase = getOpenRouteUseCase,
+       _getReportsForMapUseCase = getReportsForMapUseCase;
 
   // MapController
   final MapController _mapController = MapController();
@@ -133,24 +138,26 @@ class MapViewModel extends ChangeNotifier {
 
   // Seguimiento de ubicación (siempre activo)
   void _startLocationTracking() {
-  final locationSettings = LocationSettings(
-    accuracy: LocationAccuracy.high,
-    distanceFilter: 1, // 👈 Cada 1 metros (muy frecuente pero no continuo)
-    // ❌ NO usar timeLimit - causa timeout
-  );
+    final locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 1, // 👈 Cada 1 metros (muy frecuente pero no continuo)
+      // ❌ NO usar timeLimit - causa timeout
+    );
 
-  _positionStream = Geolocator.getPositionStream(
-    locationSettings: locationSettings,
-  ).listen(
-    (Position position) {
-      print('📍 Ubicación actualizada: ${position.latitude}, ${position.longitude}');
-      _updateCurrentPosition(position);
-    },
-    onError: (error) {
-      print('Error en tracking de ubicación: $error');
-    },
-  );
-}
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: locationSettings,
+    ).listen(
+      (Position position) {
+        print(
+          '📍 Ubicación actualizada: ${position.latitude}, ${position.longitude}',
+        );
+        _updateCurrentPosition(position);
+      },
+      onError: (error) {
+        print('Error en tracking de ubicación: $error');
+      },
+    );
+  }
 
   // Crear marcador de ubicación actual
   void _createCurrentLocationMarker() {
@@ -191,57 +198,152 @@ class MapViewModel extends ChangeNotifier {
   }
 
   // Cargar zonas de peligro
+  // REEMPLAZAR TODO el método _loadDangerZones() por:
   Future<void> _loadDangerZones() async {
-    final dangerZones = [
-      {'lat': 16.7500, 'lng': -93.1300, 'reports': 5, 'type': 'high'},
-      {'lat': 16.7600, 'lng': -93.1250, 'reports': 3, 'type': 'medium'},
-      {'lat': 16.7400, 'lng': -93.1400, 'reports': 8, 'type': 'high'},
-      {'lat': 16.7650, 'lng': -93.1350, 'reports': 2, 'type': 'low'},
-      {'lat': 16.7520, 'lng': -93.1280, 'reports': 4, 'type': 'medium'},
-    ];
+    try {
+      if (_getReportsForMapUseCase != null) {
+        // 🔥 CARGAR REPORTES REALES
+        final reports = await _getReportsForMapUseCase!.execute(
+          userId: "public", // o el userId actual del usuario logueado
+          latitude: _currentLocation.latitude,
+          longitude: _currentLocation.longitude,
+          page: 0,
+          pageSize: 50,
+        );
 
-    _dangerMarkers =
-        dangerZones.map((zone) {
-          Color zoneColor;
-          double zoneRadius;
+        print('[MapViewModel] 📊 Cargados ${reports.length} reportes reales');
 
-          switch (zone['type']) {
-            case 'high':
-              zoneColor = Colors.red;
-              zoneRadius = 25;
-              break;
-            case 'medium':
-              zoneColor = Colors.orange;
-              zoneRadius = 20;
-              break;
-            default:
-              zoneColor = Colors.yellow;
-              zoneRadius = 15;
-          }
+        // Crear marcadores de reportes reales
+        _createReportMarkers(reports);
+      } else {
+        print(
+          '[MapViewModel] ⚠️ GetReportsForMapUseCase no disponible, usando datos ficticios',
+        );
+        _loadFakeDangerZones(); // Fallback
+      }
+    } catch (e) {
+      print('[MapViewModel] ❌ Error cargando reportes: $e');
+      _loadFakeDangerZones(); // Fallback en caso de error
+    }
+  }
 
-          return Marker(
-            point: LatLng(zone['lat'] as double, zone['lng'] as double),
-            width: zoneRadius * 2,
-            height: zoneRadius * 2,
+  // 🆕 MÉTODO NUEVO para crear marcadores reales
+  void _createReportMarkers(List<ReportInfoEntity> reports) {
+    _dangerMarkers.clear();
+
+    for (final report in reports) {
+      final (color, icon) = _getReportStyle(
+        report.incident_type,
+        report.severity,
+      );
+
+      _dangerMarkers.add(
+        Marker(
+          key: Key('report_${report.hashCode}'),
+          point: LatLng(report.latitude, report.longitude),
+          width: _getMarkerSize(report.severity),
+          height: _getMarkerSize(report.severity),
+          child: GestureDetector(
+            onTap: () => _onReportTapped(report),
             child: Container(
               decoration: BoxDecoration(
-                color: zoneColor.withOpacity(0.3),
+                color: color.withOpacity(0.15),
                 shape: BoxShape.circle,
-                border: Border.all(color: zoneColor, width: 2),
-              ),
-              child: Center(
-                child: Text(
-                  '${zone['reports']}',
-                  style: TextStyle(
-                    color: zoneColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                border: Border.all(color: color, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    spreadRadius: 2,
                   ),
-                ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Center(child: Icon(icon, color: color, size: 20)),
+                  // Badge con severidad
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${report.severity}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          );
-        }).toList();
+          ),
+        ),
+      );
+    }
+
+    print(
+      '[MapViewModel] 🗺️ Creados ${_dangerMarkers.length} marcadores reales',
+    );
+  }
+
+  // 🆕 MÉTODOS DE AYUDA
+  (Color, IconData) _getReportStyle(String incidentType, int severity) {
+    IconData icon;
+    switch (incidentType) {
+      case 'STREET_HARASSMENT':
+        icon = Icons.report_problem;
+        break;
+      case 'ROBBERY_ASSAULT':
+        icon = Icons.security;
+        break;
+      case 'KIDNAPPING':
+        icon = Icons.warning_amber;
+        break;
+      case 'GANG_VIOLENCE':
+        icon = Icons.groups;
+        break;
+      default:
+        icon = Icons.info;
+    }
+
+    Color color;
+    if (severity >= 4) {
+      color = Colors.red;
+    } else if (severity >= 2) {
+      color = Colors.orange;
+    } else {
+      color = Colors.yellow[700]!;
+    }
+
+    return (color, icon);
+  }
+
+  double _getMarkerSize(int severity) {
+    if (severity >= 4) return 50;
+    if (severity >= 2) return 40;
+    return 35;
+  }
+
+  void _onReportTapped(ReportInfoEntity report) {
+    print('[MapViewModel] 📍 Reporte seleccionado: ${report.title}');
+    // Aquí puedes agregar lógica para mostrar detalles del reporte
+  }
+
+  // Mantener método fallback para datos ficticios
+  void _loadFakeDangerZones() {
+    // ... tu código actual de datos ficticios ...
   }
 
   // Métodos para búsqueda
@@ -513,18 +615,18 @@ class MapViewModel extends ChangeNotifier {
   bool _isNavigating = false;
   bool get isNavigating => _isNavigating;
 
-  // AGREGAR ESTE MÉTODO SIMPLE 
+  // AGREGAR ESTE MÉTODO SIMPLE
   void startNavigation() {
-  if (_currentRoute.isEmpty) return;
-  
-  _isNavigating = true;
-  
-  // Reiniciar tracking con mayor precisión
-  _positionStream?.cancel();
-  _startLocationTracking();
-  
-  notifyListeners();
-}
+    if (_currentRoute.isEmpty) return;
+
+    _isNavigating = true;
+
+    // Reiniciar tracking con mayor precisión
+    _positionStream?.cancel();
+    _startLocationTracking();
+
+    notifyListeners();
+  }
 
   // Método para actualizar posición
   void _updateCurrentPosition(Position position) {
@@ -546,14 +648,14 @@ class MapViewModel extends ChangeNotifier {
 
   // Método para detener navegación
   void stopNavigation() {
-  _isNavigating = false;
-  
-  // Reiniciar tracking con menor frecuencia
-  _positionStream?.cancel();
-  _startLocationTracking();
-  
-  notifyListeners();
-}
+    _isNavigating = false;
+
+    // Reiniciar tracking con menor frecuencia
+    _positionStream?.cancel();
+    _startLocationTracking();
+
+    notifyListeners();
+  }
 
   // Actualizar dispose
   @override

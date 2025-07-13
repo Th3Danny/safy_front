@@ -1,42 +1,88 @@
-import 'package:geolocator/geolocator.dart';
-import 'package:safy/core/errors/failures.dart';
-import 'package:safy/home/domain/entities/location.dart';
 
+import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:safy/home/domain/entities/location.dart';
+import 'package:safy/core/errors/failures.dart';
+
+class LocationConfig {
+  final LocationAccuracy accuracy;
+  final Duration timeout;
+
+  const LocationConfig({
+    this.accuracy = LocationAccuracy.high,
+    this.timeout = const Duration(seconds: 15),
+  });
+}
 
 class GetCurrentLocationUseCase {
-  Future<Location> execute() async {
+  // ⚠️ FUNCIÓN ESTÁTICA para compute (CRÍTICO)
+  static Future<Location> _getLocationInIsolate(LocationConfig config) async {
     try {
-      // Verificar permisos
-      final permission = await Geolocator.checkPermission();
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Servicios de ubicación deshabilitados');
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        final requestedPermission = await Geolocator.requestPermission();
-        if (requestedPermission == LocationPermission.denied) {
-          throw LocationFailure('Permisos de ubicación denegados');
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Permisos denegados');
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        throw LocationFailure('Permisos de ubicación permanentemente denegados');
+        throw Exception('Permisos denegados permanentemente');
       }
 
-      // Verificar servicios de ubicación
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw LocationFailure('Servicios de ubicación desactivados');
-      }
-
-      // Obtener ubicación actual
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: config.accuracy,
+        timeLimit: config.timeout,
       );
 
+      // ✅ Usar tu entidad Location existente
       return Location(
         latitude: position.latitude,
         longitude: position.longitude,
+        timestamp: DateTime.now(),
       );
     } catch (e) {
-      if (e is LocationFailure) rethrow;
-      throw LocationFailure('Error obteniendo ubicación: $e');
+      throw Exception('Error obteniendo ubicación: $e');
     }
+  }
+
+  // 🚀 MÉTODO QUE USA COMPUTE (no bloquea UI)
+  Future<Location> execute({
+    LocationAccuracy accuracy = LocationAccuracy.high,
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    try {
+      final config = LocationConfig(
+        accuracy: accuracy,
+        timeout: timeout,
+      );
+
+      // ⚠️ ESTO ES LO QUE EVITA EL CRASH
+      return await compute(_getLocationInIsolate, config);
+    } catch (e) {
+      throw ServerFailure('Error obteniendo ubicación: $e');
+    }
+  }
+
+  // Método stream (opcional, mantener si lo usas)
+  Stream<Location> getLocationUpdates({
+    LocationAccuracy accuracy = LocationAccuracy.high,
+    double distanceFilter = 10.0,
+  }) {
+    return Geolocator.getPositionStream(
+      locationSettings: LocationSettings(
+        accuracy: accuracy,
+        distanceFilter: distanceFilter.toInt(),
+      ),
+    ).map((position) => Location(
+      latitude: position.latitude,
+      longitude: position.longitude,
+      timestamp: DateTime.now(),
+    ));
   }
 }

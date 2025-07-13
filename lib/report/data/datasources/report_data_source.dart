@@ -2,23 +2,48 @@ import 'package:dio/dio.dart';
 import 'package:safy/auth/domain/exceptions/auth_exceptions.dart';
 import 'package:safy/report/data/dtos/report_request_dto.dart';
 import 'package:safy/report/data/dtos/report_response_dto.dart';
+import 'package:safy/report/data/dtos/reports_page_response_dto.dart';
 import 'package:safy/report/domain/exceptions/report_exceptions.dart';
 import 'package:safy/core/network/domian/constants/api_client_constants.dart';
+
 class ReportApiClient {
   final Dio _dio;
 
   ReportApiClient(this._dio);
 
-  Future<ReportResponseDto> getReportById(String id) async {
+  Future<List<ReportResponseDto>> getReports({
+  required String userId,
+  int? page,
+  int? pageSize,
+}) async {
   try {
-    final response = await _dio.get('${ApiConstants.reports}/$id');
-    return ReportResponseDto.fromJson(response.data);
+    final response = await _dio.get(
+      ApiConstants.reports,
+      queryParameters: {
+        'userId': userId,
+        'page': page ?? 0,
+        'pageSize': pageSize ?? 20,
+      },
+    );
+    
+    final pageResponse = ReportsPageResponseDto.fromJson(response.data);
+    return pageResponse.reports;
+    
   } on DioException catch (e) {
     _handleDioError(e);
     rethrow;
   }
 }
 
+  Future<ReportResponseDto> getReportById(String id) async {
+    try {
+      final response = await _dio.get('${ApiConstants.reports}/$id');
+      return ReportResponseDto.fromJson(response.data);
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    }
+  }
 
   Future<ReportResponseDto> createReport(ReportRequestDto requestDto) async {
     try {
@@ -28,23 +53,23 @@ class ReportApiClient {
       );
 
       return ReportResponseDto.fromJson(response.data);
-
-    }on DioException catch (e) {
+    } on DioException catch (e) {
       _handleDioError(e);
       rethrow;
     }
   }
 
-
-
-   // ===== Manejo de errores centralizado =====
+  // ===== Manejo de errores centralizado =====
   void _handleDioError(DioException e) {
     if (e.response?.statusCode == 401) {
       throw const InvalidCredentialsException('Credenciales inválidas');
     } else if (e.response?.statusCode == 409) {
       throw const AuthException('Conflicto: posible duplicado');
     } else if (e.response?.statusCode == 422) {
-      throw ReportValidationException('Datos inválidos', e.response?.data['errors'] ?? {});
+      throw ReportValidationException(
+        'Datos inválidos',
+        e.response?.data['errors'] ?? {},
+      );
     } else if (e.response?.statusCode == 500) {
       throw const AuthException('Error del servidor');
     } else {
