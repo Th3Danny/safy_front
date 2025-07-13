@@ -12,6 +12,26 @@ class ReportRepositoryImpl implements ReportRepository {
   ReportRepositoryImpl(this._apiClient);
 
   @override
+  Future<List<ReportInfoEntity>> getReports({
+    required String userId,
+    int? page,
+    int? pageSize,
+    double? latitude,  
+    double? longitude,
+  }) async {
+    try {
+      final responseDtos = await _apiClient.getReports(
+        userId: userId,
+        page: page,
+        pageSize: pageSize,
+      );
+      return responseDtos.map((dto) => dto.toDomainEntity()).toList();
+    } catch (e) {
+      throw ReportExceptions('Error al obtener los reportes: $e');
+    }
+  }
+
+  @override
   Future<ReportInfoEntity> getReportById({required String id}) async {
     try {
       final responseDto = await _apiClient.getReportById(id);

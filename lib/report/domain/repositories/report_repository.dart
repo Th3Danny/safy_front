@@ -1,11 +1,14 @@
 import '../entities/report.dart';
 
 abstract class ReportRepository {
-  // Future<List<ReportInfoEntity>> getReports({
-  //   required String userId,
-  //   int? page,
-  //   int? pageSize,
-  // });
+  Future<List<ReportInfoEntity>> getReports({
+    required String userId,
+    int? page,
+    int? pageSize,
+    double? latitude,
+    double? longitude,
+
+  });
 
  Future<ReportInfoEntity> getReportById({required String id});
 
