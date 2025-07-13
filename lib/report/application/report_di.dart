@@ -5,6 +5,7 @@ import 'package:safy/report/data/repositories/report_repository_impl.dart';
 import 'package:safy/report/domain/repositories/report_repository.dart';
 import 'package:safy/report/domain/usecases/get_report.dart';
 import 'package:safy/report/domain/usecases/post_report.dart';
+import 'package:safy/report/presentation/viewmodels/create_report_viewmodel.dart'; 
 
 final sl = GetIt.instance;
 
@@ -28,13 +29,10 @@ Future<void> setupReportDependencies() async {
     () => GetReportUseCase(sl<ReportRepository>()),
   );
 
+  // 🚀 ✅ AGREGAR ESTA LÍNEA QUE FALTA:
+  sl.registerFactory<CreateReportViewModel>(
+    () => CreateReportViewModel(sl<PostReport>()),
+  );
+
   print('[ReportDI] ✅ Dependencias de Reporte registradas');
 }
-
-// void resetReportViewModelAfterSuccess() {
-//   if (sl.isRegistered<RegisterViewModel>()) {
-//     final registerViewModel = sl<RegisterViewModel>();
-//     registerViewModel.clearForm();
-//     print('[AuthDI] 🧹 RegisterViewModel limpiado después del registro exitoso');
-//   }
-// }
