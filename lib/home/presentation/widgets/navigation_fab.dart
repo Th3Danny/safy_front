@@ -57,9 +57,7 @@ class NavigationFab extends StatelessWidget {
 
                     GestureDetector(
                       onTap: () {
-                        context.go(
-                          AppRoutesConstant.settings,
-                        ); 
+                        context.go(AppRoutesConstant.settings);
                       },
                       child: const CircleAvatar(
                         radius: 16,
@@ -274,16 +272,16 @@ class NavigationFab extends StatelessWidget {
         // redirección según tipo
         switch (type) {
           case 'add':
-            context.go('nueva_ruta');
+            onNavigationTap(type); // ✅ Usar el callback
             break;
           case 'walk':
-            context.go('/caminar');
+            onNavigationTap(type); // ✅ Usar el callback
             break;
           case 'car':
-            context.go('/auto');
+            onNavigationTap(type); // ✅ Usar el callback
             break;
           case 'bus':
-            context.go('/transporte');
+            onNavigationTap(type); // ✅ Usar el callback
             break;
         }
       },

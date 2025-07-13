@@ -13,15 +13,11 @@ import 'package:safy/auth/presentation/viewmodels/register_viewmodel.dart';
 import 'package:safy/core/session/session_manager.dart';
 import 'package:safy/core/session/token_refresh_service.dart';
 
-
-
 final sl = GetIt.instance;
 
 Future<void> setupAuthDependencies() async {
-
   sl.registerLazySingleton<SessionManager>(() => SessionManager.instance);
 
- 
   sl.registerLazySingleton<AuthApiClient>(
     () => AuthApiClient(sl<Dio>(instanceName: 'authenticated')),
   );
@@ -59,7 +55,8 @@ Future<void> setupAuthDependencies() async {
 
   sl.registerFactory<LoginViewModel>(() => LoginViewModel(sl<SignInUseCase>()));
 
-  sl.registerFactory<RegisterViewModel>(
+  // 🔧 CAMBIO CRÍTICO: De registerFactory a registerLazySingleton
+  sl.registerLazySingleton<RegisterViewModel>(
     () => RegisterViewModel(sl<SignUpUseCase>()),
   );
 
@@ -71,5 +68,15 @@ Future<void> setupAuthDependencies() async {
     ),
   );
 
-  print('[AuthDI]  Dependencias de autenticación registradas');
+  print('[AuthDI] ✅ Dependencias de autenticación registradas');
+  print('[AuthDI] RegisterViewModel hashCode: ${sl<RegisterViewModel>().hashCode}');
+}
+
+// 🧹 Método opcional para limpiar después del registro exitoso
+void resetRegisterViewModelAfterSuccess() {
+  if (sl.isRegistered<RegisterViewModel>()) {
+    final registerViewModel = sl<RegisterViewModel>();
+    registerViewModel.clearForm();
+    print('[AuthDI] 🧹 RegisterViewModel limpiado después del registro exitoso');
+  }
 }

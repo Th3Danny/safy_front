@@ -12,6 +12,7 @@ class LoginRequestDto {
   Map<String, dynamic> toJson() => {
     'email': email.trim().toLowerCase(),
     'password': password,
+    //'remember_me': rememberMe,
   };
 
   @override

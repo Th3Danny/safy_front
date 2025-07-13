@@ -19,6 +19,7 @@ import 'package:safy/home/domain/usecases/get_danger_zones_use_case.dart';
 import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
+import 'package:safy/home/presentation/viewmodels/map_view_model_enhanced.dart';
 
 Future<void> setupMapsDependencies() async {
   print('[MapsDI] 🗺️ Configurando dependencias de mapas...');
@@ -39,8 +40,8 @@ Future<void> setupMapsDependencies() async {
     () => NominatimApiClient(GetIt.instance<Dio>(instanceName: 'public')),
   );
   
-  GetIt.instance.registerLazySingleton<OSRMApiClient >(
-    () => OSRMApiClient (GetIt.instance<Dio>(instanceName: 'public')),
+  GetIt.instance.registerLazySingleton<OSRMApiClient>(
+    () => OSRMApiClient(GetIt.instance<Dio>(instanceName: 'public')),
   );
   
   // ===== REPOSITORIES =====
@@ -60,7 +61,7 @@ Future<void> setupMapsDependencies() async {
   
   // Repositorio de OpenRouteService
   GetIt.instance.registerLazySingleton<OpenRouteRepository>(
-    () => OpenRouteRepositoryImpl(GetIt.instance<OSRMApiClient >()),
+    () => OpenRouteRepositoryImpl(GetIt.instance<OSRMApiClient>()),
   );
   
   // ===== DOMAIN LAYER (USE CASES) =====
@@ -77,6 +78,7 @@ Future<void> setupMapsDependencies() async {
     () => CheckDangerZonesUseCase(GetIt.instance<DangerZoneRepository>()),
   );
   
+  // ❌ ELIMINADA DUPLICACIÓN - Solo UNA vez registrado
   GetIt.instance.registerLazySingleton<GetDangerZonesUseCase>(
     () => GetDangerZonesUseCase(GetIt.instance<DangerZoneRepository>()),
   );
@@ -86,18 +88,28 @@ Future<void> setupMapsDependencies() async {
     () => SearchPlacesUseCase(GetIt.instance<PlacesRepository>()),
   );
   
-  // 👈 IMPORTANTE: GetOpenRouteUseCase ANTES del MapViewModel
   GetIt.instance.registerLazySingleton<GetOpenRouteUseCase>(
     () => GetOpenRouteUseCase(GetIt.instance<OpenRouteRepository>()),
   );
   
   // ===== PRESENTATION LAYER (VIEW MODELS) =====
   
-  // 👈 CORREGIDO: Ahora incluye GetOpenRouteUseCase
+  // MapViewModel original (mantener para compatibilidad)
   GetIt.instance.registerFactory<MapViewModel>(
     () => MapViewModel(
       searchPlacesUseCase: GetIt.instance<SearchPlacesUseCase>(),
       getOpenRouteUseCase: GetIt.instance<GetOpenRouteUseCase>(), 
+    ),
+  );
+
+  // 🚀 ViewModel mejorado (NUEVO)
+  GetIt.instance.registerFactory<MapViewModelEnhanced>(
+    () => MapViewModelEnhanced(
+      searchPlacesUseCase: GetIt.instance<SearchPlacesUseCase>(),
+      getOpenRouteUseCase: GetIt.instance<GetOpenRouteUseCase>(),
+      getCurrentLocationUseCase: GetIt.instance<GetCurrentLocationUseCase>(),
+      checkDangerZonesUseCase: GetIt.instance<CheckDangerZonesUseCase>(),
+      getDangerZonesUseCase: GetIt.instance<GetDangerZonesUseCase>(),
     ),
   );
   

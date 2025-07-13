@@ -7,6 +7,7 @@ import 'package:safy/home/presentation/widgets/map_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_fab.dart';
 import 'package:safy/home/presentation/widgets/place_search_widget.dart';
 import 'package:safy/home/presentation/widgets/route_options_widget.dart';
+import 'package:go_router/go_router.dart';
 
 class MobileMapLayout extends StatelessWidget {
   const MobileMapLayout({super.key});
@@ -114,7 +115,7 @@ class MobileMapLayout extends StatelessWidget {
     
     switch (type) {
       case 'add':
-        Navigator.pushNamed(context, '/create-report');
+        context.go('/create-report');
         break;
       case 'walk':
       case 'car':

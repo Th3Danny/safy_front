@@ -1,6 +1,7 @@
 class ApiConstants {
-  // Base URLs - cambiar cuando tengas tu API real
-  static const String baseUrl = 'http://192.168.100.9:8085'; 
+  // 🔄 CAMBIAR A TU URL ACTUAL
+  static const String baseUrl = 'https://a8122d04ffac.ngrok-free.app'; // 👈 Cambiar aquí
+  
   static const String apiVersion = '/api/v1';
   static const String fullUrl = '$baseUrl$apiVersion';
 
@@ -11,9 +12,9 @@ class ApiConstants {
   static const String logout = '/auth/logout';
   static const String profile = '/auth/profile';
 
-  // Reports endpoints
-  static const String reports = '/reports';
-  static const String createReport = '/reports/create';
+  // 🔧 CORREGIR ENDPOINTS DE REPORTS
+  static const String reports = '/reports'; // 👈 Cambiar a plural
+  static const String createReport = '/reports'; // 👈 Mismo endpoint
   static const String nearbyReports = '/reports/nearby';
 
   // Map endpoints
@@ -27,7 +28,7 @@ class ApiConstants {
   };
 
   // Timeouts
-  static const int connectTimeout = 30000; // 30 seconds
+  static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
   static const int sendTimeout = 30000;
 

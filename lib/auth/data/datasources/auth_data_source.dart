@@ -11,7 +11,7 @@ class AuthApiClient {
 
   AuthApiClient(this._dio);
 
-  /// 🔐 Login real contra API
+  ///  Login real contra API
   Future<AuthResponseDto> signIn(LoginRequestDto requestDto) async {
     try {
       final response = await _dio.post(
@@ -26,7 +26,7 @@ class AuthApiClient {
     }
   }
 
-  /// 🧾 Registro real contra API
+  ///  Registro real contra API
   Future<AuthResponseDto> signUp(RegisterRequestDto requestDto) async {
     try {
       final response = await _dio.post(
@@ -41,7 +41,7 @@ class AuthApiClient {
     }
   }
 
-  /// 🔁 Refrescar token
+  ///  Refrescar token
   Future<RefreshTokenResponseDto> refreshToken(RefreshTokenRequestDto requestDto) async {
     try {
       final response = await _dio.post(
@@ -56,7 +56,7 @@ class AuthApiClient {
     }
   }
 
-  /// 👤 Obtener perfil del usuario autenticado
+  ///  Obtener perfil del usuario autenticado
   Future<UserDto> getProfile(String token) async {
     try {
       final response = await _dio.get(
@@ -73,7 +73,7 @@ class AuthApiClient {
     }
   }
 
-  /// 🚪 Logout (si aplica en el backend)
+  ///  Logout (si aplica en el backend)
   Future<void> signOut(String token) async {
     try {
       await _dio.post(
