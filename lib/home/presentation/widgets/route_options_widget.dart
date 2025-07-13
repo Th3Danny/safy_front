@@ -1,13 +1,15 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:get_it/get_it.dart';
+import 'package:safy/home/presentation/widgets/viewmodel/route_mixin.dart';
 
-class RouteOptionsWidget extends StatefulWidget {
+class EnhancedRouteOptionsWidget extends StatefulWidget {
   final List<RouteOption> routes;
   final Function(RouteOption) onRouteSelected;
   final VoidCallback onClearRoute;
 
-  const RouteOptionsWidget({
+  const EnhancedRouteOptionsWidget({
     super.key,
     required this.routes,
     required this.onRouteSelected,
@@ -15,10 +17,10 @@ class RouteOptionsWidget extends StatefulWidget {
   });
 
   @override
-  State<RouteOptionsWidget> createState() => _RouteOptionsWidgetState();
+  State<EnhancedRouteOptionsWidget> createState() => _EnhancedRouteOptionsWidgetState();
 }
 
-class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
+class _EnhancedRouteOptionsWidgetState extends State<EnhancedRouteOptionsWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
@@ -35,14 +37,12 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
-    );
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutBack,
+    ));
 
-    // Encontrar la ruta recomendada como seleccionada por defecto
-    _selectedRouteIndex = widget.routes.indexWhere(
-      (route) => route.isRecommended,
-    );
+    _selectedRouteIndex = widget.routes.indexWhere((route) => route.isRecommended);
     if (_selectedRouteIndex == -1) _selectedRouteIndex = 0;
 
     _animationController.forward();
@@ -59,28 +59,23 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
     return SlideTransition(
       position: _slideAnimation,
       child: Container(
-        constraints: const BoxConstraints(maxHeight: 300),
+        constraints: const BoxConstraints(maxHeight: 400),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header con título y botón cerrar
             _buildHeader(),
-
-            // Lista de rutas
             Flexible(child: _buildRoutesList()),
-
-            // Botones de acción
             _buildActionButtons(),
           ],
         ),
@@ -92,30 +87,43 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        gradient: LinearGradient(
+          colors: [Colors.blue[600]!, Colors.blue[400]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Row(
         children: [
-          Icon(Icons.route, color: Colors.blue[700]),
-          const SizedBox(width: 8),
+          const Icon(Icons.route, color: Colors.white, size: 24),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              'Rutas disponibles',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[700],
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Rutas Seguras',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  '${widget.routes.length} opciones con análisis de seguridad',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+              ],
             ),
           ),
           IconButton(
             onPressed: widget.onClearRoute,
-            icon: Icon(Icons.close, color: Colors.grey[600]),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white,
-              padding: const EdgeInsets.all(8),
-            ),
+            icon: const Icon(Icons.close, color: Colors.white),
+            tooltip: 'Cerrar',
           ),
         ],
       ),
@@ -125,9 +133,9 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
   Widget _buildRoutesList() {
     return ListView.separated(
       shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
       itemCount: widget.routes.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final route = widget.routes[index];
         final isSelected = index == _selectedRouteIndex;
@@ -139,11 +147,20 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isSelected ? Colors.blue[50] : Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected ? Colors.blue : Colors.grey[300]!,
                 width: isSelected ? 2 : 1,
               ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      )
+                    ]
+                  : null,
             ),
             child: _buildRouteCard(route, isSelected),
           ),
@@ -156,7 +173,7 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Título y badge recomendado
+        // Header con título y badge
         Row(
           children: [
             Expanded(
@@ -193,7 +210,6 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
         // Información principal de la ruta
         Row(
           children: [
-            // Distancia
             Expanded(
               child: _buildInfoItem(
                 Icons.straighten,
@@ -201,8 +217,6 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
                 'Distancia',
               ),
             ),
-
-            // Tiempo
             Expanded(
               child: _buildInfoItem(
                 Icons.access_time,
@@ -210,16 +224,14 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
                 'Tiempo',
               ),
             ),
-
-            // Seguridad
             Expanded(child: _buildSafetyInfo(route)),
           ],
         ),
 
         const SizedBox(height: 12),
 
-        // Descripción de la ruta
-        _buildRouteDescription(route),
+        // 🆕 INFORMACIÓN DE SEGURIDAD MEJORADA
+        _buildSafetyDetails(route),
       ],
     );
   }
@@ -263,45 +275,87 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
     );
   }
 
-  Widget _buildRouteDescription(RouteOption route) {
-    String description;
-    switch (route.name) {
-      case 'Ruta Directa':
-        description = 'Ruta real más directa por caminos existentes';
-        break;
-      case 'Ruta Segura':
-        description = 'Evita zonas peligrosas, priorizando tu seguridad';
-        break;
-      case 'Ruta Alternativa':
-        description = 'Ruta alternativa por diferentes caminos';
-        break;
-      default:
-        description = 'Ruta calculada según tus preferencias';
-    }
-
+  // 🆕 DETALLES DE SEGURIDAD MEJORADOS
+  Widget _buildSafetyDetails(RouteOption route) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: route.safetyColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: route.safetyColor.withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              description,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[700],
-                fontStyle: FontStyle.italic,
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 16, color: route.safetyColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _getSafetyDescription(route.safetyLevel),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: route.safetyColor,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
+          const SizedBox(height: 8),
+          
+          // Consejos de seguridad dinámicos
+          ..._getSafetyTips(route).map((tip) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Icon(Icons.lightbulb_outline, size: 12, color: Colors.amber[600]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    tip,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )),
         ],
       ),
     );
+  }
+
+  String _getSafetyDescription(double safetyLevel) {
+    if (safetyLevel >= 80) return 'Ruta muy segura - Sin peligros conocidos';
+    if (safetyLevel >= 60) return 'Ruta segura - Pocos riesgos detectados';
+    if (safetyLevel >= 40) return 'Ruta moderada - Algunos peligros en el área';
+    return 'Ruta riesgosa - Múltiples peligros reportados';
+  }
+
+  List<String> _getSafetyTips(RouteOption route) {
+    final tips = <String>[];
+    
+    if (route.safetyLevel < 60) {
+      tips.add('Mantente alerta en esta ruta');
+      if (route.name == 'Ruta Segura') {
+        tips.add('Esta ruta evita las zonas más peligrosas');
+      }
+    }
+    
+    final hour = DateTime.now().hour;
+    if (hour >= 20 || hour <= 6) {
+      tips.add('Considera usar transporte público de noche');
+    }
+    
+    if (route.safetyLevel >= 80) {
+      tips.add('Excelente opción para caminar');
+    }
+    
+    return tips.take(2).toList(); // Máximo 2 consejos
   }
 
   Widget _buildActionButtons() {
@@ -311,42 +365,77 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey[50],
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
       ),
-      child: Row(
+      child: Column(
         children: [
           // Información rápida de la ruta seleccionada
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Row(
               children: [
-                Text(
-                  selectedRoute.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                Icon(Icons.route, color: selectedRoute.safetyColor, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        selectedRoute.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        '${selectedRoute.distance.toStringAsFixed(1)} km • ${selectedRoute.duration} min • ${selectedRoute.safetyLevel.toInt()}% segura',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
                   ),
-                ),
-                Text(
-                  '${selectedRoute.distance.toStringAsFixed(1)} km • ${selectedRoute.duration} min',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(width: 16),
+          const SizedBox(height: 12),
 
-          // Botón de iniciar navegación
-          ElevatedButton.icon(
-            onPressed: () => _startNavigation(selectedRoute),
-            icon: const Icon(Icons.navigation, size: 18),
-            label: const Text('Iniciar'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
+          // Botones de acción
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    widget.onRouteSelected(selectedRoute);
+                  },
+                  icon: const Icon(Icons.visibility, size: 18),
+                  label: const Text('Vista Previa'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey[700],
+                    side: BorderSide(color: Colors.grey[300]!),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _startNavigation(selectedRoute),
+                  icon: const Icon(Icons.navigation, size: 18),
+                  label: const Text('Iniciar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: selectedRoute.safetyColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -363,7 +452,6 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
   void _startNavigation(RouteOption route) {
     widget.onRouteSelected(route);
 
-    // Iniciar navegación en tiempo real
     final mapViewModel = GetIt.instance<MapViewModel>();
     mapViewModel.startNavigation();
 
@@ -373,10 +461,22 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
           children: [
             Icon(Icons.navigation, color: Colors.white),
             const SizedBox(width: 8),
-            Text('Navegación iniciada: ${route.name}'),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Navegación iniciada: ${route.name}'),
+                  Text(
+                    'Seguridad: ${route.safetyLevel.toInt()}% - ${route.safetyText}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: route.safetyColor,
         action: SnackBarAction(
           label: 'DETENER',
           textColor: Colors.white,
@@ -385,6 +485,7 @@ class _RouteOptionsWidgetState extends State<RouteOptionsWidget>
             widget.onClearRoute();
           },
         ),
+        duration: const Duration(seconds: 4),
       ),
     );
   }

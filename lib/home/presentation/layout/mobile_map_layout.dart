@@ -49,7 +49,7 @@ class MobileMapLayout extends StatelessWidget {
                   top: 180, // Ajustado para dar espacio al PlaceSearchWidget
                   left: 16,
                   right: 16,
-                  child: RouteOptionsWidget(
+                  child: EnhancedRouteOptionsWidget(
                     routes: mapViewModel.routeOptions,
                     onRouteSelected: (route) => mapViewModel.selectRoute(route),
                     onClearRoute: () => mapViewModel.clearRoute(),
