@@ -26,7 +26,7 @@ class MapOverlayWidgets extends StatelessWidget {
               if (mapViewModel.routeOptions.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: RouteOptionsWidget(
+                  child: EnhancedRouteOptionsWidget(
                     routes: mapViewModel.routeOptions,
                     onRouteSelected: (route) {
                       mapViewModel.selectRoute(route);

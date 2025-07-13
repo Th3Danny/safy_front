@@ -56,7 +56,7 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                     _showResults = value.isNotEmpty;
                   });
                   if (value.length > 2) {
-                    mapViewModel.searchPlaces(value);
+                    mapViewModel.searchPlaces(value .trim(), mapViewModel.currentLocation);
                   } else {
                     mapViewModel.clearSearch();
                   }
@@ -104,7 +104,10 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                             ),
                       onTap: () {
                         // Seleccionar lugar y calcular ruta automáticamente
-                        mapViewModel.selectPlace(place);
+                        mapViewModel.selectPlace(
+                          place,
+                          mapViewModel.currentLocation,
+                        );
                         _searchController.text = place.displayName;
                         setState(() {
                           _showResults = false;
