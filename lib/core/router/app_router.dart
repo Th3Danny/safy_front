@@ -6,7 +6,6 @@ import 'package:safy/auth/presentation/viewmodels/auth_state_view_model.dart';
 // ✅ AGREGAR IMPORTS
 import 'package:safy/core/session/session_manager.dart';
 
-
 // Tus imports existentes
 import 'package:safy/auth/presentation/pages/login/login_screen.dart';
 import 'package:safy/auth/presentation/pages/register/register_screen_01.dart';
@@ -16,6 +15,8 @@ import 'package:safy/help/presentation/pages/help_institutions_screen.dart';
 import 'package:safy/home/presentation/pages/home_screen.dart';
 import 'package:safy/profil/presentation/pages/edit_profile_screen.dart';
 import 'package:safy/report/presentation/pages/create_report_screen.dart';
+import 'package:safy/report/presentation/pages/report_detail_screen.dart'; // 👈 NUEVO IMPORT
+import 'package:safy/report/presentation/pages/view_report_screen.dart';
 import 'package:safy/settings/presentation/pages/settings_screen.dart';
 
 final _routerKey = GlobalKey<NavigatorState>();
@@ -121,6 +122,42 @@ class AppRouter {
           key: state.pageKey,
           child: const CreateReportScreen(),
         ),
+      ),
+
+      // 👈 NUEVAS RUTAS
+      GoRoute(
+        path: AppRoutesConstant.myReports,
+        name: 'my-reports',
+        pageBuilder: (context, state) => MaterialPage(
+          key: state.pageKey,
+          child: const MyReportsScreen(),
+        ),
+      ),
+
+      GoRoute(
+        path: AppRoutesConstant.reportDetail,
+        name: 'report-detail',
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final reportId = extra?['reportId'] as String?;
+          
+          if (reportId == null) {
+            return MaterialPage(
+              key: state.pageKey,
+              child: Scaffold(
+                appBar: AppBar(title: const Text('Error')),
+                body: const Center(
+                  child: Text('ID de reporte no válido'),
+                ),
+              ),
+            );
+          }
+
+          return MaterialPage(
+            key: state.pageKey,
+            child: ReportDetailScreen(reportId: reportId),
+          );
+        },
       ),
       
       GoRoute(

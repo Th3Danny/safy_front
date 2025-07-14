@@ -9,4 +9,5 @@ class GetReportUseCase {
   Future<ReportInfoEntity> execute(String id) async {
     return await _repository.getReportById(id: id);
   }
+
 }

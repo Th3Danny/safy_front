@@ -1,6 +1,7 @@
 import 'package:safy/report/domain/entities/report.dart';
 
 class ReportRequestDto {
+  final String id; 
   final String title;
   final String description;
   final String incident_type;
@@ -14,6 +15,7 @@ class ReportRequestDto {
   //final DateTime dateTime;
 
   const ReportRequestDto({
+    this.id = '',
     required this.title,
     required this.description,
     required this.incident_type,
@@ -61,6 +63,7 @@ class ReportRequestDto {
 
   ReportInfoEntity toDomainEntity() {
     return ReportInfoEntity(
+      id: id,
       title: title,
       description: description,
       incident_type: incident_type,
