@@ -1,4 +1,5 @@
 class ReportInfoEntity {
+  final String id; // Assuming this is the unique identifier for the report
   final String title;
   final String description;
   final String incident_type;
@@ -12,6 +13,7 @@ class ReportInfoEntity {
   //final DateTime dateTime;
 
   ReportInfoEntity({
+    required this.id,
     required this.title,
     required this.description,
     required this.incident_type,
@@ -28,6 +30,7 @@ class ReportInfoEntity {
   @override
   String toString() {
     return 'ReportInfoEntity('
+        'id: $id, '
         'title: $title, '
         'description: $description, '
         'incident_type: $incident_type, '

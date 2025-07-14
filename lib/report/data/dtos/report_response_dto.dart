@@ -118,6 +118,7 @@ class ReportResponseDto {
   // 🔥 CONVERTIR A ENTIDAD DE DOMINIO
   ReportInfoEntity toDomainEntity() {
     return ReportInfoEntity(
+      id: id.toString(), 
       title: title,
       description: description,
       incident_type: incidentType,

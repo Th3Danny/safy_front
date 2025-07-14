@@ -121,43 +121,56 @@ class NavigationFab extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.description,
-                              color: Colors.blue,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Reportes',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                      // 👈 SECCIÓN DE REPORTES ACTUALIZADA
+                      InkWell(
+                        onTap: () => context.go(AppRoutesConstant.myReports), // 👈 Navegar a mis reportes
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                Text(
-                                  '3 reportes',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
-                                  ),
+                                child: const Icon(
+                                  Icons.description,
+                                  color: Colors.blue,
+                                  size: 20,
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Mis Reportes',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Ver mis reportes',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: Colors.grey[400],
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
 
                       const SizedBox(height: 16),
