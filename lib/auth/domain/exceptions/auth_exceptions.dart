@@ -59,6 +59,23 @@ class PasswordMismatchException extends AuthException {
       : super(message ?? 'Las contraseñas no coinciden', code: 'PASSWORD_MISMATCH');
 }
 
+// Añade estas nuevas clases de excepción junto con las existentes
+class UnauthorizedException extends AuthException {
+  const UnauthorizedException([String? message])
+      : super(message ?? 'No autorizado', code: 'UNAUTHORIZED');
+}
+
+class InvalidSessionException extends AuthException {
+  const InvalidSessionException([String? message])
+      : super(message ?? 'Sesión inválida o expirada', code: 'INVALID_SESSION');
+}
+
+class TooManyRequestsException extends AuthException {
+  const TooManyRequestsException([String? message])
+      : super(message ?? 'Demasiados intentos. Por favor intente más tarde', 
+             code: 'TOO_MANY_REQUESTS');
+}
+
 class ValidationException extends AuthException {
   final Map<String, List<String>> fieldErrors;
 

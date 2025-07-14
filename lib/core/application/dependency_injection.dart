@@ -6,6 +6,7 @@ import 'package:safy/auth/presentation/viewmodels/auth_state_view_model.dart';
 import 'package:safy/auth/presentation/viewmodels/login_viewmodel.dart';
 import 'package:safy/auth/presentation/viewmodels/register_viewmodel.dart';
 import 'package:safy/core/network/domian/config/dio_config.dart';
+import 'package:safy/core/session/session_manager.dart';
 import 'package:safy/home/application/maps_injector.dart';
 import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
@@ -22,11 +23,11 @@ import 'package:dio/dio.dart';
 
 final sl = GetIt.instance;
 
-Future<void> setupDependencyInjection() async {
+Future<void> setupDependencyInjection({SharedPreferences? sharedPreferences}) async {
   print('[DI] 🚀 Iniciando configuración de dependencias...');
 
-  // ===== EXTERNAL DEPENDENCIES =====
-  final prefs = await SharedPreferences.getInstance();
+   // ===== EXTERNAL DEPENDENCIES =====
+  final prefs = sharedPreferences ?? await SharedPreferences.getInstance();
   sl.registerLazySingleton<SharedPreferences>(() => prefs);
 
   // ===== CORE DEPENDENCIES =====
@@ -38,6 +39,11 @@ Future<void> setupDependencyInjection() async {
   sl.registerLazySingleton<Dio>(
     () => DioConfig.createDio(),
     instanceName: 'public',
+  );
+
+  // Registrar SessionManager con las prefs
+  sl.registerLazySingleton<SessionManager>(
+    () => SessionManager.instance..initialize(prefs: prefs),
   );
 
   // Registrar el caso de uso

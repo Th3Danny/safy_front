@@ -82,7 +82,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
           if (Navigator.of(context).canPop()) {
             context.pop();
           } else {
-            context.go(AppRoutesConstant.home); // o a donde quieras redirigir en fallback
+            context.go(AppRoutesConstant.home); 
           }
         },
         icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),

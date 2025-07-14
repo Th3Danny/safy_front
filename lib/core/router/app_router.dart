@@ -2,47 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get_it/get_it.dart';
 import 'package:safy/auth/presentation/viewmodels/auth_state_view_model.dart';
-
-// ✅ AGREGAR IMPORTS
 import 'package:safy/core/session/session_manager.dart';
-
-// Tus imports existentes
 import 'package:safy/auth/presentation/pages/login/login_screen.dart';
 import 'package:safy/auth/presentation/pages/register/register_screen_01.dart';
 import 'package:safy/auth/presentation/pages/register/register_screen_02.dart';
 import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 import 'package:safy/help/presentation/pages/help_institutions_screen.dart';
+import 'package:safy/help/presentation/pages/safety_education_screen.dart';
 import 'package:safy/home/presentation/pages/home_screen.dart';
 import 'package:safy/profil/presentation/pages/edit_profile_screen.dart';
 import 'package:safy/report/presentation/pages/create_report_screen.dart';
-import 'package:safy/report/presentation/pages/report_detail_screen.dart'; // 👈 NUEVO IMPORT
-import 'package:safy/report/presentation/pages/view_report_screen.dart';
+import 'package:safy/report/presentation/pages/report_detail_screen.dart';
+import 'package:safy/report/presentation/pages/view_report_screen.dart'; // Asegúrate de tener este import si usas MyReportsScreen
 import 'package:safy/settings/presentation/pages/settings_screen.dart';
 
 final _routerKey = GlobalKey<NavigatorState>();
 
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/', // ✅ Cambiar a ruta raíz
+    initialLocation: '/',
     navigatorKey: _routerKey,
     debugLogDiagnostics: true,
-    
-    // ✅ ACTIVAR EL REDIRECT CON AUTENTICACIÓN
+
     redirect: (BuildContext context, GoRouterState state) async {
+      // ✅ IMPORTANTE: Esperar a que SessionManager se inicialice
+      // Aunque initialize() ya se llama en main, GoRouter redirect puede ejecutarse antes.
+      // Aseguramos que la instancia de SessionManager esté lista.
+      await SessionManager.instance.initialize(); // Asegura que esté inicializado
+
       final routesNonSecure = [
         AppRoutesConstant.login,
         AppRoutesConstant.register,
         AppRoutesConstant.registerStep2,
-        '/', // Ruta raíz
+        
       ];
 
       try {
-        // ✅ Usar SessionManager para verificar autenticación
         final sessionManager = SessionManager.instance;
         final isLoggedIn = sessionManager.isLoggedIn;
         final isNonSecure = routesNonSecure.contains(state.matchedLocation);
 
         print('[Router] Ruta: ${state.matchedLocation}, LoggedIn: $isLoggedIn, NonSecure: $isNonSecure');
+
+        // Si la ruta actual es la raíz y aún no se ha inicializado el AuthStateViewModel
+        // Permitimos que AuthWrapper maneje la navegación inicial
+        if (state.matchedLocation == '/' && !GetIt.instance<AuthStateViewModel>().isLoading) {
+            // No redirigimos aquí, dejamos que AuthWrapper decida.
+            // La condición !GetIt.instance<AuthStateViewModel>().isLoading es para evitar un loop
+            // si el redirect se dispara múltiples veces antes de que AuthWrapper termine.
+            return null;
+        }
+
 
         // Si no está logueado y trata de acceder a ruta protegida
         if (!isLoggedIn && !isNonSecure) {
@@ -50,10 +60,10 @@ class AppRouter {
           return AppRoutesConstant.login;
         }
 
-        // Si está logueado y trata de acceder a login/register
-        if (isLoggedIn && (state.matchedLocation == AppRoutesConstant.login || 
-                          state.matchedLocation == AppRoutesConstant.register ||
-                          state.matchedLocation == '/')) {
+        // Si está logueado y trata de acceder a login/register o la ruta raíz
+        if (isLoggedIn && (state.matchedLocation == AppRoutesConstant.login ||
+                            state.matchedLocation == AppRoutesConstant.register ||
+                            state.matchedLocation == '/')) {
           print('[Router] Redirigiendo a home - ya autenticado');
           return AppRoutesConstant.home;
         }
@@ -61,21 +71,21 @@ class AppRouter {
         return null; // No redirigir
       } catch (e) {
         print('[Router] Error en redirect: $e');
+        // En caso de error, siempre redirigir al login
         return AppRoutesConstant.login;
       }
     },
-    
+
     routes: [
-      // ✅ AGREGAR RUTA RAÍZ CON AuthWrapper
       GoRoute(
         path: '/',
         name: 'root',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: const AuthWrapper(),
+          child: const AuthWrapper(), // Tu splash screen/wrapper de autenticación
         ),
       ),
-      
+
       // Tus rutas existentes
       GoRoute(
         path: AppRoutesConstant.login,
@@ -85,7 +95,7 @@ class AppRouter {
           child: const LoginScreen(),
         ),
       ),
-      
+
       GoRoute(
         path: AppRoutesConstant.register,
         name: 'register',
@@ -94,7 +104,7 @@ class AppRouter {
           child: const RegisterScreen01(),
         ),
       ),
-      
+
       GoRoute(
         path: AppRoutesConstant.registerStep2,
         name: 'register-step2',
@@ -105,7 +115,7 @@ class AppRouter {
           ),
         ),
       ),
-      
+
       GoRoute(
         path: AppRoutesConstant.home,
         name: 'home',
@@ -114,7 +124,7 @@ class AppRouter {
           child: const HomeScreen(),
         ),
       ),
-      
+
       GoRoute(
         path: AppRoutesConstant.createReport,
         name: 'create-report',
@@ -124,7 +134,6 @@ class AppRouter {
         ),
       ),
 
-      // 👈 NUEVAS RUTAS
       GoRoute(
         path: AppRoutesConstant.myReports,
         name: 'my-reports',
@@ -140,7 +149,7 @@ class AppRouter {
         pageBuilder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           final reportId = extra?['reportId'] as String?;
-          
+
           if (reportId == null) {
             return MaterialPage(
               key: state.pageKey,
@@ -159,7 +168,7 @@ class AppRouter {
           );
         },
       ),
-      
+
       GoRoute(
         path: AppRoutesConstant.helpInstitutions,
         name: 'help-institutions',
@@ -168,7 +177,16 @@ class AppRouter {
           child: const HelpInstitutionsScreen(),
         ),
       ),
-      
+
+       GoRoute(
+        path: AppRoutesConstant.guideSecurity,
+        name: 'guide-security',
+        pageBuilder: (context, state) => MaterialPage(
+          key: state.pageKey,
+          child: const SafetyEducationScreen(),
+        ),
+      ),
+
       GoRoute(
         path: AppRoutesConstant.editProfile,
         name: 'edit-profile',
@@ -177,7 +195,7 @@ class AppRouter {
           child: const EditProfileScreen(),
         ),
       ),
-      
+
       GoRoute(
         path: AppRoutesConstant.settings,
         name: 'settings',
@@ -187,7 +205,7 @@ class AppRouter {
         ),
       ),
     ],
-    
+
     errorPageBuilder: (context, state) => MaterialPage(
       key: state.pageKey,
       child: Scaffold(
@@ -215,7 +233,8 @@ class AppRouter {
   );
 }
 
-// ✅ AGREGAR AuthWrapper para manejar el estado inicial
+// ✅ MANTÉN ESTA CLASE SIN CAMBIOS
+// AuthWrapper para manejar el estado inicial
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
@@ -238,7 +257,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
       _authViewModel = GetIt.instance<AuthStateViewModel>();
       _authViewModel.addListener(_onAuthChanged);
       
-      await _authViewModel.initialize();
+      // Aquí se llama a initialize, que carga la sesión del SessionManager
+      await _authViewModel.initialize(); 
       
       if (mounted) {
         setState(() {
@@ -266,6 +286,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void _checkAuthAndNavigate() {
     if (!_isInitialized) return;
     
+    // Usamos addPostFrameCallback para asegurar que el build del widget ha terminado
+    // antes de intentar la navegación, evitando errores de navegación temprana.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         if (_authViewModel.isLoggedIn && _authViewModel.currentUser != null) {
@@ -293,7 +315,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo o icono de tu app
             Container(
               width: 80,
               height: 80,
@@ -307,9 +328,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 color: Colors.green.shade700,
               ),
             ),
-            
             const SizedBox(height: 24),
-            
             Text(
               'Safy',
               style: TextStyle(
@@ -318,9 +337,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 color: Colors.green.shade700,
               ),
             ),
-            
             const SizedBox(height: 8),
-            
             const Text(
               'Zonas Seguras',
               style: TextStyle(
@@ -328,10 +345,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 color: Colors.grey,
               ),
             ),
-            
             const SizedBox(height: 40),
-            
-            // Loading indicator
             SizedBox(
               width: 24,
               height: 24,
@@ -340,9 +354,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade700),
               ),
             ),
-            
             const SizedBox(height: 16),
-            
             const Text(
               'Verificando sesión...',
               style: TextStyle(

@@ -15,14 +15,16 @@ import 'package:safy/core/session/token_refresh_service.dart';
 
 final sl = GetIt.instance;
 
+// En tu archivo auth/application/auth_di.dart
 Future<void> setupAuthDependencies() async {
-  sl.registerLazySingleton<SessionManager>(() => SessionManager.instance);
+  // Obtener instancia ya registrada de SessionManager
+  final sessionManager = sl<SessionManager>();
 
   sl.registerLazySingleton<AuthApiClient>(
     () => AuthApiClient(sl<Dio>(instanceName: 'authenticated')),
   );
 
-  // Initialize Token Refresh Service
+  // Token Refresh Service
   TokenRefreshService.initialize(sl<AuthApiClient>());
   sl.registerLazySingleton<TokenRefreshService>(
     () => TokenRefreshService.instance,
@@ -30,11 +32,10 @@ Future<void> setupAuthDependencies() async {
 
   // Auth Repository
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sl<AuthApiClient>(), sl<SessionManager>()),
+    () => AuthRepositoryImpl(sl<AuthApiClient>(), sessionManager),
   );
 
-  // ===== DOMAIN LAYER (USE CASES) =====
-
+  // ===== USE CASES =====
   sl.registerLazySingleton<SignInUseCase>(
     () => SignInUseCase(sl<AuthRepository>()),
   );
@@ -51,25 +52,27 @@ Future<void> setupAuthDependencies() async {
     () => GetCurrentUserUseCase(sl<AuthRepository>()),
   );
 
-  // ===== PRESENTATION LAYER (VIEW MODELS) =====
+  // ===== VIEW MODELS =====
+  // Factory para LoginViewModel (nueva instancia cada vez)
+  sl.registerFactory<LoginViewModel>(
+    () => LoginViewModel(sl<SignInUseCase>()),
+  );
 
-  sl.registerFactory<LoginViewModel>(() => LoginViewModel(sl<SignInUseCase>()));
-
-  // 🔧 CAMBIO CRÍTICO: De registerFactory a registerLazySingleton
+  // Singleton para RegisterViewModel (mantener estado)
   sl.registerLazySingleton<RegisterViewModel>(
     () => RegisterViewModel(sl<SignUpUseCase>()),
   );
 
+  // Singleton para AuthStateViewModel (estado global)
   sl.registerLazySingleton<AuthStateViewModel>(
     () => AuthStateViewModel(
       sl<GetCurrentUserUseCase>(),
       sl<SignOutUseCase>(),
-      sl<SessionManager>(),
-    ),
+      sessionManager, // Usar la instancia ya registrada
+    )..initialize(), // Inicializar automáticamente
   );
 
   print('[AuthDI] ✅ Dependencias de autenticación registradas');
-  print('[AuthDI] RegisterViewModel hashCode: ${sl<RegisterViewModel>().hashCode}');
 }
 
 // 🧹 Método opcional para limpiar después del registro exitoso

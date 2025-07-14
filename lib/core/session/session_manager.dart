@@ -4,7 +4,6 @@ import 'package:safy/auth/domain/entities/user.dart';
 import 'package:safy/core/network/domian/constants/api_client_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class SessionManager {
   static SessionManager? _instance;
   static SessionManager get instance => _instance ??= SessionManager._();
@@ -13,10 +12,10 @@ class SessionManager {
   AuthSession? _currentSession;
   SharedPreferences? _prefs;
 
-  Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
-    await _loadStoredSession();
-  }
+  Future<void> initialize({SharedPreferences? prefs}) async {
+  _prefs = prefs ?? await SharedPreferences.getInstance();
+  await _loadStoredSession();
+}
 
   AuthSession? get currentSession => _currentSession;
   UserInfoEntity? get currentUser => _currentSession?.user;
@@ -27,14 +26,16 @@ class SessionManager {
 
   ///  Crear sesión con UserInfoEntity
   Future<void> createSession({
-    required UserInfoEntity user,  
+    required UserInfoEntity user,
     required String accessToken,
     required String refreshToken,
     required int expiresIn,
     bool rememberMe = false,
   }) async {
+    print('[SessionManager] Creando sesión con rememberMe: $rememberMe');
+
     final expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
-    
+
     _currentSession = AuthSession(
       user: user,
       accessToken: accessToken,
@@ -43,8 +44,12 @@ class SessionManager {
       rememberMe: rememberMe,
     );
 
+    // Forzar guardado independientemente de rememberMe para pruebas
     await _saveSessionToStorage();
-    print('[SessionManager] Sesión creada para usuario: ${user.username}');
+
+    // Verificar que se guardó
+    final savedToken = _prefs?.getString(ApiConstants.accessTokenKey);
+    print('[SessionManager] Token guardado: ${savedToken != null}');
   }
 
   Future<void> updateTokens({
@@ -57,7 +62,7 @@ class SessionManager {
     }
 
     final expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
-    
+
     _currentSession = _currentSession!.copyWith(
       accessToken: accessToken,
       refreshToken: refreshToken,
@@ -98,7 +103,7 @@ class SessionManager {
       final payload = parts[1];
       final normalizedPayload = base64Url.normalize(payload);
       final decoded = utf8.decode(base64Url.decode(normalizedPayload));
-      
+
       return jsonDecode(decoded) as Map<String, dynamic>;
     } catch (e) {
       print('[SessionManager] Error al decodificar token: $e');
@@ -108,10 +113,10 @@ class SessionManager {
 
   Duration? getTimeUntilExpiration() {
     if (_currentSession == null) return null;
-    
+
     final now = DateTime.now();
     if (now.isAfter(_currentSession!.expiresAt)) return Duration.zero;
-    
+
     return _currentSession!.expiresAt.difference(now);
   }
 
@@ -123,13 +128,15 @@ class SessionManager {
       final refreshToken = _prefs?.getString(ApiConstants.refreshTokenKey);
       final userDataString = _prefs?.getString(ApiConstants.userDataKey);
 
-      if (accessToken == null || refreshToken == null || userDataString == null) {
+      if (accessToken == null ||
+          refreshToken == null ||
+          userDataString == null) {
         print('[SessionManager] No hay sesión almacenada');
         return;
       }
 
       final userMap = jsonDecode(userDataString) as Map<String, dynamic>;
-      
+
       // Crear UserInfoEntity desde los datos almacenados
       final user = UserInfoEntity(
         id: userMap['id'] ?? '',
@@ -142,14 +149,14 @@ class SessionManager {
         role: userMap['role'] ?? '',
         verified: userMap['verified'] ?? false,
         isActive: userMap['is_active'] ?? true,
-      
       );
 
       final tokenPayload = getTokenPayload(accessToken);
       final exp = tokenPayload?['exp'] as int?;
-      final expiresAt = exp != null 
-          ? DateTime.fromMillisecondsSinceEpoch(exp * 1000)
-          : DateTime.now().add(const Duration(hours: 1));
+      final expiresAt =
+          exp != null
+              ? DateTime.fromMillisecondsSinceEpoch(exp * 1000)
+              : DateTime.now().add(const Duration(hours: 1));
 
       _currentSession = AuthSession(
         user: user,
@@ -165,7 +172,6 @@ class SessionManager {
       } else {
         print('[SessionManager] Sesión cargada para: ${user.username}');
       }
-
     } catch (e) {
       print('[SessionManager] Error cargando sesión: $e');
       await _clearStorageData();
@@ -177,9 +183,15 @@ class SessionManager {
 
     try {
       if (_currentSession!.rememberMe) {
-        await _prefs!.setString(ApiConstants.accessTokenKey, _currentSession!.accessToken);
-        await _prefs!.setString(ApiConstants.refreshTokenKey, _currentSession!.refreshToken);
-        
+        await _prefs!.setString(
+          ApiConstants.accessTokenKey,
+          _currentSession!.accessToken,
+        );
+        await _prefs!.setString(
+          ApiConstants.refreshTokenKey,
+          _currentSession!.refreshToken,
+        );
+
         // ✅ Convertir UserInfoEntity a Map para almacenamiento
         final userMap = {
           'id': _currentSession!.user.id,
@@ -189,12 +201,11 @@ class SessionManager {
           'username': _currentSession!.user.username,
           'email': _currentSession!.user.email,
           'phone_number': _currentSession!.user.phoneNumber,
-          'role': _currentSession!.user.role, 
+          'role': _currentSession!.user.role,
           'verified': _currentSession!.user.verified,
           'is_active': _currentSession!.user.isActive,
-      
         };
-        
+
         await _prefs!.setString(ApiConstants.userDataKey, jsonEncode(userMap));
         print('[SessionManager] Sesión guardada en almacenamiento');
       }
@@ -202,6 +213,8 @@ class SessionManager {
       print('[SessionManager] Error guardando sesión: $e');
     }
   }
+
+  
 
   Future<void> _clearStorageData() async {
     if (_prefs == null) return;

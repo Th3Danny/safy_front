@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:safy/shared/widget/custom_app_bar.dart';
 import 'package:safy/shared/widget/help_institution_card.dart';
-
+import 'package:safy/help/presentation/widgets/safety_tips_widget.dart'; // 👈 NUEVO IMPORT
 
 class HelpInstitutionsScreen extends StatelessWidget {
   const HelpInstitutionsScreen({super.key});
@@ -19,6 +19,8 @@ class HelpInstitutionsScreen extends StatelessWidget {
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
+              // ========== TU CONTENIDO EXISTENTE (SIN CAMBIOS) ==========
+              
               // Instituciones principales
               const HelpInstitutionCard(
                 title: 'Fiscalía',
@@ -66,7 +68,7 @@ class HelpInstitutionsScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     
                     // Lista de números de emergencia
-                    _EmergencyContactTile(
+                    const _EmergencyContactTile(
                       title: '911',
                       subtitle: 'Atención a emergencias',
                       phone: '911',
@@ -74,7 +76,7 @@ class HelpInstitutionsScreen extends StatelessWidget {
                     
                     const SizedBox(height: 12),
                     
-                    _EmergencyContactTile(
+                    const _EmergencyContactTile(
                       title: '089',
                       subtitle: 'Denuncia anónima',
                       phone: '089',
@@ -82,7 +84,7 @@ class HelpInstitutionsScreen extends StatelessWidget {
                     
                     const SizedBox(height: 12),
                     
-                    _EmergencyContactTile(
+                    const _EmergencyContactTile(
                       title: 'Estatales - Chiapas',
                       subtitle: 'Consumidor general',
                       phone: '(961)617-2300(Ext.17000)',
@@ -90,7 +92,7 @@ class HelpInstitutionsScreen extends StatelessWidget {
                     
                     const SizedBox(height: 12),
                     
-                    _EmergencyContactTile(
+                    const _EmergencyContactTile(
                       title: '961-614-9350',
                       subtitle: 'Dirección Chiapas',
                       phone: '961-614-9350',
@@ -98,6 +100,11 @@ class HelpInstitutionsScreen extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // ========== NUEVA SECCIÓN DE INFORMACIÓN DE SEGURIDAD ==========
+              const SafetyTipsWidget(), // 👈 AGREGAR ESTE WIDGET
+              
+              const SizedBox(height: 24), // Espacio final
             ],
           ),
         ),
@@ -106,6 +113,7 @@ class HelpInstitutionsScreen extends StatelessWidget {
   }
 }
 
+// ========== TU WIDGET EXISTENTE (SIN CAMBIOS) ==========
 class _EmergencyContactTile extends StatelessWidget {
   final String title;
   final String subtitle;
