@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:safy/auth/domain/usecases/sign_in_use_case.dart';
+import 'package:safy/core/session/session_manager.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/exceptions/auth_exceptions.dart';
 
@@ -11,7 +12,7 @@ class LoginViewModel extends ChangeNotifier {
   // Estado del formulario
   String _email = '';
   String _password = '';
-  bool _rememberMe = false;
+  bool _rememberMe = true; // Por defecto, recordar sesión
   bool _isPasswordVisible = false;
 
   // Estado de la UI
@@ -30,7 +31,8 @@ class LoginViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   AuthSession? get lastSuccessfulSession => _lastSuccessfulSession;
   bool get hasError => _errorMessage != null;
-  bool get canSubmit => _email.isNotEmpty && _password.isNotEmpty && !_isLoading;
+  bool get canSubmit =>
+      _email.isNotEmpty && _password.isNotEmpty && !_isLoading;
 
   // Setters para el formulario
   void setEmail(String email) {
@@ -86,20 +88,28 @@ class LoginViewModel extends ChangeNotifier {
       final session = await _signInUseCase.execute(
         email: _email,
         password: _password,
-    
+      );
+
+      print('[LoginViewModel] rememberMe value: $_rememberMe'); // Add this
+
+      await SessionManager.instance.createSession(
+        user: session.user,
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        expiresIn: session.expiresAt.difference(DateTime.now()).inSeconds,
+        rememberMe: _rememberMe,
       );
 
       _lastSuccessfulSession = session;
-      
+
       // Limpiar contraseña por seguridad pero mantener email si rememberMe está activo
       _password = '';
       if (!_rememberMe) {
         _email = '';
       }
-      
+
       print('[LoginViewModel] Login exitoso para: ${session.user.username}');
       return true;
-
     } on ValidationException catch (e) {
       _setError(_formatValidationError(e));
       return false;
@@ -141,13 +151,14 @@ class LoginViewModel extends ChangeNotifier {
 
   String _formatValidationError(ValidationException e) {
     if (e.fieldErrors.isEmpty) return e.message;
-    
+
     // Tomar el primer error de cada campo
-    final firstErrors = e.fieldErrors.values
-        .where((errors) => errors.isNotEmpty)
-        .map((errors) => errors.first)
-        .toList();
-    
+    final firstErrors =
+        e.fieldErrors.values
+            .where((errors) => errors.isNotEmpty)
+            .map((errors) => errors.first)
+            .toList();
+
     return firstErrors.isNotEmpty ? firstErrors.first : e.message;
   }
 }

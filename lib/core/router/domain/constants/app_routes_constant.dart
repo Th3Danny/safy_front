@@ -9,6 +9,7 @@ class AppRoutesConstant {
   static const String settings = '/settings';
   static const String createReport = '/create-report';
   static const String myReports = '/my-reports'; 
+  static const String guideSecurity = '/guide-security';
   static const String reportDetail = '/report-detail'; 
   static const String reports = '/reports';
   static const String helpInstitutions = '/help-institutions';

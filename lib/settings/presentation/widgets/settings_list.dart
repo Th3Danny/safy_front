@@ -92,11 +92,13 @@ class SettingsList extends StatelessWidget {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // context.go('/login');
-                print('User logged out');
-              },
+               onPressed: () {
+          if (Navigator.of(context).canPop()) {
+            context.pop();
+          } else {
+            context.go(AppRoutesConstant.login); // o a donde quieras redirigir en fallback
+          }
+        },
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red,
               ),
