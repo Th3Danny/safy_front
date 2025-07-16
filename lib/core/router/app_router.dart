@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:get_it/get_it.dart';
-import 'package:safy/auth/presentation/viewmodels/auth_state_view_model.dart';
 import 'package:safy/core/session/session_manager.dart';
 import 'package:safy/auth/presentation/pages/login/login_screen.dart';
 import 'package:safy/auth/presentation/pages/register/register_screen_01.dart';
@@ -13,7 +11,7 @@ import 'package:safy/home/presentation/pages/home_screen.dart';
 import 'package:safy/profil/presentation/pages/edit_profile_screen.dart';
 import 'package:safy/report/presentation/pages/create_report_screen.dart';
 import 'package:safy/report/presentation/pages/report_detail_screen.dart';
-import 'package:safy/report/presentation/pages/view_report_screen.dart'; // Asegúrate de tener este import si usas MyReportsScreen
+import 'package:safy/report/presentation/pages/view_report_screen.dart';
 import 'package:safy/settings/presentation/pages/settings_screen.dart';
 
 final _routerKey = GlobalKey<NavigatorState>();
@@ -24,17 +22,11 @@ class AppRouter {
     navigatorKey: _routerKey,
     debugLogDiagnostics: true,
 
-    redirect: (BuildContext context, GoRouterState state) async {
-      // ✅ IMPORTANTE: Esperar a que SessionManager se inicialice
-      // Aunque initialize() ya se llama en main, GoRouter redirect puede ejecutarse antes.
-      // Aseguramos que la instancia de SessionManager esté lista.
-      await SessionManager.instance.initialize(); // Asegura que esté inicializado
-
+    redirect: (BuildContext context, GoRouterState state) {
       final routesNonSecure = [
         AppRoutesConstant.login,
         AppRoutesConstant.register,
         AppRoutesConstant.registerStep2,
-        
       ];
 
       try {
@@ -42,37 +34,34 @@ class AppRouter {
         final isLoggedIn = sessionManager.isLoggedIn;
         final isNonSecure = routesNonSecure.contains(state.matchedLocation);
 
-        print('[Router] Ruta: ${state.matchedLocation}, LoggedIn: $isLoggedIn, NonSecure: $isNonSecure');
+        print('[Router] 🔍 Ruta: ${state.matchedLocation}');
+        print('[Router] 🔍 LoggedIn: $isLoggedIn');
+        print('[Router] 🔍 NonSecure: $isNonSecure');
 
-        // Si la ruta actual es la raíz y aún no se ha inicializado el AuthStateViewModel
-        // Permitimos que AuthWrapper maneje la navegación inicial
-        if (state.matchedLocation == '/' && !GetIt.instance<AuthStateViewModel>().isLoading) {
-            // No redirigimos aquí, dejamos que AuthWrapper decida.
-            // La condición !GetIt.instance<AuthStateViewModel>().isLoading es para evitar un loop
-            // si el redirect se dispara múltiples veces antes de que AuthWrapper termine.
-            return null;
+        // 🔧 CAMBIO: Permitir AuthWrapper manejar la navegación inicial
+        if (state.matchedLocation == '/') {
+          print('[Router] 🏠 AuthWrapper manejará la navegación');
+          return null;
         }
 
-
-        // Si no está logueado y trata de acceder a ruta protegida
+        // 🔧 CAMBIO: Solo redirigir si realmente no hay sesión válida
         if (!isLoggedIn && !isNonSecure) {
-          print('[Router] Redirigiendo a login - no autenticado');
+          print('[Router] 🚫 Redirigiendo a login - no autenticado');
           return AppRoutesConstant.login;
         }
 
-        // Si está logueado y trata de acceder a login/register o la ruta raíz
-        if (isLoggedIn && (state.matchedLocation == AppRoutesConstant.login ||
-                            state.matchedLocation == AppRoutesConstant.register ||
-                            state.matchedLocation == '/')) {
-          print('[Router] Redirigiendo a home - ya autenticado');
+        // 🔧 CAMBIO: Solo redirigir si hay sesión válida Y está en login
+        if (isLoggedIn && state.matchedLocation == AppRoutesConstant.login) {
+          print('[Router] ✅ Redirigiendo a home - ya autenticado');
           return AppRoutesConstant.home;
         }
 
-        return null; // No redirigir
+        print('[Router] ✅ No redirect necesario');
+        return null;
       } catch (e) {
-        print('[Router] Error en redirect: $e');
-        // En caso de error, siempre redirigir al login
-        return AppRoutesConstant.login;
+        print('[Router] ❌ Error en redirect: $e');
+        // 🔧 CAMBIO: No redirigir en caso de error de red
+        return null;
       }
     },
 
@@ -80,67 +69,67 @@ class AppRouter {
       GoRoute(
         path: '/',
         name: 'root',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const AuthWrapper(), // Tu splash screen/wrapper de autenticación
-        ),
+        pageBuilder:
+            (context, state) =>
+                MaterialPage(key: state.pageKey, child: const AuthWrapper()),
       ),
 
-      // Tus rutas existentes
       GoRoute(
         path: AppRoutesConstant.login,
         name: 'login',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const LoginScreen(),
-        ),
+        pageBuilder:
+            (context, state) =>
+                MaterialPage(key: state.pageKey, child: const LoginScreen()),
       ),
 
       GoRoute(
         path: AppRoutesConstant.register,
         name: 'register',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const RegisterScreen01(),
-        ),
+        pageBuilder:
+            (context, state) => MaterialPage(
+              key: state.pageKey,
+              child: const RegisterScreen01(),
+            ),
       ),
 
       GoRoute(
         path: AppRoutesConstant.registerStep2,
         name: 'register-step2',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: RegisterScreen02(
-            registerData: state.extra as Map<String, dynamic>?,
-          ),
-        ),
+        pageBuilder:
+            (context, state) => MaterialPage(
+              key: state.pageKey,
+              child: RegisterScreen02(
+                registerData: state.extra as Map<String, dynamic>?,
+              ),
+            ),
       ),
 
       GoRoute(
         path: AppRoutesConstant.home,
         name: 'home',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const HomeScreen(),
-        ),
+        pageBuilder:
+            (context, state) =>
+                MaterialPage(key: state.pageKey, child: const HomeScreen()),
       ),
 
       GoRoute(
         path: AppRoutesConstant.createReport,
         name: 'create-report',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const CreateReportScreen(),
-        ),
+        pageBuilder:
+            (context, state) => MaterialPage(
+              key: state.pageKey,
+              child: const CreateReportScreen(),
+            ),
       ),
 
       GoRoute(
         path: AppRoutesConstant.myReports,
         name: 'my-reports',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const MyReportsScreen(),
-        ),
+        pageBuilder:
+            (context, state) => MaterialPage(
+              key: state.pageKey,
+              child: const MyReportsScreen(),
+            ),
       ),
 
       GoRoute(
@@ -155,9 +144,7 @@ class AppRouter {
               key: state.pageKey,
               child: Scaffold(
                 appBar: AppBar(title: const Text('Error')),
-                body: const Center(
-                  child: Text('ID de reporte no válido'),
-                ),
+                body: const Center(child: Text('ID de reporte no válido')),
               ),
             );
           }
@@ -172,69 +159,71 @@ class AppRouter {
       GoRoute(
         path: AppRoutesConstant.helpInstitutions,
         name: 'help-institutions',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const HelpInstitutionsScreen(),
-        ),
+        pageBuilder:
+            (context, state) => MaterialPage(
+              key: state.pageKey,
+              child: const HelpInstitutionsScreen(),
+            ),
       ),
 
-       GoRoute(
+      GoRoute(
         path: AppRoutesConstant.guideSecurity,
         name: 'guide-security',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const SafetyEducationScreen(),
-        ),
+        pageBuilder:
+            (context, state) => MaterialPage(
+              key: state.pageKey,
+              child: const SafetyEducationScreen(),
+            ),
       ),
 
       GoRoute(
         path: AppRoutesConstant.editProfile,
         name: 'edit-profile',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const EditProfileScreen(),
-        ),
+        pageBuilder:
+            (context, state) => MaterialPage(
+              key: state.pageKey,
+              child: const EditProfileScreen(),
+            ),
       ),
 
       GoRoute(
         path: AppRoutesConstant.settings,
         name: 'settings',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const SettingsScreen(),
-        ),
+        pageBuilder:
+            (context, state) =>
+                MaterialPage(key: state.pageKey, child: const SettingsScreen()),
       ),
     ],
 
-    errorPageBuilder: (context, state) => MaterialPage(
-      key: state.pageKey,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Page Not Found')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                'Page not found: ${state.matchedLocation}',
-                style: const TextStyle(fontSize: 18),
+    errorPageBuilder:
+        (context, state) => MaterialPage(
+          key: state.pageKey,
+          child: Scaffold(
+            appBar: AppBar(title: const Text('Page Not Found')),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Page not found: ${state.matchedLocation}',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.go('/'),
+                    child: const Text('Go to Home'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/'),
-                child: const Text('Go to Home'),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
-    ),
   );
 }
 
-// ✅ MANTÉN ESTA CLASE SIN CAMBIOS
-// AuthWrapper para manejar el estado inicial
+// AUTHWRAPPER MEJORADO
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
@@ -243,68 +232,34 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  late final AuthStateViewModel _authViewModel;
-  bool _isInitialized = false;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeAuth();
+    _checkAndNavigate();
   }
 
-  void _initializeAuth() async {
-    try {
-      _authViewModel = GetIt.instance<AuthStateViewModel>();
-      _authViewModel.addListener(_onAuthChanged);
+  void _checkAndNavigate() {
+    print('[AuthWrapper] 🚀 Verificando navegación...');
+    
+    // Usar WidgetsBinding para asegurar que el widget esté montado
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _hasNavigated) return;
       
-      // Aquí se llama a initialize, que carga la sesión del SessionManager
-      await _authViewModel.initialize(); 
+      final sessionManager = SessionManager.instance;
+      print('[AuthWrapper] 🔍 SessionManager isLoggedIn: ${sessionManager.isLoggedIn}');
       
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-        });
-        _checkAuthAndNavigate();
-      }
-    } catch (e) {
-      print('[AuthWrapper] Error inicializando: $e');
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-        });
+      if (sessionManager.isLoggedIn) {
+        print('[AuthWrapper] ✅ Navegando a home - sesión válida');
+        _hasNavigated = true;
+        context.go(AppRoutesConstant.home);
+      } else {
+        print('[AuthWrapper] 🚫 Navegando a login - sin sesión');
+        _hasNavigated = true;
         context.go(AppRoutesConstant.login);
       }
-    }
-  }
-
-  void _onAuthChanged() {
-    if (mounted) {
-      _checkAuthAndNavigate();
-    }
-  }
-
-  void _checkAuthAndNavigate() {
-    if (!_isInitialized) return;
-    
-    // Usamos addPostFrameCallback para asegurar que el build del widget ha terminado
-    // antes de intentar la navegación, evitando errores de navegación temprana.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        if (_authViewModel.isLoggedIn && _authViewModel.currentUser != null) {
-          context.go(AppRoutesConstant.home);
-        } else {
-          context.go(AppRoutesConstant.login);
-        }
-      }
     });
-  }
-
-  @override
-  void dispose() {
-    if (_isInitialized) {
-      _authViewModel.removeListener(_onAuthChanged);
-    }
-    super.dispose();
   }
 
   @override
@@ -367,4 +322,5 @@ class _AuthWrapperState extends State<AuthWrapper> {
       ),
     );
   }
+
 }

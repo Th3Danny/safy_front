@@ -1,10 +1,7 @@
 class ApiConstants {
-  // 🔄 CAMBIAR A TU URL ACTUAL
-  static const String baseUrl = 'https://a8122d04ffac.ngrok-free.app'; // 👈 Cambiar aquí
   
-  static const String apiVersion = '/api/v1';
-  static const String fullUrl = '$baseUrl$apiVersion';
-
+  static const String baseUrl = 'https://1eb39063c03b.ngrok-free.app'; 
+  
   // Auth endpoints
   static const String login = '/auth/login';
   static const String register = '/auth/register';
@@ -13,8 +10,8 @@ class ApiConstants {
   static const String profile = '/auth/profile';
 
   // 🔧 CORREGIR ENDPOINTS DE REPORTS
-  static const String reports = '/reports'; // 👈 Cambiar a plural
-  static const String createReport = '/reports'; // 👈 Mismo endpoint
+  static const String reports = '/reports'; 
+  static const String createReport = '/reports'; 
   static const String nearbyReports = '/reports/nearby';
 
   // Map endpoints

@@ -15,9 +15,8 @@ import 'package:safy/core/session/token_refresh_service.dart';
 
 final sl = GetIt.instance;
 
-// En tu archivo auth/application/auth_di.dart
 Future<void> setupAuthDependencies() async {
-  // Obtener instancia ya registrada de SessionManager
+  // 👈 USAR LA INSTANCIA YA REGISTRADA DE SESSION MANAGER
   final sessionManager = sl<SessionManager>();
 
   sl.registerLazySingleton<AuthApiClient>(
@@ -63,13 +62,13 @@ Future<void> setupAuthDependencies() async {
     () => RegisterViewModel(sl<SignUpUseCase>()),
   );
 
-  // Singleton para AuthStateViewModel (estado global)
+  // 👈 SINGLETON PARA AUTHSTATEVIEWMODEL SIN AUTO-INITIALIZE
   sl.registerLazySingleton<AuthStateViewModel>(
     () => AuthStateViewModel(
       sl<GetCurrentUserUseCase>(),
       sl<SignOutUseCase>(),
-      sessionManager, // Usar la instancia ya registrada
-    )..initialize(), // Inicializar automáticamente
+      sessionManager,
+    ), // 👈 NO LLAMAR .initialize() AQUÍ
   );
 
   print('[AuthDI] ✅ Dependencias de autenticación registradas');
