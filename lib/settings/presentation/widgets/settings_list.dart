@@ -117,7 +117,7 @@ class _SettingsListState extends State<SettingsList> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          // 🔧 CORRECCIÓN: Actualizar ambos estados
+                          //  CORRECCIÓN: Actualizar ambos estados
                           setState(() {
                             _isLoggingOut = true;
                           });
@@ -142,12 +142,12 @@ class _SettingsListState extends State<SettingsList> {
 
   Future<void> _performSimpleLogout(BuildContext dialogContext) async {
     try {
-      print('[SettingsList] 🚪 Iniciando logout simple...');
+      print('[SettingsList]  Iniciando logout simple...');
       
       // Limpiar sesión directamente
       await SessionManager.instance.clearSession();
       
-      print('[SettingsList] ✅ Logout simple exitoso');
+      print('[SettingsList]  Logout simple exitoso');
       
       // Pequeña pausa para que se vea el loading
       await Future.delayed(const Duration(milliseconds: 500));
@@ -163,7 +163,7 @@ class _SettingsListState extends State<SettingsList> {
       }
       
     } catch (e) {
-      print('[SettingsList] ❌ Error en logout simple: $e');
+      print('[SettingsList]  Error en logout simple: $e');
       
       if (Navigator.of(dialogContext).canPop()) {
         Navigator.of(dialogContext).pop();

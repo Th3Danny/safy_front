@@ -1,18 +1,18 @@
-enum JobType {
-  student('student', 'Estudiante'),
-  employee('employee', 'Empleado'),
-  businessman('businessman', 'Empresario'),
-  tourist('tourist', 'Turista');
+enum Job {
+  student('STUDENT', 'Estudiante'),
+  employee('EMPLOYEE', 'Empleado'),
+  businessman('BUSINESSMAN', 'Empresario'),
+  tourist('TOURIST', 'Turista');
 
-  const JobType(this.value, this.displayName);
+  const Job(this.value, this.displayName);
 
   final String value;
   final String displayName;
 
-  static JobType fromString(String value) {
-    return JobType.values.firstWhere(
+  static Job fromString(String value) {
+    return Job.values.firstWhere(
       (type) => type.value == value,
-      orElse: () => JobType.student,
+      orElse: () => Job.student,
     );
   }
 } 

@@ -44,15 +44,16 @@ class MobileMapLayout extends StatelessWidget {
               
 
               // 📋 Opciones de ruta (cuando hay rutas calculadas)
-              if (mapViewModel.routeOptions.isNotEmpty)
+              if (mapViewModel.routeOptions.isNotEmpty && mapViewModel.showRoutePanel) 
                 Positioned(
                   top: 180, // Ajustado para dar espacio al PlaceSearchWidget
                   left: 16,
                   right: 16,
-                  child: EnhancedRouteOptionsWidget(
+                  child: FloatingRouteControl(
                     routes: mapViewModel.routeOptions,
                     onRouteSelected: (route) => mapViewModel.selectRoute(route),
                     onClearRoute: () => mapViewModel.clearRoute(),
+                    onClose: () => mapViewModel.hideRoutePanel(),
                   ),
                 ),
 
@@ -66,7 +67,7 @@ class MobileMapLayout extends StatelessWidget {
                 //selectedMode: mapViewModel.selectedTransportMode,
               ),
 
-              // ❌ Mensaje de error
+              //  Mensaje de error
               if (mapViewModel.errorMessage != null)
                 Positioned(
                   bottom: 100,

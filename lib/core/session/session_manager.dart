@@ -207,14 +207,15 @@ class SessionManager {
     final user = UserInfoEntity(
       id: userMap['id']?.toString() ?? '',
       name: userMap['name'] ?? '',
-      lastName: userMap['lastname'] ?? '', // 👈 CAMBIO: 'lastname' (sin _)
-      secondLastName: userMap['second_lastname'], // 👈 CAMBIO: 'second_lastname' (con _)
+      lastName: userMap['lastname'] ?? '', 
+      secondLastName: userMap['second_lastname'], 
       username: userMap['username'] ?? '',
       email: userMap['email'] ?? '',
+      job: userMap['job'] ?? '',
       phoneNumber: userMap['phone_number'] ?? '',
       role: userMap['role'] ?? '',
       verified: userMap['verified'] ?? false,
-      isActive: userMap['active'] ?? true, // 👈 CAMBIO: 'active' (no is_active)
+      isActive: userMap['active'] ?? true, 
     );
 
     print('[SessionManager] 👤 Usuario parseado: ${user.username}');
