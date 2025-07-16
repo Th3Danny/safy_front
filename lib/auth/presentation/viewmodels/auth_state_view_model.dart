@@ -31,32 +31,41 @@ class AuthStateViewModel extends ChangeNotifier {
   bool get isInitialized => _initialized;
 
   Future<void> initialize() async {
-    if (_initialized) return;
-    
-    _setLoading(true);
+  if (_initialized) return;
+  
+  _setLoading(true);
 
-    try {
-      if (_sessionManager.isLoggedIn) {
-        _currentUser = await _getCurrentUserUseCase.execute();
-        print('[AuthStateVM] Usuario cargado: ${_currentUser?.username}');
-      } else {
-        print('[AuthStateVM] No hay usuario logueado');
-      }
-      _initialized = true;
-    } catch (e, stackTrace) {
-      print('[AuthStateVM] Error cargando usuario: $e');
-      print(stackTrace);
-      _setError('Error cargando datos del usuario');
+  try {
+    if (_sessionManager.isLoggedIn) {
+      print('[AuthStateVM] 🔄 Intentando cargar usuario...');
       
-      // Limpiar sesión inválida si hay error
-      if (e is UnauthorizedException || e is InvalidSessionException) {
-        await _sessionManager.clearSession();
+      try {
+        _currentUser = await _getCurrentUserUseCase.execute();
+        print('[AuthStateVM] ✅ Usuario cargado: ${_currentUser?.username}');
+      } catch (e) {
+        print('[AuthStateVM] ⚠️ Error cargando usuario, usando datos de sesión: $e');
+        // 🔧 CAMBIO: Usar datos del SessionManager si falla la API
+        _currentUser = _sessionManager.currentUser;
+        print('[AuthStateVM] 💾 Usuario tomado de SessionManager: ${_currentUser?.username}');
       }
-    } finally {
-      _setLoading(false);
-      notifyListeners();
+    } else {
+      print('[AuthStateVM]  No hay usuario logueado');
     }
+    _initialized = true;
+  } catch (e, stackTrace) {
+    print('[AuthStateVM]  Error en initialize: $e');
+    print(stackTrace);
+    
+    // 🔧 CAMBIO: No limpiar sesión por errores de red
+    if (e is UnauthorizedException) {
+      await _sessionManager.clearSession();
+    }
+    // No limpiar sesión por otros errores (como de red)
+  } finally {
+    _setLoading(false);
+    notifyListeners();
   }
+}
 
   void updateUser(UserInfoEntity user) {
     _currentUser = user;

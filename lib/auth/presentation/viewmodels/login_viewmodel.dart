@@ -12,7 +12,7 @@ class LoginViewModel extends ChangeNotifier {
   // Estado del formulario
   String _email = '';
   String _password = '';
-  bool _rememberMe = true; // Por defecto, recordar sesión
+  bool _rememberMe = true;
   bool _isPasswordVisible = false;
 
   // Estado de la UI
@@ -84,21 +84,43 @@ class LoginViewModel extends ChangeNotifier {
     _setLoading(true);
     _clearError();
 
+    print('[LoginViewModel] 🔐 ========== INICIANDO LOGIN ==========');
+    print('[LoginViewModel] 📧 Email: $_email');
+    print('[LoginViewModel] 💾 RememberMe: $_rememberMe');
+
     try {
+      print('[LoginViewModel] 🌐 Llamando a SignInUseCase...');
       final session = await _signInUseCase.execute(
         email: _email,
         password: _password,
       );
 
-      print('[LoginViewModel] rememberMe value: $_rememberMe'); // Add this
+      print('[LoginViewModel] ✅ SignInUseCase exitoso');
+      print('[LoginViewModel] 👤 Usuario recibido: ${session.user.username}');
+      print('[LoginViewModel] 🔑 Token recibido: ${session.accessToken.substring(0, 20)}...');
+      print('[LoginViewModel] ⏰ Expira en: ${session.expiresAt}');
 
+      // Calcular expiresIn en segundos
+      final expiresIn = session.expiresAt.difference(DateTime.now()).inSeconds;
+      print('[LoginViewModel] ⏰ ExpiresIn calculado: $expiresIn segundos');
+
+      print('[LoginViewModel] 💾 Creando sesión con SessionManager...');
       await SessionManager.instance.createSession(
         user: session.user,
         accessToken: session.accessToken,
         refreshToken: session.refreshToken,
-        expiresIn: session.expiresAt.difference(DateTime.now()).inSeconds,
+        expiresIn: expiresIn,
         rememberMe: _rememberMe,
       );
+
+      print('[LoginViewModel] ✅ Sesión creada en SessionManager');
+      
+      // Verificar inmediatamente el estado del SessionManager
+      final sessionManager = SessionManager.instance;
+      print('[LoginViewModel] 🔍 Verificación inmediata:');
+      print('[LoginViewModel] 🔍   - isLoggedIn: ${sessionManager.isLoggedIn}');
+      print('[LoginViewModel] 🔍   - currentUser: ${sessionManager.currentUser?.username}');
+      print('[LoginViewModel] 🔍   - accessToken presente: ${sessionManager.accessToken != null}');
 
       _lastSuccessfulSession = session;
 
@@ -108,20 +130,25 @@ class LoginViewModel extends ChangeNotifier {
         _email = '';
       }
 
-      print('[LoginViewModel] Login exitoso para: ${session.user.username}');
+      print('[LoginViewModel] 🎉 ========== LOGIN COMPLETADO ==========');
+      print('[LoginViewModel] 🎉 Estado final - isLoggedIn: ${sessionManager.isLoggedIn}');
       return true;
+      
     } on ValidationException catch (e) {
+      print('[LoginViewModel] ❌ ValidationException: ${e.message}');
       _setError(_formatValidationError(e));
       return false;
     } on InvalidCredentialsException catch (e) {
+      print('[LoginViewModel] ❌ InvalidCredentialsException: ${e.message}');
       _setError(e.message);
       return false;
     } on AuthException catch (e) {
+      print('[LoginViewModel] ❌ AuthException: ${e.message}');
       _setError(e.message);
       return false;
     } catch (e) {
+      print('[LoginViewModel] ❌ Error inesperado: $e');
       _setError('Error inesperado. Intenta nuevamente.');
-      print('[LoginViewModel] Error inesperado: $e');
       return false;
     } finally {
       _setLoading(false);

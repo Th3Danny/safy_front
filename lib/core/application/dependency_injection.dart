@@ -12,7 +12,6 @@ import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:safy/report/domain/usecases/get_reports_use_case.dart';
-// ✅ NUEVOS IMPORTS:
 import 'package:safy/report/application/report_di.dart';
 import 'package:safy/report/domain/repositories/report_repository.dart';
 import 'package:safy/report/domain/usecases/get_reports_for_map_use_case.dart';
@@ -26,7 +25,7 @@ final sl = GetIt.instance;
 Future<void> setupDependencyInjection({SharedPreferences? sharedPreferences}) async {
   print('[DI] 🚀 Iniciando configuración de dependencias...');
 
-   // ===== EXTERNAL DEPENDENCIES =====
+  // ===== EXTERNAL DEPENDENCIES =====
   final prefs = sharedPreferences ?? await SharedPreferences.getInstance();
   sl.registerLazySingleton<SharedPreferences>(() => prefs);
 
@@ -41,9 +40,10 @@ Future<void> setupDependencyInjection({SharedPreferences? sharedPreferences}) as
     instanceName: 'public',
   );
 
-  // Registrar SessionManager con las prefs
+  // 👈 CORREGIR REGISTRO DE SESSION MANAGER
+  // No llamar initialize aquí - ya se hace en main
   sl.registerLazySingleton<SessionManager>(
-    () => SessionManager.instance..initialize(prefs: prefs),
+    () => SessionManager.instance,
   );
 
   // Registrar el caso de uso
@@ -51,17 +51,14 @@ Future<void> setupDependencyInjection({SharedPreferences? sharedPreferences}) as
     () => GetReportsForMapUseCase(sl<ReportRepository>()),
   );
 
-  // 👈 NUEVO CASO DE USO
-    sl.registerLazySingleton<GetReportsUseCase>(
-      () => GetReportsUseCase(sl<ReportRepository>()),
-    );
-
-  
+  sl.registerLazySingleton<GetReportsUseCase>(
+    () => GetReportsUseCase(sl<ReportRepository>()),
+  );
 
   // ===== FEATURE DEPENDENCIES =====
   await setupAuthDependencies();
   await setupMapsDependencies();
-  await setupReportDependencies(); // ✅ AGREGADO
+  await setupReportDependencies();
 
   print('[DI] ✅ Todas las dependencias configuradas exitosamente');
 }
@@ -78,24 +75,19 @@ List<SingleChildWidget> getAllProviders() {
     ),
 
     ChangeNotifierProvider<GetReportsViewModel>(
-  create: (_) => sl<GetReportsViewModel>(),
-),
-
+      create: (_) => sl<GetReportsViewModel>(),
+    ),
 
     // ===== MAP PROVIDERS =====
     ChangeNotifierProvider<MapViewModel>(
-  create: (_) => MapViewModel(
-    searchPlacesUseCase: sl<SearchPlacesUseCase>(),
-    getOpenRouteUseCase: sl<GetOpenRouteUseCase>(),
-    getReportsForMapUseCase: sl<GetReportsForMapUseCase>(), // 👈 NUEVO
-    
-  ),
-),
+      create: (_) => MapViewModel(
+        searchPlacesUseCase: sl<SearchPlacesUseCase>(),
+        getOpenRouteUseCase: sl<GetOpenRouteUseCase>(),
+        getReportsForMapUseCase: sl<GetReportsForMapUseCase>(),
+      ),
+    ),
 
-
-
-
-    // ===== REPORT PROVIDERS ===== ✅ AGREGADO
+    // ===== REPORT PROVIDERS =====
     ChangeNotifierProvider<CreateReportViewModel>(
       create: (_) => sl<CreateReportViewModel>(),
     ),

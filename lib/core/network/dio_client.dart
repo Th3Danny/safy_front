@@ -8,7 +8,7 @@ class DioClient {
   DioClient() {
     _dio = Dio(
       BaseOptions(
-        baseUrl: ApiConstants.fullUrl,
+        baseUrl: ApiConstants.baseUrl,
         connectTimeout: Duration(milliseconds: ApiConstants.connectTimeout),
         receiveTimeout: Duration(milliseconds: ApiConstants.receiveTimeout),
         sendTimeout: Duration(milliseconds: ApiConstants.sendTimeout),
