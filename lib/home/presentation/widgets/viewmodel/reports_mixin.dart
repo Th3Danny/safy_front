@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:safy/report/domain/entities/report.dart';
 import 'package:safy/report/domain/usecases/get_reports_for_map_use_case.dart';
-import 'dart:math' as math;
+
 
 /// Mixin para gestión de reportes y zonas peligrosas
 mixin ReportsMixin on ChangeNotifier {
