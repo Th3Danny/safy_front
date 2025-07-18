@@ -26,10 +26,12 @@ class RegisterRequestDto {
   final String username;
   final int age;
   final String gender;
-  final String jobType;
+  final String job;
   final String email;
   final String password;
   final String confirmPassword;
+  final String? phoneNumber;
+  final String role;
 
   const RegisterRequestDto({
     required this.name,
@@ -38,10 +40,12 @@ class RegisterRequestDto {
     required this.username,
     required this.age,
     required this.gender,
-    required this.jobType,
+    required this.job,
     required this.email,
     required this.password,
     required this.confirmPassword,
+    this.phoneNumber,
+    required this.role,
   });
 
   Map<String, dynamic> toJson() => {
@@ -52,10 +56,13 @@ class RegisterRequestDto {
     'username': username.trim().toLowerCase(),
     'age': age,
     'gender': gender,
-    'job_type': jobType,
+    'job': job,
     'email': email.trim().toLowerCase(),
     'password': password,
     'confirm_password': confirmPassword,
+    if (phoneNumber != null && phoneNumber!.isNotEmpty) 
+    'phone_number': null,
+    'role': role,
   };
 
   @override

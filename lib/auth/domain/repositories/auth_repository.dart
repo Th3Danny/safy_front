@@ -15,10 +15,12 @@ abstract class AuthRepository {
     required String username,
     required int age,
     required String gender,
-    required String jobType,
+    required String job,
     required String email,
     required String password,
     required String confirmPassword,
+    String? phoneNumber,
+    required String role,
   });
   
   Future<void> signOut();

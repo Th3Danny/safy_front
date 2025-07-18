@@ -7,8 +7,9 @@ class UserDto {
   final String? secondLastName;
   final String username;
   final String email;
-  final String phoneNumber;
+  final String? phoneNumber;
   final String role;
+  final String job;
   final bool verified;
   final bool isActive;
 
@@ -19,6 +20,7 @@ class UserDto {
     this.secondLastName,
     required this.username,
     required this.email,
+    required this.job,
     required this.phoneNumber,
     required this.role,
     required this.verified,
@@ -35,6 +37,7 @@ class UserDto {
       email: json['email'] ?? '',
       phoneNumber: json['phone_number'] ?? '',
       role: json['role'] ?? '',
+      job: json['job'] ?? '',
       verified: json['verified'] ?? false,
       isActive: json['active'] ?? true,
     );
@@ -49,6 +52,7 @@ class UserDto {
     'email': email,
     'phone_number': phoneNumber,
     'role': role,
+    'job': job,
     'verified': verified,
     'active': isActive,
   };
@@ -61,6 +65,7 @@ class UserDto {
       secondLastName: secondLastName,
       username: username,
       email: email,
+      job: job,
       phoneNumber: phoneNumber,
       role: role,
       verified: verified,

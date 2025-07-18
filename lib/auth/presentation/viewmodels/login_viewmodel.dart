@@ -84,9 +84,7 @@ class LoginViewModel extends ChangeNotifier {
     _setLoading(true);
     _clearError();
 
-    print('[LoginViewModel] 🔐 ========== INICIANDO LOGIN ==========');
-    print('[LoginViewModel] 📧 Email: $_email');
-    print('[LoginViewModel] 💾 RememberMe: $_rememberMe');
+
 
     try {
       print('[LoginViewModel] 🌐 Llamando a SignInUseCase...');
