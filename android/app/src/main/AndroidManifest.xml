@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.safy">
+    package="com.safy.app">
 
     <!-- Permisos para Google Maps -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -8,6 +8,13 @@
       <!-- Solo permisos básicos para flutter_map -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- Permisos para Firebase -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:label="Safy App"
@@ -18,7 +25,10 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAr6Jxjz66y0GD-6XH6uO9QPMd8ODyTdrQ"/>
-        
+        <!-- Configuración de firebase -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="default_channel" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

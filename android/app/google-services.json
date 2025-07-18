@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "459641136863",
+    "project_id": "safy-2f125",
+    "storage_bucket": "safy-2f125.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:459641136863:android:0b66a57d4d8f8279cbeb6a",
+        "android_client_info": {
+          "package_name": "com.safy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGzeV7VyuGLgO6tDIKC3qORdhYpnglOes"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

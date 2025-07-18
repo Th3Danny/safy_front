@@ -2,11 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:safy/core/application/dependency_injection.dart';
 import 'package:safy/core/router/app_router.dart';
+import 'package:safy/core/services/firebase_messaging_service.dart';
 import 'package:safy/core/session/session_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:safy/core/services/firebase_message_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 🔥 Inicializar Firebase
+  await Firebase.initializeApp();
+  await FirebaseMessagingService().init();
+
+  // 👂 Escuchar mensajes en segundo plano
+  FirebaseMessaging.onBackgroundMessage(firebaseBackgroundMessageHandler);
 
   print('[Main] 🚀 ========== INICIANDO SAFY ==========');
 
@@ -15,7 +26,7 @@ void main() async {
     print('[Main] 📱 Paso 1: Inicializando SharedPreferences...');
     final prefs = await SharedPreferences.getInstance();
     print('[Main] ✅ SharedPreferences OK');
-    
+
     // DEBUG: Verificar si hay datos almacenados
     final storedToken = prefs.getString('access_token');
     final storedUser = prefs.getString('user_data');
@@ -28,7 +39,7 @@ void main() async {
     // 2. Inicializar SessionManager
     print('[Main] 🔐 Paso 2: Inicializando SessionManager...');
     await SessionManager.instance.initialize(prefs: prefs);
-    
+
     // DEBUG: Verificar estado del SessionManager después de initialize
     print('[Main] 🔍 VERIFICACIÓN POST-INICIALIZACIÓN:');
     SessionManager.instance.debugSessionState();
@@ -39,11 +50,15 @@ void main() async {
     await setupDependencyInjection(sharedPreferences: prefs);
     print('[Main] ✅ Dependencias OK');
 
+    // 👇 Iniciar el servicio de notificaciones
+    await sl<FirebaseMessagingService>().init();
+
     print('[Main] 🎉 ========== INICIALIZACIÓN COMPLETA ==========');
-    print('[Main] 🎉 Estado final - Usuario logueado: ${SessionManager.instance.isLoggedIn}');
-    
+    print(
+      '[Main] 🎉 Estado final - Usuario logueado: ${SessionManager.instance.isLoggedIn}',
+    );
+
     runApp(const MyApp());
-    
   } catch (e, stackTrace) {
     print('[Main] ❌ ========== ERROR CRÍTICO ==========');
     print('[Main] ❌ Error: $e');
@@ -53,13 +68,19 @@ void main() async {
   }
 }
 
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print('[📡 Background] Mensaje recibido: ${message.messageId}');
+}
+
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     print('[MyApp] 🏗️ Construyendo MyApp...');
-    
+
     return MultiProvider(
       providers: getAllProviders(),
       child: MaterialApp.router(
@@ -78,7 +99,7 @@ class MyApp extends StatelessWidget {
 
 class ErrorApp extends StatelessWidget {
   final String error;
-  
+
   const ErrorApp({super.key, required this.error});
 
   @override
@@ -92,11 +113,7 @@ class ErrorApp extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline, 
-                  size: 64, 
-                  color: Colors.red.shade600,
-                ),
+                Icon(Icons.error_outline, size: 64, color: Colors.red.shade600),
                 const SizedBox(height: 24),
                 Text(
                   'Error al iniciar la aplicación',
@@ -117,10 +134,7 @@ class ErrorApp extends StatelessWidget {
                   ),
                   child: Text(
                     error,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.red.shade700,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.red.shade700),
                     textAlign: TextAlign.center,
                   ),
                 ),
