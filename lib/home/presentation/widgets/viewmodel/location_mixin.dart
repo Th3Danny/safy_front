@@ -3,8 +3,17 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
 
+import 'package:safy/core/services/notification_service.dart';
+
 /// Mixin para gestión de ubicación del usuario
 mixin LocationMixin on ChangeNotifier {
+
+  // Agrega esta propiedad para las zonas peligrosas
+  List<LatLng> _dangerZones = [];
+
+  final Distance _distance = Distance();
+
+  
   
   // Propiedades de ubicación
   late LatLng _currentLocation;
@@ -67,15 +76,46 @@ mixin LocationMixin on ChangeNotifier {
       },
     );
   }
+  
+  void setDangerZones(List<LatLng> zones) {
+    _dangerZones = zones;
+  }
+  // void updateCurrentPosition(Position position) {
+  //   final newLocation = LatLng(position.latitude, position.longitude);
+  //   _currentLocation = newLocation;
+    
+  //   // Callback para el ViewModel principal
+  //   onLocationUpdated(newLocation);
+  //   notifyListeners();
+  // }
 
   void updateCurrentPosition(Position position) {
     final newLocation = LatLng(position.latitude, position.longitude);
     _currentLocation = newLocation;
-    
+
+    // Notificar si está cerca de una zona peligrosa
+    _checkProximityToDangerZones(newLocation);
+
     // Callback para el ViewModel principal
     onLocationUpdated(newLocation);
     notifyListeners();
   }
+
+  void _checkProximityToDangerZones(LatLng currentLocation) {
+    for (final zone in _dangerZones) {
+      final meters = Distance().call(currentLocation, zone);
+      if (meters < 200) {
+        NotificationService().showNotification(
+          id: 1,
+          title: 'Zona peligrosa cercana',
+          body: 'Estás a menos de 200 metros de una zona con reportes.',
+        );
+        break;
+      }
+    }
+  }
+
+  
 
   void startNavigation() {
     _isNavigating = true;
@@ -83,6 +123,8 @@ mixin LocationMixin on ChangeNotifier {
     startLocationTracking();
     notifyListeners();
   }
+
+  
 
   void stopNavigation() {
     _isNavigating = false;
