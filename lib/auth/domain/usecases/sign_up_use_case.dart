@@ -14,10 +14,12 @@ class SignUpUseCase {
     required String username,
     required int age,
     required String gender,
-    required String jobType,
+    required String job,
     required String email,
     required String password,
     required String confirmPassword,
+    String? phoneNumber, 
+    required String role,
   }) async {
     // Validaciones de negocio
     _validateRegistrationData(
@@ -28,6 +30,9 @@ class SignUpUseCase {
       email: email,
       password: password,
       confirmPassword: confirmPassword,
+      phoneNumber: null,
+      job: job,
+      role: role,
     );
 
     return await _repository.signUp(
@@ -37,10 +42,12 @@ class SignUpUseCase {
       username: username.trim().toLowerCase(),
       age: age,
       gender: gender,
-      jobType: jobType,
+      role: role,
+      job: job,
       email: email.trim().toLowerCase(),
       password: password,
       confirmPassword: confirmPassword,
+      phoneNumber: null,
     );
   }
 
@@ -52,6 +59,9 @@ class SignUpUseCase {
     required String email,
     required String password,
     required String confirmPassword,
+    String? phoneNumber,
+    required String job,
+    required String role,
   }) {
     final errors = <String, List<String>>{};
 

@@ -8,13 +8,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  print('[Main] 🚀 ========== INICIANDO SAFY ==========');
-
   try {
     // 1. Inicializar SharedPreferences
-    print('[Main] 📱 Paso 1: Inicializando SharedPreferences...');
+
     final prefs = await SharedPreferences.getInstance();
-    print('[Main] ✅ SharedPreferences OK');
+
     
     // DEBUG: Verificar si hay datos almacenados
     final storedToken = prefs.getString('access_token');
@@ -26,29 +24,25 @@ void main() async {
     }
 
     // 2. Inicializar SessionManager
-    print('[Main] 🔐 Paso 2: Inicializando SessionManager...');
+ 
     await SessionManager.instance.initialize(prefs: prefs);
     
     // DEBUG: Verificar estado del SessionManager después de initialize
-    print('[Main] 🔍 VERIFICACIÓN POST-INICIALIZACIÓN:');
+ 
     SessionManager.instance.debugSessionState();
-    print('[Main] ✅ SessionManager OK');
 
     // 3. Configurar dependencias
-    print('[Main] 🔧 Paso 3: Configurando dependencias...');
     await setupDependencyInjection(sharedPreferences: prefs);
-    print('[Main] ✅ Dependencias OK');
 
-    print('[Main] 🎉 ========== INICIALIZACIÓN COMPLETA ==========');
     print('[Main] 🎉 Estado final - Usuario logueado: ${SessionManager.instance.isLoggedIn}');
     
     runApp(const MyApp());
     
   } catch (e, stackTrace) {
-    print('[Main] ❌ ========== ERROR CRÍTICO ==========');
-    print('[Main] ❌ Error: $e');
-    print('[Main] ❌ StackTrace: $stackTrace');
-    print('[Main] ❌ =====================================');
+    print('[Main]  ========== ERROR CRÍTICO ==========');
+    print('[Main]  Error: $e');
+    print('[Main]  StackTrace: $stackTrace');
+
     runApp(ErrorApp(error: e.toString()));
   }
 }
@@ -58,7 +52,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('[MyApp] 🏗️ Construyendo MyApp...');
     
     return MultiProvider(
       providers: getAllProviders(),

@@ -123,6 +123,7 @@ mixin RouteMixin on ChangeNotifier {
       );
 
       selectRoute(recommendedRoute);
+      onRoutesPanelShow();
     } catch (e) {
       onRouteError('Error calculando rutas: $e');
     }
@@ -345,6 +346,8 @@ mixin RouteMixin on ChangeNotifier {
   void onRouteSelected(RouteOption route);
   void onRoutesCleared();
   void onRouteError(String error);
+  void onRoutesPanelShow();
+
 }
 
 // Clase RouteOption

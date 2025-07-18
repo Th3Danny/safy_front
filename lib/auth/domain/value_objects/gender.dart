@@ -1,8 +1,8 @@
 enum Gender {
-  male('male', 'Masculino'),
-  female('female', 'Femenino'),
-  other('other', 'Otro'),
-  preferNotToSay('prefer_not_to_say', 'Prefiero no decir');
+  male('MALE', 'Masculino'),
+  female('FEMALE', 'Femenino'),
+  other('OTHER', 'Otro'),
+  preferNotToSay('PREFER_NOT_TO_SAY', 'Prefiero no decir');
 
   const Gender(this.value, this.displayName);
 

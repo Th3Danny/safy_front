@@ -93,17 +93,17 @@ class _RegisterForm02State extends State<RegisterForm02> {
         }
       });
 
-      // ✅ Navegar al home si registro fue exitoso
+      // ✅ Navegar al login si registro fue exitoso
       if (_registerViewModel.lastSuccessfulSession != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('¡Registro exitoso! Bienvenido a Safy'),
+                content: Text('¡Registro exitoso! Ahora puedes iniciar sesión.'),
                 backgroundColor: Colors.green,
               ),
             );
-            context.go(AppRoutesConstant.home);
+            context.go(AppRoutesConstant.login);
           }
         });
       }
@@ -268,6 +268,31 @@ class _RegisterForm02State extends State<RegisterForm02> {
 
           const SizedBox(height: 16),
 
+          // Phone Number field
+          // CustomTextField( 
+          //   controller: TextEditingController(text: _registerViewModel.phoneNumber),
+          //   label: 'Phone Number',
+          //   hint: '123-456-7890',
+          //   keyboardType: TextInputType.phone,
+          //   onChanged: (value) {
+          //     if (!_isLoadingData) {
+          //       _registerViewModel.setPhoneNumber(value);
+          //     }
+          //   },
+          //   validator: (value) {
+          //     final error = _registerViewModel.getFieldError('phoneNumber');
+          //     if (error != null) return error;
+
+          //     if (value == null || value.trim().isEmpty) {
+          //       return 'Phone number is required';
+          //     }
+          //     if (!RegExp(r'^\+?[0-9\s\-()]+$').hasMatch(value.trim())) {
+          //       return 'Enter a valid phone number';
+          //     }
+          //     return null;
+          //   },
+          // ),
+
           // Password field
           CustomTextField(
             controller: _passwordController,
@@ -376,8 +401,8 @@ class _RegisterForm02State extends State<RegisterForm02> {
 
 // ✅ Widget para conectar JobSelector con JobType enum
 class _JobSelectorConnected extends StatelessWidget {
-  final JobType selectedJobType;
-  final ValueChanged<JobType> onJobSelected;
+  final Job selectedJobType;
+  final ValueChanged<Job> onJobSelected;
 
   const _JobSelectorConnected({
     required this.selectedJobType,
@@ -388,11 +413,11 @@ class _JobSelectorConnected extends StatelessWidget {
   Widget build(BuildContext context) {
     return JobSelector(
       selectedJob: selectedJobType.displayName,
-      jobs: JobType.values.map((job) => job.displayName).toList(),
+      jobs: Job.values.map((job) => job.displayName).toList(),
       onJobSelected: (jobDisplayName) {
-        final jobType = JobType.values.firstWhere(
+        final jobType = Job.values.firstWhere(
           (job) => job.displayName == jobDisplayName,
-          orElse: () => JobType.student,
+          orElse: () => Job.student,
         );
         onJobSelected(jobType);
       },

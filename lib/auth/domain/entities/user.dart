@@ -5,7 +5,8 @@ class UserInfoEntity {
   final String? secondLastName;
   final String username;
   final String email;
-  final String phoneNumber;
+  final String? phoneNumber;
+  final String job;
   final String role;
   final bool verified;
   final bool isActive;
@@ -19,6 +20,7 @@ class UserInfoEntity {
     required this.email,
     required this.phoneNumber,
     required this.role,
+    required this.job,
     required this.verified,
     required this.isActive,
   });

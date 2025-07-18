@@ -16,19 +16,18 @@ import '../widgets/viewmodel/markers_mixin.dart';
 
 /// ViewModel principal del mapa que integra todas las funcionalidades
 /// usando mixins para mejor organización y mantenibilidad
-class MapViewModel extends ChangeNotifier 
+class MapViewModel extends ChangeNotifier
     with LocationMixin, RouteMixin, ReportsMixin, SearchMixin, MarkersMixin {
-
   // ============================================================================
   // DEPENDENCIAS E INYECCIÓN
   // ============================================================================
-  
+
   @override
   final SearchPlacesUseCase? searchPlacesUseCase;
-  
+
   @override
   final GetOpenRouteUseCase? getOpenRouteUseCase;
-  
+
   @override
   final GetReportsForMapUseCase? getReportsForMapUseCase;
 
@@ -41,7 +40,7 @@ class MapViewModel extends ChangeNotifier
   // ============================================================================
   // CONFIGURACIÓN DEL MAPA
   // ============================================================================
-  
+
   final MapController _mapController = MapController();
   MapController get mapController => _mapController;
 
@@ -50,6 +49,9 @@ class MapViewModel extends ChangeNotifier
 
   bool _mapReady = false;
   bool get mapReady => _mapReady;
+
+  bool _showRoutePanel = false; // ← AGREGAR ESTO
+  bool get showRoutePanel => _showRoutePanel; // ← AGREGAR ESTO
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
@@ -149,6 +151,14 @@ class MapViewModel extends ChangeNotifier
   @override
   void onRoutesCleared() {
     clearRouteMarkers();
+    hideRoutePanel(); // ← AGREGAR ESTO
+  }
+
+  @override
+  void onRoutesPanelShow() {
+    // ← CAMBIAR A ESTO
+    _showRoutePanel = true;
+    notifyListeners();
   }
 
   @override
@@ -176,7 +186,11 @@ class MapViewModel extends ChangeNotifier
   }
 
   @override
-  void onPlaceSelected(Place place, LatLng placeLocation, LatLng currentLocation) {
+  void onPlaceSelected(
+    Place place,
+    LatLng placeLocation,
+    LatLng currentLocation,
+  ) {
     _mapController.move(placeLocation, 15.0);
     addDestinationMarker(placeLocation, place.displayName);
     setEndPoint(placeLocation);
@@ -209,6 +223,11 @@ class MapViewModel extends ChangeNotifier
 
   Future<void> searchAndSelectPlace(String query) async {
     await searchPlaces(query, currentLocation);
+  }
+
+  void hideRoutePanel() {
+    _showRoutePanel = false;
+    notifyListeners();
   }
 
   void clearError() {

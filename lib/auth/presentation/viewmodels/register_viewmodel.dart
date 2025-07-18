@@ -9,7 +9,9 @@ class RegisterViewModel extends ChangeNotifier {
   final SignUpUseCase _signUpUseCase;
 
   RegisterViewModel(this._signUpUseCase) {
-    print('[RegisterViewModel] Constructor llamado - hashCode: ${this.hashCode}');
+    print(
+      '[RegisterViewModel] Constructor llamado - hashCode: ${this.hashCode}',
+    );
   }
 
   // Estado del formulario - Página 1 (Datos personales)
@@ -21,12 +23,13 @@ class RegisterViewModel extends ChangeNotifier {
   Gender _selectedGender = Gender.preferNotToSay;
 
   // Estado del formulario - Página 2 (Cuenta y trabajo)
-  JobType _selectedJobType = JobType.student;
+  Job _selectedJobType = Job.student;
   String _email = '';
   String _password = '';
   String _confirmPassword = '';
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  String? _phoneNumber = null;
 
   // Estado de la UI
   bool _isLoading = false;
@@ -44,8 +47,9 @@ class RegisterViewModel extends ChangeNotifier {
   Gender get selectedGender => _selectedGender;
 
   // Getters - Página 2
-  JobType get selectedJobType => _selectedJobType;
+  Job get selectedJobType => _selectedJobType;
   String get email => _email;
+  String get phoneNumber => _phoneNumber ?? '';
   String get password => _password;
   String get confirmPassword => _confirmPassword;
   bool get isPasswordVisible => _isPasswordVisible;
@@ -61,22 +65,24 @@ class RegisterViewModel extends ChangeNotifier {
 
   // 🔧 Validaciones de página mejoradas
   bool get canGoToNextPage {
-    final isValid = _name.isNotEmpty &&
+    final isValid =
+        _name.isNotEmpty &&
         _lastName.isNotEmpty &&
         _username.isNotEmpty &&
         _username.length >= 3 &&
         _age >= 13;
-    
+
     return isValid;
   }
 
   bool get canSubmit {
-    final isValid = _email.isNotEmpty &&
+    final isValid =
+        _email.isNotEmpty &&
         _password.isNotEmpty &&
         _confirmPassword.isNotEmpty &&
         _password == _confirmPassword &&
         !_isLoading;
-    
+
     return isValid;
   }
 
@@ -86,7 +92,9 @@ class RegisterViewModel extends ChangeNotifier {
     if (_name != trimmedName) {
       _name = trimmedName;
       _clearFieldError('name');
-      print('[RegisterViewModel] setName: "$_name" (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] setName: "$_name" (hashCode: ${this.hashCode})',
+      );
       notifyListeners();
     }
   }
@@ -96,7 +104,9 @@ class RegisterViewModel extends ChangeNotifier {
     if (_lastName != trimmedLastName) {
       _lastName = trimmedLastName;
       _clearFieldError('lastName');
-      print('[RegisterViewModel] setLastName: "$_lastName" (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] setLastName: "$_lastName" (hashCode: ${this.hashCode})',
+      );
       notifyListeners();
     }
   }
@@ -105,7 +115,9 @@ class RegisterViewModel extends ChangeNotifier {
     final trimmedSecondLastName = secondLastName.trim();
     if (_secondLastName != trimmedSecondLastName) {
       _secondLastName = trimmedSecondLastName;
-      print('[RegisterViewModel] setSecondLastName: "$_secondLastName" (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] setSecondLastName: "$_secondLastName" (hashCode: ${this.hashCode})',
+      );
       notifyListeners();
     }
   }
@@ -115,7 +127,9 @@ class RegisterViewModel extends ChangeNotifier {
     if (_username != trimmedUsername) {
       _username = trimmedUsername;
       _clearFieldError('username');
-      print('[RegisterViewModel] setUsername: "$_username" (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] setUsername: "$_username" (hashCode: ${this.hashCode})',
+      );
       notifyListeners();
     }
   }
@@ -132,16 +146,20 @@ class RegisterViewModel extends ChangeNotifier {
   void setGender(Gender gender) {
     if (_selectedGender != gender) {
       _selectedGender = gender;
-      print('[RegisterViewModel] setGender: ${_selectedGender.value} (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] setGender: ${_selectedGender.value} (hashCode: ${this.hashCode})',
+      );
       notifyListeners();
     }
   }
 
   // Setters - Página 2
-  void setJobType(JobType jobType) {
+  void setJobType(Job jobType) {
     if (_selectedJobType != jobType) {
       _selectedJobType = jobType;
-      print('[RegisterViewModel] setJobType: ${_selectedJobType.value} (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] setJobType: ${_selectedJobType.value} (hashCode: ${this.hashCode})',
+      );
       notifyListeners();
     }
   }
@@ -151,16 +169,22 @@ class RegisterViewModel extends ChangeNotifier {
     if (_email != trimmedEmail) {
       _email = trimmedEmail;
       _clearFieldError('email');
-      print('[RegisterViewModel] setEmail: "$_email" (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] setEmail: "$_email" (hashCode: ${this.hashCode})',
+      );
       notifyListeners();
     }
   }
+
+
 
   void setPassword(String password) {
     if (_password != password) {
       _password = password;
       _clearFieldError('password');
-      print('[RegisterViewModel] setPassword: "${password.isNotEmpty ? "***" : ""}" (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] setPassword: "${password.isNotEmpty ? "***" : ""}" (hashCode: ${this.hashCode})',
+      );
       notifyListeners();
     }
   }
@@ -169,7 +193,9 @@ class RegisterViewModel extends ChangeNotifier {
     if (_confirmPassword != confirmPassword) {
       _confirmPassword = confirmPassword;
       _clearFieldError('confirmPassword');
-      print('[RegisterViewModel] setConfirmPassword: "${confirmPassword.isNotEmpty ? "***" : ""}" (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] setConfirmPassword: "${confirmPassword.isNotEmpty ? "***" : ""}" (hashCode: ${this.hashCode})',
+      );
       notifyListeners();
     }
   }
@@ -189,10 +215,14 @@ class RegisterViewModel extends ChangeNotifier {
     if (_currentPage < 1 && canGoToNextPage) {
       _currentPage++;
       _clearError(); // SOLO limpiar errores, NO datos
-      print('[RegisterViewModel] nextPage: $_currentPage (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] nextPage: $_currentPage (hashCode: ${this.hashCode})',
+      );
       // 🔧 NO llamar notifyListeners() aquí para evitar setState durante navegación
     } else {
-      print('[RegisterViewModel] nextPage: No se puede avanzar. canGoToNextPage: $canGoToNextPage (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] nextPage: No se puede avanzar. canGoToNextPage: $canGoToNextPage (hashCode: ${this.hashCode})',
+      );
     }
   }
 
@@ -200,7 +230,9 @@ class RegisterViewModel extends ChangeNotifier {
     if (_currentPage > 0) {
       _currentPage--;
       _clearError(); // SOLO limpiar errores, NO datos
-      print('[RegisterViewModel] previousPage: $_currentPage (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] previousPage: $_currentPage (hashCode: ${this.hashCode})',
+      );
       // 🔧 NO llamar notifyListeners() aquí para evitar setState durante navegación
     }
   }
@@ -210,7 +242,9 @@ class RegisterViewModel extends ChangeNotifier {
     if (page >= 0 && page <= 1) {
       _currentPage = page;
       _clearError(); // SOLO limpiar errores, NO datos
-      print('[RegisterViewModel] goToPage: $_currentPage (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] goToPage: $_currentPage (hashCode: ${this.hashCode})',
+      );
       // 🔍 Imprimir estado actual después del cambio de página
       printCurrentState();
       // 🔧 NO llamar notifyListeners() aquí para evitar setState durante initState
@@ -242,15 +276,18 @@ class RegisterViewModel extends ChangeNotifier {
 
   // Limpiar formulario completo
   void clearForm() {
-    print('[RegisterViewModel] clearForm: Limpiando formulario (hashCode: ${this.hashCode})');
+    print(
+      '[RegisterViewModel] clearForm: Limpiando formulario (hashCode: ${this.hashCode})',
+    );
     _name = '';
     _lastName = '';
     _secondLastName = '';
     _username = '';
     _age = 18;
     _selectedGender = Gender.preferNotToSay;
-    _selectedJobType = JobType.student;
+    _selectedJobType = Job.student;
     _email = '';
+    _phoneNumber = null;
     _password = '';
     _confirmPassword = '';
     _isPasswordVisible = false;
@@ -289,7 +326,9 @@ class RegisterViewModel extends ChangeNotifier {
   // Método principal de registro
   Future<bool> signUp() async {
     if (!canSubmit) {
-      print('[RegisterViewModel] signUp: No se puede enviar. canSubmit: $canSubmit (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] signUp: No se puede enviar. canSubmit: $canSubmit (hashCode: ${this.hashCode})',
+      );
       return false;
     }
 
@@ -299,9 +338,11 @@ class RegisterViewModel extends ChangeNotifier {
 
     try {
       // 🔍 Imprimir estado antes de enviar
-      print('[RegisterViewModel] Intentando registrar con los siguientes datos (hashCode: ${this.hashCode}):');
+      print(
+        '[RegisterViewModel] Intentando registrar con los siguientes datos (hashCode: ${this.hashCode}):',
+      );
       printCurrentState();
-      
+
       final session = await _signUpUseCase.execute(
         name: _name,
         lastName: _lastName,
@@ -309,15 +350,19 @@ class RegisterViewModel extends ChangeNotifier {
         username: _username,
         age: _age,
         gender: _selectedGender.value,
-        jobType: _selectedJobType.value,
+        job: _selectedJobType.value,
         email: _email,
         password: _password,
         confirmPassword: _confirmPassword,
+        phoneNumber: null,
+        role: 'CITIZEN', // Asignar rol por defecto
       );
 
       _lastSuccessfulSession = session;
 
-      print('[RegisterViewModel] Registro exitoso para: ${session.user.username} (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] Registro exitoso para: ${session.user.username} (hashCode: ${this.hashCode})',
+      );
       return true;
     } on ValidationException catch (e) {
       _handleValidationError(e);
@@ -335,7 +380,9 @@ class RegisterViewModel extends ChangeNotifier {
       return false;
     } catch (e) {
       _setError('Error inesperado durante el registro. Intenta nuevamente.');
-      print('[RegisterViewModel] Error inesperado: $e (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] Error inesperado: $e (hashCode: ${this.hashCode})',
+      );
       return false;
     } finally {
       _setLoading(false);
@@ -367,7 +414,9 @@ class RegisterViewModel extends ChangeNotifier {
 
     if (hasPage1Errors && _currentPage == 1) {
       _currentPage = 0;
-      print('[RegisterViewModel] Errores en página 1, regresando... (hashCode: ${this.hashCode})');
+      print(
+        '[RegisterViewModel] Errores en página 1, regresando... (hashCode: ${this.hashCode})',
+      );
     }
 
     _setError(e.message);

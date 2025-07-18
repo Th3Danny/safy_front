@@ -59,10 +59,12 @@ class AuthRepositoryImpl implements AuthRepository {
     required String username,
     required int age,
     required String gender,
-    required String jobType,
+    required String job,
     required String email,
     required String password,
     required String confirmPassword,
+    String? phoneNumber,
+    required String role,
   }) async {
     try {
       //  SINTAXIS CORRECTA: Constructor de RegisterRequestDto
@@ -73,10 +75,12 @@ class AuthRepositoryImpl implements AuthRepository {
         username: username,
         age: age,
         gender: gender,
-        jobType: jobType,
+        job: job,
         email: email,
         password: password,
         confirmPassword: confirmPassword,
+        phoneNumber: phoneNumber,
+        role: role, // Asignar rol por defecto
       );
 
       final response = await _apiClient.signUp(requestDto);
