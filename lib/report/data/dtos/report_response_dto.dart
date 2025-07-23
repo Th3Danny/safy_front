@@ -50,37 +50,35 @@ class ReportResponseDto {
   });
 
   factory ReportResponseDto.fromJson(Map<String, dynamic> json) {
-    // 🔥 LA RESPUESTA REAL: el reporte está directamente en 'data'
-    final data = json['data'] as Map<String, dynamic>;
-    
+    // ✅ CORRECCIÓN: Los reportes están directamente en el JSON, sin wrapper 'data'
     return ReportResponseDto(
-      id: data['id'],
-      title: data['title'],
-      description: data['description'],
-      incidentType: data['incident_type'],
-      status: data['status'],
-      latitude: (data['latitude'] as num).toDouble(),
-      longitude: (data['longitude'] as num).toDouble(),
-      address: data['address'],
-      reporterName: data['reporter_name'],
-      isAnonymous: data['is_anonymous'],
-      severity: data['severity'],
-      imageUrl: data['image_url'],
-      audioUrl: data['audio_url'],
-      // 🔥 CAMPOS NULLABLE - pueden ser null según tu respuesta
-      createdAt: data['created_at'] != null ? _parseDateTime(data['created_at']) : null,
-      updatedAt: data['updated_at'] != null ? _parseDateTime(data['updated_at']) : null,
-      verifiedBy: data['verified_by'],
-      verifiedAt: data['verified_at'] != null ? _parseDateTime(data['verified_at']) : null,
-      verificationNotes: data['verification_notes'],
-      resolvedBy: data['resolved_by'],
-      resolvedAt: data['resolved_at'] != null ? _parseDateTime(data['resolved_at']) : null,
-      resolutionNotes: data['resolution_notes'],
-      comments: data['comments'],
+      id: json['id'],
+      title: json['title'],
+      description: json['description'],
+      incidentType: json['incident_type'],
+      status: json['status'],
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      address: json['address'],
+      reporterName: json['reporter_name'],
+      isAnonymous: json['is_anonymous'],
+      severity: json['severity'],
+      imageUrl: json['image_url'],
+      audioUrl: json['audio_url'],
+      // ✅ CAMPOS NULLABLE - pueden ser null según tu respuesta
+      createdAt: json['created_at'] != null ? _parseDateTime(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? _parseDateTime(json['updated_at']) : null,
+      verifiedBy: json['verified_by'],
+      verifiedAt: json['verified_at'] != null ? _parseDateTime(json['verified_at']) : null,
+      verificationNotes: json['verification_notes'],
+      resolvedBy: json['resolved_by'],
+      resolvedAt: json['resolved_at'] != null ? _parseDateTime(json['resolved_at']) : null,
+      resolutionNotes: json['resolution_notes'],
+      comments: json['comments'],
     );
   }
 
-  // 🔥 MÉTODO PARA PARSEAR FECHAS (maneja null y diferentes formatos)
+  // ✅ MÉTODO PARA PARSEAR FECHAS (maneja null y diferentes formatos)
   static DateTime? _parseDateTime(dynamic dateValue) {
     if (dateValue == null) return null;
     
@@ -115,7 +113,7 @@ class ReportResponseDto {
     return null;
   }
 
-  // 🔥 CONVERTIR A ENTIDAD DE DOMINIO
+  // ✅ CONVERTIR A ENTIDAD DE DOMINIO
   ReportInfoEntity toDomainEntity() {
     return ReportInfoEntity(
       id: id.toString(), 

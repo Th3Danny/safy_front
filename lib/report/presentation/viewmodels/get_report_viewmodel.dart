@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:safy/report/domain/entities/report.dart';
 import 'package:safy/report/domain/exceptions/report_exceptions.dart';
-import 'package:safy/report/domain/usecases/get_report.dart';
+import 'package:safy/report/domain/usecases/get_report_by_id.dart';
 
 
 class GetReportViewModel extends ChangeNotifier {

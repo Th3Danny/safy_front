@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:safy/auth/domain/exceptions/auth_exceptions.dart';
 import 'package:safy/report/data/dtos/report_request_dto.dart';
+import 'package:safy/report/data/dtos/report_response_dto.dart';
 import 'package:safy/report/domain/entities/cluster_entity.dart';
 import 'package:safy/report/domain/entities/report.dart';
 import 'package:safy/report/domain/exceptions/report_exceptions.dart';
@@ -23,7 +24,9 @@ class ReportRepositoryImpl implements ReportRepository {
     int? maxHoursAgo,
   }) async {
     try {
-      print('[ClusterRepository] 📍 Obteniendo clusters cerca de: $latitude, $longitude');
+      print(
+        '[ClusterRepository] 📍 Obteniendo clusters cerca de: $latitude, $longitude',
+      );
 
       final clusterDtos = await _apiClient.getClusters(
         latitude: latitude,
@@ -31,9 +34,9 @@ class ReportRepositoryImpl implements ReportRepository {
       );
 
       final clusters = clusterDtos.map((dto) => dto.toDomainEntity()).toList();
-      
+
       print('[ClusterRepository] ✅ Procesados ${clusters.length} clusters');
-      
+
       return clusters;
     } catch (e) {
       print('[ClusterRepository] ❌ Error: $e');
@@ -50,31 +53,41 @@ class ReportRepositoryImpl implements ReportRepository {
     double? longitude,
   }) async {
     try {
-      // Validar que se proporcionen coordenadas para reportes cercanos
+      List<ReportResponseDto> responseDtos;
+
+      // 🔧 Si NO hay coordenadas → obtener MIS reportes
       if (latitude == null || longitude == null) {
-        throw ReportExceptions('Se requieren coordenadas para obtener reportes cercanos');
+        print(
+          '[ReportRepository] 📋 Obteniendo MIS reportes para usuario: $userId',
+        );
+
+        responseDtos = await _apiClient.getMyReports(
+          page: page,
+          pageSize: pageSize,
+        );
+      }
+      // 🔧 Si HAY coordenadas → obtener reportes cercanos
+      else {
+        print(
+          '[ReportRepository] 📍 Obteniendo reportes cercanos en: $latitude, $longitude',
+        );
+
+        responseDtos = await _apiClient.getMyReports(
+          page: page,
+          pageSize: pageSize,
+        );
       }
 
-      print('[ReportRepository] 📍 Obteniendo reportes cercanos en: $latitude, $longitude');
-
-      final responseDtos = await _apiClient.getReports(
-        userId: userId,
-        latitude: latitude,
-        longitude: longitude,
-        page: page,
-        pageSize: pageSize,
-      );
-
       final reports = responseDtos.map((dto) => dto.toDomainEntity()).toList();
-      
+
       print('[ReportRepository] ✅ Procesados ${reports.length} reportes');
-      
+
       return reports;
     } on ReportExceptions {
       rethrow;
     } catch (e) {
       print('[ReportRepository] ❌ Error: $e');
-      throw ReportExceptions('Error al obtener los reportes cercanos: $e');
+      throw ReportExceptions('Error al obtener los reportes: $e');
     }
   }
 
@@ -89,46 +102,46 @@ class ReportRepositoryImpl implements ReportRepository {
   }
 
   @override
-Future<ReportInfoEntity> createReport({
-  required String title,
-  required String description,
-  required String incident_type,
-  required double latitude,
-  required double longitude,
-  String? address,
-  required String reporterName,
-  String? reporterEmail,
-  required int severity,
-  required bool isAnonymous,
-  //required DateTime dateTime,
-}) async {
-  try {
-    final requestDto = ReportRequestDto(
-      title: title,
-      description: description,
-      incident_type: incident_type,
-      latitude: latitude,
-      longitude: longitude,
-      address: address,
-      reporter_name: reporterName,
-      reporter_email: reporterEmail,
-      severity: severity,
-      is_anonymous: isAnonymous,
-      //dateTime: dateTime,
-    );
+  Future<ReportInfoEntity> createReport({
+    required String title,
+    required String description,
+    required String incident_type,
+    required double latitude,
+    required double longitude,
+    String? address,
+    required String reporterName,
+    String? reporterEmail,
+    required int severity,
+    required bool isAnonymous,
+    //required DateTime dateTime,
+  }) async {
+    try {
+      final requestDto = ReportRequestDto(
+        title: title,
+        description: description,
+        incident_type: incident_type,
+        latitude: latitude,
+        longitude: longitude,
+        address: address,
+        reporter_name: reporterName,
+        reporter_email: reporterEmail,
+        severity: severity,
+        is_anonymous: isAnonymous,
+        //dateTime: dateTime,
+      );
 
-    final responseDto = await _apiClient.createReport(requestDto);
-    return responseDto.toDomainEntity();
-  } on DioException catch (e) {
-    throw __mapDioErrorToReportException(e);
-  } on AuthException {
-    rethrow;
-  } catch (e) {
-    throw AuthException(
-      'Error inesperado durante el registro: ${e.toString()}',
-    );
+      final responseDto = await _apiClient.createReport(requestDto);
+      return responseDto.toDomainEntity();
+    } on DioException catch (e) {
+      throw __mapDioErrorToReportException(e);
+    } on AuthException {
+      rethrow;
+    } catch (e) {
+      throw AuthException(
+        'Error inesperado durante el registro: ${e.toString()}',
+      );
+    }
   }
-}
 
   ReportExceptions __mapDioErrorToReportException(DioException e) {
     final statusCode = e.response?.statusCode;
