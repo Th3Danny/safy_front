@@ -1,0 +1,335 @@
+// lib/features/home/presentation/widgets/viewmodel/clusters_mixin.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:safy/report/domain/entities/cluster_entity.dart';
+import 'package:safy/report/domain/usecases/get_clusters_use_case.dart';
+
+/// Mixin para gestión de clusters de zonas peligrosas
+mixin ClustersMixin on ChangeNotifier {
+  
+  // Propiedades de clusters
+  List<Marker> _clusterMarkers = [];
+  List<Marker> get clusterMarkers => _clusterMarkers;
+
+  bool _showClusters = true;
+  bool get showClusters => _showClusters;
+
+  List<ClusterEntity> _clusters = [];
+  List<ClusterEntity> get clusters => _clusters;
+
+  bool _clustersLoading = false;
+  bool get clustersLoading => _clustersLoading;
+
+  String? _clustersError;
+  String? get clustersError => _clustersError;
+
+  // Dependencia del caso de uso - debe ser implementado por el ViewModel
+  GetClustersUseCase? get getClustersUseCase;
+
+  // Cargar clusters de zonas peligrosas
+  Future<void> loadDangerousClusters(LatLng currentLocation) async {
+    if (_clustersLoading) return; // Evitar cargas múltiples
+    
+    _clustersLoading = true;
+    _clustersError = null;
+    notifyListeners();
+
+    try {
+      print('[ClustersMixin] 📍 Cargando clusters de zonas peligrosas cerca de: ${currentLocation.latitude}, ${currentLocation.longitude}');
+      
+      if (getClustersUseCase != null) {
+        _clusters = await getClustersUseCase!.execute(
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+        );
+
+        print('[ClustersMixin] 📊 Cargados ${_clusters.length} clusters desde API');
+        
+        if (_clusters.isNotEmpty) {
+          _createClusterMarkers(_clusters);
+          print('[ClustersMixin] ✅ Marcadores de clusters creados exitosamente');
+        } else {
+          print('[ClustersMixin] ℹ️ No hay clusters cercanos');
+          _clusterMarkers.clear();
+        }
+      } else {
+        print('[ClustersMixin] ⚠️ GetClustersUseCase no disponible, usando datos ficticios');
+        _loadFakeClusters();
+      }
+    } catch (e) {
+      print('[ClustersMixin] ❌ Error cargando clusters: $e');
+      _clustersError = 'Error cargando zonas peligrosas: $e';
+      print('[ClustersMixin] 🔄 Fallback a datos ficticios');
+      _loadFakeClusters();
+    } finally {
+      _clustersLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void _createClusterMarkers(List<ClusterEntity> clusters) {
+    _clusterMarkers.clear();
+
+    for (final cluster in clusters) {
+      final (color, icon) = _getClusterStyle(cluster.dominantIncidentType, cluster.severityNumber);
+      final markerSize = _getClusterMarkerSize(cluster.severityNumber);
+
+      _clusterMarkers.add(
+        Marker(
+          key: Key('cluster_${cluster.clusterId}'),
+          point: LatLng(cluster.centerLatitude, cluster.centerLongitude),
+          width: markerSize,
+          height: markerSize,
+          child: GestureDetector(
+            onTap: () => _onClusterTapped(cluster),
+            child: Container(
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.5),
+                    blurRadius: 12,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // Icono principal del tipo de incidente dominante
+                  Center(
+                    child: Icon(
+                      icon, 
+                      color: color, 
+                      size: 28
+                    )
+                  ),
+                  
+                  // Badge de severidad
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${cluster.severityNumber}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  // Indicador de cluster con cantidad de reportes
+                  Positioned(
+                    bottom: 2,
+                    left: 2,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${cluster.reportCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    print('[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters');
+  }
+
+  (Color, IconData) _getClusterStyle(String incidentType, int severity) {
+    // Icono basado en tipo de incidente dominante
+    IconData icon;
+    switch (incidentType.toUpperCase()) {
+      case 'STREET_HARASSMENT':
+      case 'ACOSO_CALLEJERO':
+        icon = Icons.report_problem;
+        break;
+      case 'ROBBERY_ASSAULT':
+      case 'ASALTOS':
+      case 'ROBOS':
+        icon = Icons.security;
+        break;
+      case 'KIDNAPPING':
+      case 'SECUESTRO':
+        icon = Icons.warning_amber;
+        break;
+      case 'GANG_VIOLENCE':
+      case 'PANDILLAS':
+        icon = Icons.groups;
+        break;
+      case 'PELEAS':
+        icon = Icons.sports_mma;
+        break;
+      default:
+        icon = Icons.dangerous;
+    }
+
+    // Color basado en severidad
+    Color color;
+    if (severity >= 5) {
+      color = Colors.red[700]!;
+    } else if (severity >= 4) {
+      color = Colors.red[500]!;
+    } else if (severity >= 3) {
+      color = Colors.orange[600]!;
+    } else {
+      color = Colors.yellow[700]!;
+    }
+
+    return (color, icon);
+  }
+
+  double _getClusterMarkerSize(int severity) {
+    // Los clusters son más grandes que reportes individuales
+    if (severity >= 5) return 70;
+    if (severity >= 4) return 60;
+    if (severity >= 3) return 50;
+    return 45;
+  }
+
+  void _onClusterTapped(ClusterEntity cluster) {
+    print('[ClustersMixin] 📍 Cluster de zona peligrosa seleccionado:');
+    print('[ClustersMixin] 🏷️ Tipo: ${cluster.dominantIncidentName}');
+    print('[ClustersMixin] 📊 Reportes: ${cluster.reportCount}');
+    print('[ClustersMixin] ⚠️ Severidad: ${cluster.severity}');
+    print('[ClustersMixin] 🌍 Zona: ${cluster.zone}');
+    print('[ClustersMixin] 📝 Descripción: ${cluster.description}');
+    
+    onClusterSelected(cluster);
+  }
+
+  void _loadFakeClusters() {
+    // Datos ficticios para desarrollo/testing
+    _clusterMarkers.clear();
+    
+    final fakeClusters = [
+      (16.7580, -93.1300, Colors.red, 5, 'ROBBERY_ASSAULT', 'Asaltos/Robos', 3),
+      (16.7520, -93.1280, Colors.orange, 3, 'STREET_HARASSMENT', 'Acoso Callejero', 2),
+      (16.7600, -93.1350, Colors.red, 4, 'GANG_VIOLENCE', 'Violencia Pandillas', 4),
+    ];
+
+    for (int i = 0; i < fakeClusters.length; i++) {
+      final cluster = fakeClusters[i];
+      _clusterMarkers.add(
+        Marker(
+          key: Key('fake_cluster_$i'),
+          point: LatLng(cluster.$1, cluster.$2),
+          width: _getClusterMarkerSize(cluster.$4),
+          height: _getClusterMarkerSize(cluster.$4),
+          child: Container(
+            decoration: BoxDecoration(
+              color: cluster.$3.withOpacity(0.2),
+              shape: BoxShape.circle,
+              border: Border.all(color: cluster.$3, width: 4),
+            ),
+            child: Stack(
+              children: [
+                Center(child: Icon(Icons.dangerous, color: cluster.$3, size: 28)),
+                Positioned(
+                  bottom: 2,
+                  left: 2,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${cluster.$7}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    
+    print('[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters ficticios');
+  }
+
+  void toggleClusters() {
+    _showClusters = !_showClusters;
+    onClustersToggled(_showClusters);
+    notifyListeners();
+  }
+
+  bool isPointInDangerousCluster(LatLng point) {
+    const dangerRadius = 150.0; // metros
+
+    for (final cluster in _clusters) {
+      final clusterPoint = LatLng(cluster.centerLatitude, cluster.centerLongitude);
+      final distance = Distance().as(LengthUnit.Meter, point, clusterPoint);
+      if (distance <= dangerRadius && cluster.severityNumber >= 4) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Obtener información de seguridad de la zona
+  String getZoneSafetyInfo(LatLng point) {
+    for (final cluster in _clusters) {
+      final clusterPoint = LatLng(cluster.centerLatitude, cluster.centerLongitude);
+      final distance = Distance().as(LengthUnit.Meter, point, clusterPoint);
+      
+      if (distance <= 200) {
+        return '⚠️ Zona ${cluster.severity.toLowerCase()}: ${cluster.dominantIncidentName} (${cluster.reportCount} reportes)';
+      }
+    }
+    return '✅ Zona sin alertas recientes';
+  }
+
+  // Limpiar clusters cuando sea necesario
+  void clearClusters() {
+    _clusters.clear();
+    _clusterMarkers.clear();
+    _clustersError = null;
+    notifyListeners();
+  }
+
+  // Callbacks abstractos
+  void onClusterSelected(ClusterEntity cluster);
+  void onClustersToggled(bool visible);
+}

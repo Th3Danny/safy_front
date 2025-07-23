@@ -1,18 +1,30 @@
+import 'package:safy/report/domain/entities/cluster_entity.dart';
 import '../entities/report.dart';
 
+
+
 abstract class ReportRepository {
+   Future<List<ClusterEntity>> getClusters({
+    required double latitude,
+    required double longitude,
+    double? radiusKm,
+    String? city,
+    int? minSeverity,
+    int? maxSeverity,
+    int? maxHoursAgo,
+  });
+
   Future<List<ReportInfoEntity>> getReports({
     required String userId,
     int? page,
     int? pageSize,
     double? latitude,
     double? longitude,
-
   });
 
- Future<ReportInfoEntity> getReportById({required String id});
+  Future<ReportInfoEntity> getReportById({required String id});
 
-   Future<ReportInfoEntity> createReport({
+  Future<ReportInfoEntity> createReport({
     required String title,
     required String description,
     required String incident_type,
@@ -27,7 +39,8 @@ abstract class ReportRepository {
   });
 
 
- // Future<ReportInfoEntity> updateReport(ReportInfoEntity report);
 
- // Future<void> deleteReport(String reportId);
+  // Future<ReportInfoEntity> updateReport(ReportInfoEntity report);
+
+  // Future<void> deleteReport(String reportId);
 }
