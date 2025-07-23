@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:safy/auth/domain/exceptions/auth_exceptions.dart';
 import 'package:safy/report/data/dtos/report_request_dto.dart';
+import 'package:safy/report/domain/entities/cluster_entity.dart';
 import 'package:safy/report/domain/entities/report.dart';
 import 'package:safy/report/domain/exceptions/report_exceptions.dart';
 import 'package:safy/report/domain/repositories/report_repository.dart';
@@ -12,22 +13,68 @@ class ReportRepositoryImpl implements ReportRepository {
   ReportRepositoryImpl(this._apiClient);
 
   @override
+  Future<List<ClusterEntity>> getClusters({
+    required double latitude,
+    required double longitude,
+    double? radiusKm,
+    String? city,
+    int? minSeverity,
+    int? maxSeverity,
+    int? maxHoursAgo,
+  }) async {
+    try {
+      print('[ClusterRepository] 📍 Obteniendo clusters cerca de: $latitude, $longitude');
+
+      final clusterDtos = await _apiClient.getClusters(
+        latitude: latitude,
+        longitude: longitude,
+      );
+
+      final clusters = clusterDtos.map((dto) => dto.toDomainEntity()).toList();
+      
+      print('[ClusterRepository] ✅ Procesados ${clusters.length} clusters');
+      
+      return clusters;
+    } catch (e) {
+      print('[ClusterRepository] ❌ Error: $e');
+      throw Exception('Error al obtener los clusters: $e');
+    }
+  }
+
+  @override
   Future<List<ReportInfoEntity>> getReports({
     required String userId,
     int? page,
     int? pageSize,
-    double? latitude,  
+    double? latitude,
     double? longitude,
   }) async {
     try {
+      // Validar que se proporcionen coordenadas para reportes cercanos
+      if (latitude == null || longitude == null) {
+        throw ReportExceptions('Se requieren coordenadas para obtener reportes cercanos');
+      }
+
+      print('[ReportRepository] 📍 Obteniendo reportes cercanos en: $latitude, $longitude');
+
       final responseDtos = await _apiClient.getReports(
         userId: userId,
+        latitude: latitude,
+        longitude: longitude,
         page: page,
         pageSize: pageSize,
       );
-      return responseDtos.map((dto) => dto.toDomainEntity()).toList();
+
+      final reports = responseDtos.map((dto) => dto.toDomainEntity()).toList();
+      
+      print('[ReportRepository] ✅ Procesados ${reports.length} reportes');
+      
+      return reports;
+    } on ReportExceptions {
+      rethrow;
     } catch (e) {
-      throw ReportExceptions('Error al obtener los reportes: $e');
+      print('[ReportRepository] ❌ Error: $e');
+      throw ReportExceptions('Error al obtener los reportes cercanos: $e');
     }
   }
 

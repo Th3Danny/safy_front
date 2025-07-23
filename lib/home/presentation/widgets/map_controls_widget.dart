@@ -1,16 +1,23 @@
-
 import 'package:flutter/material.dart';
 
 class MapControlsWidget extends StatelessWidget {
   final VoidCallback onLocationPressed;
   final VoidCallback onToggleDangerZones;
+  final VoidCallback onToggleClusters; // NUEVO
+  final VoidCallback? onRefreshClusters; // NUEVO
   final bool showDangerZones;
+  final bool showClusters; // NUEVO
+  final bool clustersLoading; // NUEVO
 
   const MapControlsWidget({
     super.key,
     required this.onLocationPressed,
     required this.onToggleDangerZones,
+    required this.onToggleClusters, // NUEVO
+    this.onRefreshClusters, // NUEVO
     required this.showDangerZones,
+    required this.showClusters, // NUEVO
+    this.clustersLoading = false, // NUEVO
   });
 
   @override
@@ -29,16 +36,46 @@ class MapControlsWidget extends StatelessWidget {
         
         const SizedBox(height: 8),
         
-        // Botón para alternar zonas peligrosas
+        // NUEVO: Botón para alternar clusters de zonas peligrosas
         _buildControlButton(
-          onPressed: onToggleDangerZones,
-          icon: showDangerZones ? Icons.visibility : Icons.visibility_off,
-          tooltip: showDangerZones ? 'Ocultar zonas peligrosas' : 'Mostrar zonas peligrosas',
-          backgroundColor: showDangerZones ? Colors.red[100] : Colors.white,
-          iconColor: showDangerZones ? Colors.red : Colors.grey[600],
+          onPressed: clustersLoading ? null : onToggleClusters,
+          icon: clustersLoading 
+            ? Icons.hourglass_empty 
+            : (showClusters ? Icons.dangerous : Icons.dangerous_outlined),
+          tooltip: clustersLoading
+            ? 'Cargando clusters...'
+            : (showClusters ? 'Ocultar zonas críticas' : 'Mostrar zonas críticas'),
+          backgroundColor: showClusters ? Colors.red[100] : Colors.white,
+          iconColor: clustersLoading 
+            ? Colors.grey 
+            : (showClusters ? Colors.red[700] : Colors.grey[600]),
+          isLoading: clustersLoading,
         ),
         
         const SizedBox(height: 8),
+        
+        // Botón para alternar reportes individuales
+        _buildControlButton(
+          onPressed: onToggleDangerZones,
+          icon: showDangerZones ? Icons.visibility : Icons.visibility_off,
+          tooltip: showDangerZones ? 'Ocultar reportes individuales' : 'Mostrar reportes individuales',
+          backgroundColor: showDangerZones ? Colors.orange[100] : Colors.white,
+          iconColor: showDangerZones ? Colors.orange[700] : Colors.grey[600],
+        ),
+        
+        const SizedBox(height: 8),
+        
+        // NUEVO: Botón de refresh para clusters (opcional)
+        if (onRefreshClusters != null) ...[
+          _buildControlButton(
+            onPressed: clustersLoading ? null : onRefreshClusters,
+            icon: Icons.refresh,
+            tooltip: 'Actualizar zonas peligrosas',
+            backgroundColor: Colors.white,
+            iconColor: clustersLoading ? Colors.grey : Colors.blue[600],
+          ),
+          const SizedBox(height: 8),
+        ],
         
         // Botón de capas del mapa
         _buildControlButton(
@@ -64,11 +101,12 @@ class MapControlsWidget extends StatelessWidget {
   }
 
   Widget _buildControlButton({
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
     required IconData icon,
     required String tooltip,
     required Color? backgroundColor,
     required Color? iconColor,
+    bool isLoading = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -92,11 +130,22 @@ class MapControlsWidget extends StatelessWidget {
             height: 48,
             child: Tooltip(
               message: tooltip,
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 24,
-              ),
+              child: isLoading
+                ? Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(iconColor ?? Colors.grey),
+                      ),
+                    ),
+                  )
+                : Icon(
+                    icon,
+                    color: iconColor,
+                    size: 24,
+                  ),
             ),
           ),
         ),
@@ -138,17 +187,50 @@ class MapControlsWidget extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Opción: Zonas peligrosas
+            // NUEVO: Opción: Clusters de zonas críticas
+            ListTile(
+              leading: Icon(
+                showClusters ? Icons.dangerous : Icons.dangerous_outlined,
+                color: showClusters ? Colors.red[700] : Colors.grey,
+              ),
+              title: const Text('Zonas críticas'),
+              subtitle: Text(
+                showClusters 
+                    ? 'Clusters de alta peligrosidad visibles'
+                    : 'Clusters de zonas peligrosas ocultos',
+              ),
+              trailing: clustersLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Switch(
+                    value: showClusters,
+                    onChanged: clustersLoading ? null : (_) {
+                      onToggleClusters();
+                      Navigator.pop(context);
+                    },
+                  ),
+              onTap: clustersLoading ? null : () {
+                onToggleClusters();
+                Navigator.pop(context);
+              },
+            ),
+
+            const Divider(),
+
+            // Opción: Reportes individuales
             ListTile(
               leading: Icon(
                 showDangerZones ? Icons.visibility : Icons.visibility_off,
-                color: showDangerZones ? Colors.red : Colors.grey,
+                color: showDangerZones ? Colors.orange[700] : Colors.grey,
               ),
-              title: const Text('Zonas peligrosas'),
+              title: const Text('Reportes individuales'),
               subtitle: Text(
                 showDangerZones 
-                    ? 'Las zonas de riesgo están visibles'
-                    : 'Las zonas de riesgo están ocultas',
+                    ? 'Incidentes individuales visibles'
+                    : 'Incidentes individuales ocultos',
               ),
               trailing: Switch(
                 value: showDangerZones,
@@ -167,13 +249,13 @@ class MapControlsWidget extends StatelessWidget {
 
             // Opción: Reportes recientes
             ListTile(
-              leading: Icon(Icons.report_problem, color: Colors.orange[600]),
-              title: const Text('Reportes recientes'),
+              leading: Icon(Icons.access_time, color: Colors.blue[600]),
+              title: const Text('Solo reportes recientes'),
               subtitle: const Text('Mostrar incidentes de las últimas 24h'),
               trailing: Switch(
                 value: true, // Por defecto activado
                 onChanged: (value) {
-                  // Implementar lógica para mostrar/ocultar reportes recientes
+                  // TODO: Implementar lógica para filtrar por tiempo
                   Navigator.pop(context);
                 },
               ),
@@ -181,19 +263,44 @@ class MapControlsWidget extends StatelessWidget {
 
             const Divider(),
 
-            // Opción: Patrullas policiales
+            // Opción: Patrullas policiales (futura funcionalidad)
             ListTile(
-              leading: Icon(Icons.local_police, color: Colors.blue[600]),
+              leading: Icon(Icons.local_police, color: Colors.green[600]),
               title: const Text('Patrullas policiales'),
               subtitle: const Text('Ubicación aproximada de patrullas'),
               trailing: Switch(
                 value: false, // Por defecto desactivado
                 onChanged: (value) {
-                  // Implementar lógica para mostrar/ocultar patrullas
+                  // TODO: Implementar lógica para mostrar/ocultar patrullas
                   Navigator.pop(context);
                 },
               ),
             ),
+
+            // NUEVO: Botón de refresh
+            if (onRefreshClusters != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: clustersLoading ? null : () {
+                  onRefreshClusters!();
+                  Navigator.pop(context);
+                },
+                icon: clustersLoading 
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.refresh),
+                label: Text(
+                  clustersLoading ? 'Actualizando...' : 'Actualizar datos'
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[50],
+                  foregroundColor: Colors.blue[700],
+                ),
+              ),
+            ],
 
             const SizedBox(height: 16),
           ],
@@ -238,11 +345,19 @@ class MapControlsWidget extends StatelessWidget {
               description: 'Toca el mapa para seleccionar destino',
             ),
             const SizedBox(height: 12),
+            // NUEVO: Info sobre clusters
+            _buildInfoItem(
+              icon: Icons.dangerous,
+              color: Colors.red[700]!,
+              title: 'Zonas críticas',
+              description: 'Clusters de alta concentración de incidentes',
+            ),
+            const SizedBox(height: 12),
             _buildInfoItem(
               icon: Icons.warning,
               color: Colors.orange,
-              title: 'Zonas de riesgo',
-              description: 'Áreas con reportes de incidentes',
+              title: 'Reportes individuales',
+              description: 'Incidentes específicos reportados por usuarios',
             ),
             const SizedBox(height: 16),
             Container(
@@ -258,7 +373,7 @@ class MapControlsWidget extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Tip: Mantén presionado el mapa para reportar un incidente',
+                      'Tip: Los marcadores rojos indican zonas de mayor peligro. Planifica rutas alternativas.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.blue[700],

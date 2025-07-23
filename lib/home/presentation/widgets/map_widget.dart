@@ -1,10 +1,9 @@
-
+// map_widget.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
-
 
 class MapWidget extends StatelessWidget {
   const MapWidget({super.key});
@@ -44,12 +43,8 @@ class MapWidget extends StatelessWidget {
                 ],
               ),
 
-            // Capa de zonas peligrosas (opcional)
-            if (mapViewModel.showDangerZones)
-              MarkerLayer(markers: mapViewModel.dangerMarkers),
-
-            // Capa de marcadores principales
-            MarkerLayer(markers: mapViewModel.markers),
+            // ✨ NUEVA CAPA: Todos los marcadores combinados (clusters, reportes, ubicación, rutas)
+            MarkerLayer(markers: mapViewModel.allMapMarkers),
 
             // Capa de información de ruta
             if (mapViewModel.routeOptions.isNotEmpty)
@@ -63,11 +58,14 @@ class MapWidget extends StatelessWidget {
   void _handleMapTap(BuildContext context, LatLng point) {
     final mapViewModel = context.read<MapViewModel>();
     
+    // Obtener información de seguridad de la ubicación tocada
+    final safetyInfo = mapViewModel.getLocationSafetyInfo(point);
+    
     // Mostrar diálogo para seleccionar punto de inicio o destino
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildLocationSelector(context, point, mapViewModel),
+      builder: (context) => _buildLocationSelector(context, point, mapViewModel, safetyInfo),
     );
   }
 
@@ -75,6 +73,7 @@ class MapWidget extends StatelessWidget {
     BuildContext context,
     LatLng point,
     MapViewModel mapViewModel,
+    String safetyInfo,
   ) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -100,7 +99,7 @@ class MapWidget extends StatelessWidget {
           const SizedBox(height: 16),
 
           Text(
-            'Punto seleccionado',
+            'Ubicación seleccionada',
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
@@ -112,7 +111,35 @@ class MapWidget extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+
+          // 🆕 NUEVA: Información de seguridad de la zona
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: safetyInfo.startsWith('⚠️') 
+                  ? Colors.orange.shade50 
+                  : Colors.green.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: safetyInfo.startsWith('⚠️') 
+                    ? Colors.orange.shade200 
+                    : Colors.green.shade200,
+              ),
+            ),
+            child: Text(
+              safetyInfo,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: safetyInfo.startsWith('⚠️') 
+                    ? Colors.orange.shade800 
+                    : Colors.green.shade800,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // Botones de acción
           Row(

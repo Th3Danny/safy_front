@@ -1,6 +1,6 @@
 class ApiConstants {
   
-  static const String baseUrl = 'https://1eb39063c03b.ngrok-free.app'; 
+  static const String baseUrl = 'https://gateway.devquailityup.xyz'; 
   
   // Auth endpoints
   static const String login = '/auth/login';
@@ -12,7 +12,8 @@ class ApiConstants {
   // 🔧 CORREGIR ENDPOINTS DE REPORTS
   static const String reports = '/reports'; 
   static const String createReport = '/reports'; 
-  static const String nearbyReports = '/reports/nearby';
+  //static const String nearbyReports = '/reports/nearby';
+ static const String nearbyReports = '/reports-nearby/smart-nearby';
 
   // Map endpoints
   static const String heatmap = '/map/heatmap';
@@ -22,6 +23,7 @@ class ApiConstants {
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'ngrok-skip-browser-warning': 'true', // Para evitar warnings de ngrok
   };
 
   // Timeouts

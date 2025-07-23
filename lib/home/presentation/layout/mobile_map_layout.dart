@@ -1,3 +1,4 @@
+// lib/features/home/presentation/pages/mobile_map_layout.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
@@ -22,26 +23,28 @@ class MobileMapLayout extends StatelessWidget {
               // 🌍 Mapa principal
               const MapWidget(),
               
-              // 🎯 Controles del mapa
+              // 🎯 Controles del mapa (ACTUALIZADO con todos los parámetros)
               Positioned(
                 top: 50,
                 right: 16,
                 child: MapControlsWidget(
                   onLocationPressed: () => mapViewModel.centerOnCurrentLocation(),
                   onToggleDangerZones: () => mapViewModel.toggleDangerZones(),
+                  onToggleClusters: () => mapViewModel.toggleClusters(),
+                  onRefreshClusters: () => mapViewModel.refreshDangerousZones(),
                   showDangerZones: mapViewModel.showDangerZones,
+                  showClusters: mapViewModel.showClusters,
+                  clustersLoading: mapViewModel.clustersLoading,
                 ),
               ),
 
-              // 🔍 Widget de búsqueda de lugares (NUEVO - siempre visible)
+              // 🔍 Widget de búsqueda de lugares
               const Positioned(
                 top: 50,
                 left: 16,
                 right: 80, // Espacio para los controles del mapa
                 child: PlaceSearchWidget(),
               ),
-
-              
 
               // 📋 Opciones de ruta (cuando hay rutas calculadas)
               if (mapViewModel.routeOptions.isNotEmpty && mapViewModel.showRoutePanel) 
@@ -64,39 +67,28 @@ class MobileMapLayout extends StatelessWidget {
               // 🧭 Panel de navegación inferior
               NavigationFab(
                 onNavigationTap: (type) => _handleNavigationTap(context, type),
-                //selectedMode: mapViewModel.selectedTransportMode,
               ),
 
-              //  Mensaje de error
-              if (mapViewModel.errorMessage != null)
+              // ⚠️ Mensaje de error (mejorado para clusters)
+              if (mapViewModel.errorMessage != null || mapViewModel.clustersError != null)
                 Positioned(
                   bottom: 100,
                   left: 16,
                   right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.error, color: Colors.red),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            mapViewModel.errorMessage!,
-                            style: TextStyle(color: Colors.red.shade800),
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.close, color: Colors.red),
-                          onPressed: () => mapViewModel.clearError(),
-                        ),
-                      ],
-                    ),
+                  child: _buildErrorMessage(
+                    context, 
+                    mapViewModel.errorMessage ?? mapViewModel.clustersError!,
+                    () => mapViewModel.clearError(),
                   ),
+                ),
+
+              // 🔄 Indicador de carga para clusters (mejorado)
+              if (mapViewModel.clustersLoading)
+                Positioned(
+                  top: 120,
+                  left: 16,
+                  right: 16,
+                  child: _buildLoadingIndicator(),
                 ),
             ],
           );
@@ -105,14 +97,156 @@ class MobileMapLayout extends StatelessWidget {
     );
   }
 
+  Widget _buildErrorMessage(BuildContext context, String message, VoidCallback onDismiss) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.red.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.error_outline, 
+              color: Colors.red.shade700,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Error en el mapa',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red.shade800,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onDismiss,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  Icons.close,
+                  color: Colors.red.shade600,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Actualizando mapa',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue.shade800,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Cargando zonas peligrosas...',
+                  style: TextStyle(
+                    color: Colors.blue.shade700,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool _shouldShowDangerWarning(MapViewModel mapViewModel) {
-    // Lógica para determinar si mostrar advertencia de zona peligrosa
-    // Podrías verificar si el usuario está cerca de una zona peligrosa
-    return false; // Por ahora desactivado
+    // Verificar si el usuario está cerca de una zona peligrosa usando los clusters
+    try {
+      return mapViewModel.isLocationDangerous(mapViewModel.currentLocation);
+    } catch (e) {
+      return false;
+    }
   }
 
   void _handleNavigationTap(BuildContext context, String type) {
-    final mapViewModel = context.read<MapViewModel>(); // 👈 Arreglado el error de sintaxis
+    final mapViewModel = context.read<MapViewModel>();
     
     switch (type) {
       case 'add':
@@ -138,6 +272,10 @@ class MobileMapLayout extends StatelessWidget {
       SnackBar(
         content: Text('Modo de transporte: ${modeNames[mode]}'),
         duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }
