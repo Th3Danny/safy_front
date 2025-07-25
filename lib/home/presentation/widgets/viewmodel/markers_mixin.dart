@@ -6,7 +6,7 @@ import 'package:latlong2/latlong.dart';
 mixin MarkersMixin on ChangeNotifier {
   
   // Marcadores y rutas
-  List<Marker> _markers = [];
+  final List<Marker> _markers = [];
   List<Marker> get markers => _markers;
 
   // Crear marcador de ubicación actual

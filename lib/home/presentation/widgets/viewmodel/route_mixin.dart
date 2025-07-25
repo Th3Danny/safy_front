@@ -19,7 +19,7 @@ mixin RouteMixin on ChangeNotifier {
   String _selectedTransportMode = 'walk';
   String get selectedTransportMode => _selectedTransportMode;
 
-  List<RouteOption> _routeOptions = [];
+  final List<RouteOption> _routeOptions = [];
   List<RouteOption> get routeOptions => _routeOptions;
 
   // Dependencias abstractas

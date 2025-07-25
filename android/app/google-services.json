@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "459641136863",
-    "project_id": "safy-2f125",
-    "storage_bucket": "safy-2f125.firebasestorage.app"
+    "project_number": "867887781952",
+    "project_id": "safety-4c345",
+    "storage_bucket": "safety-4c345.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:459641136863:android:0b66a57d4d8f8279cbeb6a",
+        "mobilesdk_app_id": "1:867887781952:android:361817a831794cffd127a5",
         "android_client_info": {
           "package_name": "com.safy.app"
         }
@@ -15,7 +15,26 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAGzeV7VyuGLgO6tDIKC3qORdhYpnglOes"
+          "current_key": "AIzaSyBpWz_A3EL_tds4lqpsGxx-pU5ZLckvujg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867887781952:android:c682208497bccb33d127a5",
+        "android_client_info": {
+          "package_name": "com.valhallatech.safy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpWz_A3EL_tds4lqpsGxx-pU5ZLckvujg"
         }
       ],
       "services": {

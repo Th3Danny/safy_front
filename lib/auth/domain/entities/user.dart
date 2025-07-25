@@ -27,7 +27,7 @@ class UserInfoEntity {
 
   String get fullName {
     final parts = [name, lastName, secondLastName]
-        .where((part) => part != null && part!.isNotEmpty);
+        .where((part) => part != null && part.isNotEmpty);
     return parts.join(' ');
   }
 

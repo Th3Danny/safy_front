@@ -80,9 +80,9 @@ class ValidationException extends AuthException {
   final Map<String, List<String>> fieldErrors;
 
   const ValidationException(
-    String message,
+    super.message,
     this.fieldErrors,
-  ) : super(message, code: 'VALIDATION_ERROR');
+  ) : super(code: 'VALIDATION_ERROR');
 
   @override
   String toString() {

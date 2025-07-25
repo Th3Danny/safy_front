@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:safy/core/services/firebase_message_handler.dart';
+import 'package:geolocator/geolocator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,16 +37,15 @@ void main() async {
     }
 
     // 2. Inicializar SessionManager
- 
+
     await SessionManager.instance.initialize(prefs: prefs);
 
     // DEBUG: Verificar estado del SessionManager después de initialize
- 
+
     SessionManager.instance.debugSessionState();
 
     // 3. Configurar dependencias
     await setupDependencyInjection(sharedPreferences: prefs);
-
 
     // 👇 Iniciar el servicio de notificaciones
     await sl<FirebaseMessagingService>().init();
@@ -70,15 +70,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('[📡 Background] Mensaje recibido: ${message.messageId}');
 }
 
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     print('[MyApp] 🏗️ Construyendo MyApp...');
-
     return MultiProvider(
       providers: getAllProviders(),
       child: MaterialApp.router(
@@ -90,8 +87,98 @@ class MyApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         routerConfig: AppRouter.router,
+        builder: (context, child) => LocationPermissionGate(child: child!),
       ),
     );
+  }
+}
+
+class LocationPermissionGate extends StatefulWidget {
+  final Widget child;
+  const LocationPermissionGate({required this.child, super.key});
+
+  @override
+  State<LocationPermissionGate> createState() => _LocationPermissionGateState();
+}
+
+class _LocationPermissionGateState extends State<LocationPermissionGate> {
+  bool _checking = true;
+  bool _granted = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
+        setState(() {
+          _checking = false;
+          _granted = false;
+          _error = 'Se requiere el permiso de ubicación para usar la app.';
+        });
+        return;
+      }
+      setState(() {
+        _checking = false;
+        _granted = true;
+      });
+    } catch (e) {
+      setState(() {
+        _checking = false;
+        _granted = false;
+        _error = 'Error solicitando permiso de ubicación: $e';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_checking) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (!_granted) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.location_off, size: 64, color: Colors.red),
+                const SizedBox(height: 24),
+                const Text(
+                  'Permiso de ubicación requerido',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _error ?? 'Activa el permiso de ubicación para continuar.',
+                  style: const TextStyle(fontSize: 14, color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _checkPermission,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Intentar de nuevo'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return widget.child;
   }
 }
 

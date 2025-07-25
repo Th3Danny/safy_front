@@ -3,7 +3,6 @@ import 'package:safy/auth/domain/exceptions/auth_exceptions.dart';
 import 'package:safy/report/data/dtos/cluster_response_dto.dart';
 import 'package:safy/report/data/dtos/report_request_dto.dart';
 import 'package:safy/report/data/dtos/report_response_dto.dart';
-import 'package:safy/report/data/dtos/reports_page_response_dto.dart';
 import 'package:safy/report/domain/exceptions/report_exceptions.dart';
 import 'package:safy/core/network/domian/constants/api_client_constants.dart';
 

@@ -8,7 +8,7 @@ import 'package:safy/report/domain/usecases/get_clusters_use_case.dart';
 /// Mixin para gestión de clusters de zonas peligrosas
 mixin ClustersMixin on ChangeNotifier {
   // Propiedades de clusters
-  List<Marker> _clusterMarkers = [];
+  final List<Marker> _clusterMarkers = [];
   List<Marker> get clusterMarkers => _clusterMarkers;
 
   bool _showClusters = true;
@@ -27,7 +27,10 @@ mixin ClustersMixin on ChangeNotifier {
   GetClustersUseCase? get getClustersUseCase;
 
   // Cargar clusters de zonas peligrosas
-  Future<void> loadDangerousClusters(LatLng currentLocation) async {
+  Future<void> loadDangerousClusters(
+    LatLng currentLocation, {
+    double zoom = 15.0,
+  }) async {
     if (_clustersLoading) return; // Evitar cargas múltiples
 
     _clustersLoading = true;
@@ -50,7 +53,7 @@ mixin ClustersMixin on ChangeNotifier {
         );
 
         if (_clusters.isNotEmpty) {
-          _createClusterMarkers(_clusters);
+          _createClusterMarkers(_clusters, zoom: zoom);
           print(
             '[ClustersMixin] ✅ Marcadores de clusters creados exitosamente',
           );
@@ -75,8 +78,19 @@ mixin ClustersMixin on ChangeNotifier {
     }
   }
 
-  void _createClusterMarkers(List<ClusterEntity> clusters) {
+  void _createClusterMarkers(
+    List<ClusterEntity> clusters, {
+    double zoom = 15.0,
+  }) {
     _clusterMarkers.clear();
+
+    if (zoom < 12.0) {
+      // No mostrar clusters si el zoom es muy bajo
+      print(
+        '[ClustersMixin] 🔍 Zoom demasiado alejado (<12), no se muestran clusters.',
+      );
+      return;
+    }
 
     for (final cluster in clusters) {
       final (color, icon) = _getClusterStyle(
@@ -84,15 +98,17 @@ mixin ClustersMixin on ChangeNotifier {
         cluster.severityNumber,
       );
 
-      // ✅ CAMBIO: Tamaño proporcional a reportes pero fijo para zoom
-      final clusterSize = _getClusterSizeByReports(cluster.reportCount);
+      // Escalado según zoom, tamaño mínimo 8
+      double clusterSize =
+          _getClusterSizeByReports(cluster.reportCount) * _getZoomScale(zoom);
+      if (clusterSize < 8.0) clusterSize = 8.0;
 
       _clusterMarkers.add(
         Marker(
           key: Key('cluster_${cluster.clusterId}'),
           point: LatLng(cluster.centerLatitude, cluster.centerLongitude),
-          width: clusterSize, // ✅ Tamaño proporcional pero fijo
-          height: clusterSize, // ✅ Tamaño proporcional pero fijo
+          width: clusterSize,
+          height: clusterSize,
           child: GestureDetector(
             onTap: () => _onClusterTapped(cluster),
             child: Container(
@@ -110,23 +126,15 @@ mixin ClustersMixin on ChangeNotifier {
               ),
               child: Stack(
                 children: [
-                  // Icono principal (escalado al tamaño del cluster)
                   Center(
-                    child: Icon(
-                      icon,
-                      color: color,
-                      size:
-                          clusterSize * 0.4, // ✅ Icono proporcional al cluster
-                    ),
+                    child: Icon(icon, color: color, size: clusterSize * 0.4),
                   ),
-
-                  // Badge de severidad (escalado)
                   Positioned(
                     top: clusterSize * 0.05,
                     right: clusterSize * 0.05,
                     child: Container(
-                      width: clusterSize * 0.35, // ✅ Proporcional al cluster
-                      height: clusterSize * 0.35, // ✅ Proporcional al cluster
+                      width: clusterSize * 0.35,
+                      height: clusterSize * 0.35,
                       decoration: BoxDecoration(
                         color: color,
                         shape: BoxShape.circle,
@@ -137,21 +145,19 @@ mixin ClustersMixin on ChangeNotifier {
                           '${cluster.severityNumber}',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: clusterSize * 0.2, // ✅ Texto proporcional
+                            fontSize: clusterSize * 0.2,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
                   ),
-
-                  // Counter de reportes (escalado)
                   Positioned(
                     bottom: clusterSize * 0.05,
                     left: clusterSize * 0.05,
                     child: Container(
-                      width: clusterSize * 0.32, // ✅ Proporcional al cluster
-                      height: clusterSize * 0.32, // ✅ Proporcional al cluster
+                      width: clusterSize * 0.32,
+                      height: clusterSize * 0.32,
                       decoration: BoxDecoration(
                         color: Colors.blue,
                         shape: BoxShape.circle,
@@ -162,8 +168,7 @@ mixin ClustersMixin on ChangeNotifier {
                           '${cluster.reportCount}',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize:
-                                clusterSize * 0.18, // ✅ Texto proporcional
+                            fontSize: clusterSize * 0.18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -192,6 +197,11 @@ mixin ClustersMixin on ChangeNotifier {
     if (reportCount >= 5) return 55.0; // Zona actividad moderada
     if (reportCount >= 3) return 50.0; // Zona actividad baja-moderada
     return 45.0; // Zona actividad mínima
+  }
+
+  double _getZoomScale(double zoom) {
+    // Zoom base 15.0, escala 1.0. Si alejas, reduce tamaño; si acercas, aumenta.
+    return 1.0 / (1.0 + (15.0 - zoom) * 0.25).clamp(0.5, 2.0);
   }
 
   (Color, IconData) _getClusterStyle(String incidentType, int severity) {
@@ -288,8 +298,12 @@ mixin ClustersMixin on ChangeNotifier {
         Marker(
           key: Key('fake_cluster_$i'),
           point: LatLng(cluster.$1, cluster.$2),
-          width: _getClusterMarkerSize(cluster.$4),
-          height: _getClusterMarkerSize(cluster.$4),
+          width:
+              _getClusterMarkerSize(cluster.$4) *
+              _getZoomScale(15.0), // Use _getZoomScale for fake data
+          height:
+              _getClusterMarkerSize(cluster.$4) *
+              _getZoomScale(15.0), // Use _getZoomScale for fake data
           child: Container(
             decoration: BoxDecoration(
               color: cluster.$3.withOpacity(0.2),

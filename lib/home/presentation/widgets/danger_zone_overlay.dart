@@ -199,15 +199,6 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
   void _reportIncident(BuildContext context) {
     // Navegar a la pantalla de reporte con ubicación actual
     final mapViewModel = context.read<MapViewModel>();
-    if (mapViewModel.currentLocation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('📍 Ubicación no disponible. Intenta nuevamente.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     // ✅ CAMBIO: Usar context.go en lugar de Navigator.pushNamed
     context.go(AppRoutesConstant.createReport);
@@ -226,7 +217,7 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
       _isVisible = false;
     });
 
-    void _dismissWarning() {
+    void dismissWarning() {
       // Aquí podrías guardar que el usuario ya vio esta advertencia
       // para no mostrarla nuevamente en la misma sesión
     }

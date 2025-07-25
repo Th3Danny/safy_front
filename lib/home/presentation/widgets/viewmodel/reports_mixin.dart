@@ -4,12 +4,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:safy/report/domain/entities/report.dart';
 import 'package:safy/report/domain/usecases/get_reports_for_map_use_case.dart';
 
-
 /// Mixin para gestión de reportes y zonas peligrosas
 mixin ReportsMixin on ChangeNotifier {
-  
   // Propiedades de reportes
-  List<Marker> _dangerMarkers = [];
+  final List<Marker> _dangerMarkers = [];
   List<Marker> get dangerMarkers => _dangerMarkers;
 
   bool _showDangerZones = true;
@@ -19,7 +17,10 @@ mixin ReportsMixin on ChangeNotifier {
   GetReportsForMapUseCase? get getReportsForMapUseCase;
 
   // Cargar zonas de peligro
-  Future<void> loadDangerZones(LatLng currentLocation) async {
+  Future<void> loadDangerZones(
+    LatLng currentLocation, {
+    double zoom = 15.0,
+  }) async {
     try {
       if (getReportsForMapUseCase != null) {
         final reports = await getReportsForMapUseCase!.execute(
@@ -31,9 +32,11 @@ mixin ReportsMixin on ChangeNotifier {
         );
 
         print('[ReportsMixin] 📊 Cargados ${reports.length} reportes reales');
-        _createReportMarkers(reports);
+        _createReportMarkers(reports, zoom: zoom);
       } else {
-        print('[ReportsMixin] ⚠️ GetReportsForMapUseCase no disponible, usando datos ficticios');
+        print(
+          '[ReportsMixin] ⚠️ GetReportsForMapUseCase no disponible, usando datos ficticios',
+        );
         _loadFakeDangerZones();
       }
     } catch (e) {
@@ -42,18 +45,33 @@ mixin ReportsMixin on ChangeNotifier {
     }
   }
 
-  void _createReportMarkers(List<ReportInfoEntity> reports) {
+  void _createReportMarkers(
+    List<ReportInfoEntity> reports, {
+    double zoom = 15.0,
+  }) {
     _dangerMarkers.clear();
 
+    if (zoom < 12.0) {
+      // No mostrar reportes si el zoom es muy bajo
+      print('[ReportsMixin] 🔍 Zoom demasiado alejado (<12), no se muestran reportes.');
+      return;
+    }
+
     for (final report in reports) {
-      final (color, icon) = _getReportStyle(report.incident_type, report.severity);
+      final (color, icon) = _getReportStyle(
+        report.incident_type,
+        report.severity,
+      );
+
+      double markerSize = _getMarkerSize(report.severity) * _getZoomScale(zoom);
+      if (markerSize < 8.0) markerSize = 8.0;
 
       _dangerMarkers.add(
         Marker(
           key: Key('report_${report.hashCode}'),
           point: LatLng(report.latitude, report.longitude),
-          width: _getMarkerSize(report.severity),
-          height: _getMarkerSize(report.severity),
+          width: markerSize,
+          height: markerSize,
           child: GestureDetector(
             onTap: () => _onReportTapped(report),
             child: Container(
@@ -71,13 +89,15 @@ mixin ReportsMixin on ChangeNotifier {
               ),
               child: Stack(
                 children: [
-                  Center(child: Icon(icon, color: color, size: 20)),
+                  Center(
+                    child: Icon(icon, color: color, size: markerSize * 0.4),
+                  ),
                   Positioned(
-                    top: 2,
-                    right: 2,
+                    top: markerSize * 0.1,
+                    right: markerSize * 0.1,
                     child: Container(
-                      width: 16,
-                      height: 16,
+                      width: markerSize * 0.35,
+                      height: markerSize * 0.35,
                       decoration: BoxDecoration(
                         color: color,
                         shape: BoxShape.circle,
@@ -86,9 +106,9 @@ mixin ReportsMixin on ChangeNotifier {
                       child: Center(
                         child: Text(
                           '${report.severity}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: markerSize * 0.2,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -103,7 +123,9 @@ mixin ReportsMixin on ChangeNotifier {
       );
     }
 
-    print('[ReportsMixin] 🗺️ Creados ${_dangerMarkers.length} marcadores reales');
+    print(
+      '[ReportsMixin] 🗺️ Creados ${_dangerMarkers.length} marcadores reales',
+    );
   }
 
   (Color, IconData) _getReportStyle(String incidentType, int severity) {
@@ -143,6 +165,11 @@ mixin ReportsMixin on ChangeNotifier {
     return 35;
   }
 
+  double _getZoomScale(double zoom) {
+    // Zoom base 15.0, escala 1.0. Si alejas, reduce tamaño; si acercas, aumenta.
+    return 1.0 / (1.0 + (15.0 - zoom) * 0.25).clamp(0.5, 2.0);
+  }
+
   void _onReportTapped(ReportInfoEntity report) {
     print('[ReportsMixin] 📍 Reporte seleccionado: ${report.title}');
     onReportSelected(report);
@@ -151,7 +178,7 @@ mixin ReportsMixin on ChangeNotifier {
   void _loadFakeDangerZones() {
     // Datos ficticios para desarrollo
     _dangerMarkers.clear();
-    
+
     final fakeDangers = [
       (16.7580, -93.1300, Colors.red, 4),
       (16.7520, -93.1280, Colors.orange, 3),
@@ -189,7 +216,11 @@ mixin ReportsMixin on ChangeNotifier {
     const dangerRadius = 100.0;
 
     for (final dangerMarker in _dangerMarkers) {
-      final distance = Distance().as(LengthUnit.Meter, point, dangerMarker.point);
+      final distance = Distance().as(
+        LengthUnit.Meter,
+        point,
+        dangerMarker.point,
+      );
       if (distance <= dangerRadius) {
         return true;
       }
@@ -208,7 +239,11 @@ mixin ReportsMixin on ChangeNotifier {
     checkPoints.addAll(route);
 
     for (int i = 0; i < route.length - 1; i++) {
-      final intermediatePoints = _getPointsAlongPath(route[i], route[i + 1], intervalMeters: 50);
+      final intermediatePoints = _getPointsAlongPath(
+        route[i],
+        route[i + 1],
+        intervalMeters: 50,
+      );
       checkPoints.addAll(intermediatePoints);
     }
 
@@ -217,7 +252,11 @@ mixin ReportsMixin on ChangeNotifier {
       bool isInDanger = false;
 
       for (final dangerMarker in _dangerMarkers) {
-        final distance = Distance().as(LengthUnit.Meter, point, dangerMarker.point);
+        final distance = Distance().as(
+          LengthUnit.Meter,
+          point,
+          dangerMarker.point,
+        );
 
         if (distance <= 50) {
           safetyScore -= 15;
@@ -252,12 +291,18 @@ mixin ReportsMixin on ChangeNotifier {
 
     final finalScore = safetyScore.clamp(0.0, 100.0);
 
-    print('[ReportsMixin] 📊 Seguridad calculada: ${finalScore.toInt()}% (${dangerousChecks}/${totalChecks} puntos peligrosos)');
+    print(
+      '[ReportsMixin] 📊 Seguridad calculada: ${finalScore.toInt()}% ($dangerousChecks/$totalChecks puntos peligrosos)',
+    );
 
     return finalScore;
   }
 
-  List<LatLng> _getPointsAlongPath(LatLng start, LatLng end, {double intervalMeters = 50}) {
+  List<LatLng> _getPointsAlongPath(
+    LatLng start,
+    LatLng end, {
+    double intervalMeters = 50,
+  }) {
     final points = <LatLng>[];
     final totalDistance = Distance().as(LengthUnit.Meter, start, end);
 
@@ -270,7 +315,8 @@ mixin ReportsMixin on ChangeNotifier {
     for (int i = 1; i < numPoints; i++) {
       final fraction = i / numPoints;
       final lat = start.latitude + (end.latitude - start.latitude) * fraction;
-      final lng = start.longitude + (end.longitude - start.longitude) * fraction;
+      final lng =
+          start.longitude + (end.longitude - start.longitude) * fraction;
       points.add(LatLng(lat, lng));
     }
 

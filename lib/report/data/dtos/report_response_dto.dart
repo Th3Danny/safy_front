@@ -11,15 +11,15 @@ class ReportResponseDto {
   final String? address;
   final String reporterName;
   final bool isAnonymous;
-  final int severity;
+  final int severity; // Assuming 'severity' is always guaranteed to be an int from the server in valid responses.
   final String? imageUrl;
   final String? audioUrl;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final String? verifiedBy;
+  final int? verifiedBy;
   final DateTime? verifiedAt;
   final String? verificationNotes;
-  final String? resolvedBy;
+  final int? resolvedBy;
   final DateTime? resolvedAt;
   final String? resolutionNotes;
   final String? comments;
@@ -49,40 +49,57 @@ class ReportResponseDto {
     this.comments,
   });
 
+  /// Factory method to create a ReportResponseDto from a JSON map.
+  /// It expects the report data to be nested under a 'data' key.
   factory ReportResponseDto.fromJson(Map<String, dynamic> json) {
-    // ✅ CORRECCIÓN: Los reportes están directamente en el JSON, sin wrapper 'data'
+    // Safely access the 'data' key, which contains the actual report details.
+    final Map<String, dynamic>? data = json['data'] as Map<String, dynamic>?;
+
+    // If 'data' is null, or not a Map, this indicates a malformed response.
+    if (data == null) {
+      throw FormatException('La respuesta del servidor no contiene la clave "data" o está malformada.');
+    }
+
     return ReportResponseDto(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      incidentType: json['incident_type'],
-      status: json['status'],
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
-      address: json['address'],
-      reporterName: json['reporter_name'],
-      isAnonymous: json['is_anonymous'],
-      severity: json['severity'],
-      imageUrl: json['image_url'],
-      audioUrl: json['audio_url'],
-      // ✅ CAMPOS NULLABLE - pueden ser null según tu respuesta
-      createdAt: json['created_at'] != null ? _parseDateTime(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? _parseDateTime(json['updated_at']) : null,
-      verifiedBy: json['verified_by'],
-      verifiedAt: json['verified_at'] != null ? _parseDateTime(json['verified_at']) : null,
-      verificationNotes: json['verification_notes'],
-      resolvedBy: json['resolved_by'],
-      resolvedAt: json['resolved_at'] != null ? _parseDateTime(json['resolved_at']) : null,
-      resolutionNotes: json['resolution_notes'],
-      comments: json['comments'],
+      // Access fields from the 'data' map
+      id: data['id'] as int,
+      title: data['title'] as String,
+      description: data['description'] as String,
+      incidentType: data['incident_type'] as String,
+      status: data['status'] as String,
+      latitude: (data['latitude'] as num).toDouble(),
+      longitude: (data['longitude'] as num).toDouble(),
+      address: data['address'] as String?, // Nullable string, use 'as String?'
+      reporterName: data['reporter_name'] as String,
+      isAnonymous: data['is_anonymous'] as bool,
+      // Assuming 'severity' is always an int when present. If it can be null, change to 'as int?'
+      severity: data['severity'] as int,
+      imageUrl: data['image_url'] as String?, // Nullable string
+      audioUrl: data['audio_url'] as String?, // Nullable string
+      
+      // Handle DateTime parsing, providing null if the value from JSON is null
+      createdAt: data['created_at'] != null ? _parseDateTime(data['created_at']) : null,
+      updatedAt: data['updated_at'] != null ? _parseDateTime(data['updated_at']) : null,
+      
+      // Nullable int fields
+      verifiedBy: data['verified_by'] as int?,
+      verifiedAt: data['verified_at'] != null ? _parseDateTime(data['verified_at']) : null,
+      verificationNotes: data['verification_notes'] as String?, // Nullable string
+      
+      // Nullable int fields
+      resolvedBy: data['resolved_by'] as int?,
+      resolvedAt: data['resolved_at'] != null ? _parseDateTime(data['resolved_at']) : null,
+      resolutionNotes: data['resolution_notes'] as String?, // Nullable string
+      comments: data['comments'] as String?, // Nullable string
     );
   }
 
-  // ✅ MÉTODO PARA PARSEAR FECHAS (maneja null y diferentes formatos)
+  /// Helper method to parse dynamic date values (String or List<int>) into DateTime.
+  /// Returns null if the value is null or cannot be parsed.
   static DateTime? _parseDateTime(dynamic dateValue) {
     if (dateValue == null) return null;
-    
-    // Si es un array (formato Java LocalDateTime)
+
+    // If it's a list (e.g., [year, month, day, hour, minute, second, nano])
     if (dateValue is List && dateValue.length >= 6) {
       try {
         return DateTime(
@@ -92,42 +109,44 @@ class ReportResponseDto {
           dateValue[3], // hour
           dateValue[4], // minute
           dateValue[5], // second
-          (dateValue.length > 6 ? dateValue[6] ~/ 1000000 : 0), // milliseconds
+          (dateValue.length > 6 ? (dateValue[6] as int) ~/ 1000000 : 0), // milliseconds from nanos
         );
       } catch (e) {
-        print('[ReportResponseDto] Error parseando fecha array: $e');
+        print('[ReportResponseDto] Error parsing date from array: $dateValue -> $e');
         return null;
       }
     }
-    
-    // Si es un string ISO
+
+    // If it's an ISO 8601 string
     if (dateValue is String) {
       try {
         return DateTime.parse(dateValue);
       } catch (e) {
-        print('[ReportResponseDto] Error parseando fecha string: $e');
+        print('[ReportResponseDto] Error parsing date from string: $dateValue -> $e');
         return null;
       }
     }
     
+    // If it's neither, return null
     return null;
   }
 
-  // ✅ CONVERTIR A ENTIDAD DE DOMINIO
+  /// Converts the DTO to a domain entity (ReportInfoEntity).
   ReportInfoEntity toDomainEntity() {
     return ReportInfoEntity(
-      id: id.toString(), 
+      id: id.toString(),
       title: title,
       description: description,
-      incident_type: incidentType,
+      incident_type: incidentType, // Changed from incidentType to incident_type as per domain entity
       latitude: latitude,
       longitude: longitude,
       address: address,
       reporterName: reporterName,
-      reporterEmail: null, // El backend no devuelve email en la respuesta
+      reporterEmail: null, // As per previous note, backend doesn't return email here
       severity: severity,
       isAnonymous: isAnonymous,
-      //dateTime: createdAt ?? DateTime.now(), // Usar createdAt o fecha actual
+      // If ReportInfoEntity has a dateTime field, you'll need to decide which DateTime to use.
+      // Example: dateTime: createdAt ?? DateTime.now(),
     );
   }
 
