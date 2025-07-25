@@ -3,11 +3,11 @@ import '../entities/auth_session.dart';
 
 abstract class AuthRepository {
   Future<AuthSession> signIn({
-    required String email, 
+    required String email,
     required String password,
     bool rememberMe = false,
   });
-  
+
   Future<AuthSession> signUp({
     required String name,
     required String lastName,
@@ -21,8 +21,9 @@ abstract class AuthRepository {
     required String confirmPassword,
     String? phoneNumber,
     required String role,
+    String? fcmToken,
   });
-  
+
   Future<void> signOut();
   Future<bool> refreshToken();
   Future<UserInfoEntity> getCurrentUser();

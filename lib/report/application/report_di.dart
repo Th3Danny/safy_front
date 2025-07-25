@@ -8,7 +8,7 @@ import 'package:safy/report/data/repositories/report_repository_impl.dart';
 
 // Domain layer
 import 'package:safy/report/domain/repositories/report_repository.dart';
-import 'package:safy/report/domain/usecases/get_report.dart';
+import 'package:safy/report/domain/usecases/get_report_by_id.dart';
 import 'package:safy/report/domain/usecases/get_reports_use_case.dart';
 import 'package:safy/report/domain/usecases/get_reports_for_map_use_case.dart';
 import 'package:safy/report/domain/usecases/get_clusters_use_case.dart';

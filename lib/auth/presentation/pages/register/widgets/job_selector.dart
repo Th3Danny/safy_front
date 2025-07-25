@@ -42,7 +42,7 @@ class JobSelector extends StatelessWidget {
           job: job,
           isSelected: selectedJob == job,
           onTap: () => onJobSelected(job),
-        )).toList(),
+        )),
       ],
     );
   }

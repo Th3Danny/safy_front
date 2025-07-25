@@ -30,7 +30,7 @@ class IncidentTypeSelector extends StatelessWidget {
           incident: incident,
           isSelected: selectedIncident == incident['name'],
           onTap: () => onIncidentSelected(incident['name']),
-        )).toList(),
+        )),
       ],
     );
   }

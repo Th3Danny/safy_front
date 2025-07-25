@@ -38,7 +38,7 @@ class RouteEntity {
   bool get hasDangerWarnings => warnings.isNotEmpty;
   
   String get formattedDistance => '${distanceKm.toStringAsFixed(1)} km';
-  String get formattedDuration => '${durationMinutes} min';
+  String get formattedDuration => '$durationMinutes min';
 
   double get estimatedArrivalTime {
     final now = DateTime.now();

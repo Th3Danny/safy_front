@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.safy.app">
+    package="com.valhallatech.safy">
 
     <!-- Permisos para Google Maps -->
     <uses-permission android:name="android.permission.INTERNET" />

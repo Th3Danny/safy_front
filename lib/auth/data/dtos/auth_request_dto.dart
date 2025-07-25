@@ -32,6 +32,7 @@ class RegisterRequestDto {
   final String confirmPassword;
   final String? phoneNumber;
   final String role;
+  final String? fcmToken;
 
   const RegisterRequestDto({
     required this.name,
@@ -46,12 +47,13 @@ class RegisterRequestDto {
     required this.confirmPassword,
     this.phoneNumber,
     required this.role,
+    this.fcmToken,
   });
 
   Map<String, dynamic> toJson() => {
     'name': name.trim(),
     'lastname': lastName.trim(),
-    if (secondLastName != null && secondLastName!.isNotEmpty) 
+    if (secondLastName != null && secondLastName!.isNotEmpty)
       'second_lastname': secondLastName!.trim(),
     'username': username.trim().toLowerCase(),
     'age': age,
@@ -60,11 +62,12 @@ class RegisterRequestDto {
     'email': email.trim().toLowerCase(),
     'password': password,
     'confirm_password': confirmPassword,
-    if (phoneNumber != null && phoneNumber!.isNotEmpty) 
-    'phone_number': null,
+    if (phoneNumber != null && phoneNumber!.isNotEmpty) 'phone_number': null,
     'role': role,
+    if (fcmToken != null && fcmToken!.isNotEmpty) 'fcm_token': fcmToken,
   };
 
   @override
-  String toString() => 'RegisterRequestDto(name: $name $lastName, username: $username, email: $email)';
+  String toString() =>
+      'RegisterRequestDto(name: $name $lastName, username: $username, email: $email)';
 }

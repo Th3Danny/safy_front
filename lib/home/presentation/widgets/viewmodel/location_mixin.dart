@@ -8,7 +8,6 @@ import 'package:safy/core/services/notification_service.dart';
 
 /// Mixin para gestión de ubicación del usuario
 mixin LocationMixin on ChangeNotifier {
-
   // Agrega esta propiedad para las zonas peligrosas
   List<LatLng> _dangerZones = [];
   final Distance _distance = Distance();
@@ -27,9 +26,13 @@ mixin LocationMixin on ChangeNotifier {
       print('[LocationMixin] 📍 Obteniendo ubicación actual...');
       final position = await _determinePosition();
       _currentLocation = LatLng(position.latitude, position.longitude);
-      print('[LocationMixin] ✅ Ubicación obtenida: ${_currentLocation.latitude}, ${_currentLocation.longitude}');
+      print(
+        '[LocationMixin] ✅ Ubicación obtenida: ${_currentLocation.latitude}, ${_currentLocation.longitude}',
+      );
     } catch (e) {
-      print('[LocationMixin] ⚠️ Error obteniendo ubicación, usando ubicación por defecto: $e');
+      print(
+        '[LocationMixin] ⚠️ Error obteniendo ubicación, usando ubicación por defecto: $e',
+      );
       // Ubicación por defecto (Tuxtla Gutiérrez, Centro)
       _currentLocation = LatLng(16.7569, -93.1292);
     }
@@ -55,14 +58,16 @@ mixin LocationMixin on ChangeNotifier {
 
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
-      timeLimit: const Duration(seconds: 10), // Timeout para evitar esperas largas
+      timeLimit: const Duration(
+        seconds: 10,
+      ), // Timeout para evitar esperas largas
     );
   }
 
   // Seguimiento de ubicación
   void startLocationTracking() {
     print('[LocationMixin] 🔄 Iniciando seguimiento de ubicación...');
-    
+
     final locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: 10, // Actualizar cada 10 metros
@@ -72,7 +77,9 @@ mixin LocationMixin on ChangeNotifier {
       locationSettings: locationSettings,
     ).listen(
       (Position position) {
-        print('[LocationMixin] 📍 Ubicación actualizada: ${position.latitude}, ${position.longitude}');
+        print(
+          '[LocationMixin] 📍 Ubicación actualizada: ${position.latitude}, ${position.longitude}',
+        );
         updateCurrentPosition(position);
       },
       onError: (error) {
@@ -80,7 +87,7 @@ mixin LocationMixin on ChangeNotifier {
       },
     );
   }
-  
+
   void setDangerZones(List<LatLng> zones) {
     _dangerZones = zones;
   }
@@ -91,9 +98,15 @@ mixin LocationMixin on ChangeNotifier {
     _currentLocation = newLocation;
 
     // Verificar si se movió significativamente (más de 50 metros)
-    final distance = Distance().as(LengthUnit.Meter, previousLocation, newLocation);
+    final distance = Distance().as(
+      LengthUnit.Meter,
+      previousLocation,
+      newLocation,
+    );
     if (distance > 50) {
-      print('[LocationMixin] 🚶 Movimiento significativo detectado: ${distance.toInt()}m');
+      print(
+        '[LocationMixin] 🚶 Movimiento significativo detectado: ${distance.toInt()}m',
+      );
       // Podrías recargar reportes cercanos aquí si es necesario
       // onLocationChanged(newLocation, distance);
     }
@@ -110,8 +123,7 @@ mixin LocationMixin on ChangeNotifier {
     for (final zone in _dangerZones) {
       final meters = Distance().call(currentLocation, zone);
       if (meters < 200) {
-        NotificationService().showNotification(
-          id: 1,
+        NotificationService().showDangerZoneNotification(
           title: 'Zona peligrosa cercana',
           body: 'Estás a menos de 200 metros de una zona con reportes.',
         );
@@ -142,9 +154,11 @@ mixin LocationMixin on ChangeNotifier {
       final position = await _determinePosition();
       final newLocation = LatLng(position.latitude, position.longitude);
       _currentLocation = newLocation;
-      
-      print('[LocationMixin] ✅ Centrado en: ${newLocation.latitude}, ${newLocation.longitude}');
-      
+
+      print(
+        '[LocationMixin] ✅ Centrado en: ${newLocation.latitude}, ${newLocation.longitude}',
+      );
+
       // Callback para el ViewModel principal
       onLocationCentered(newLocation);
       notifyListeners();
@@ -161,18 +175,26 @@ mixin LocationMixin on ChangeNotifier {
       print('[LocationMixin] 📍 Obteniendo ubicación fresca para reportes...');
       final position = await _determinePosition();
       final freshLocation = LatLng(position.latitude, position.longitude);
-      
+
       // Actualizar ubicación actual si es diferente
-      final distance = Distance().as(LengthUnit.Meter, _currentLocation, freshLocation);
+      final distance = Distance().as(
+        LengthUnit.Meter,
+        _currentLocation,
+        freshLocation,
+      );
       if (distance > 10) {
-        print('[LocationMixin] 🔄 Actualizando ubicación actual (${distance.toInt()}m de diferencia)');
+        print(
+          '[LocationMixin] 🔄 Actualizando ubicación actual (${distance.toInt()}m de diferencia)',
+        );
         _currentLocation = freshLocation;
         notifyListeners();
       }
-      
+
       return freshLocation;
     } catch (e) {
-      print('[LocationMixin] ⚠️ Error obteniendo ubicación fresca, usando ubicación actual');
+      print(
+        '[LocationMixin] ⚠️ Error obteniendo ubicación fresca, usando ubicación actual',
+      );
       return _currentLocation;
     }
   }
@@ -187,7 +209,7 @@ mixin LocationMixin on ChangeNotifier {
   void onLocationUpdated(LatLng location);
   void onLocationCentered(LatLng location);
   void onLocationError(String error);
-  
+
   // Callback opcional para cambios significativos de ubicación
   void onLocationChanged(LatLng newLocation, double distanceMoved) {
     // Implementar en el ViewModel si se necesita recargar reportes

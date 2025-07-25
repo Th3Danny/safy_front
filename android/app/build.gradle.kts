@@ -5,8 +5,10 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+import java.util.Properties
+
 android {
-    namespace = "com.safy.app"
+    namespace = "com.valhallatech.safy"
     compileSdk = 35
 
     compileOptions {
@@ -19,17 +21,36 @@ android {
         jvmTarget = "17"
     }
 
+    // --- Firma release ---
+    val keystoreProperties = Properties()
+    val keystorePropertiesFile = rootProject.file("app/key.properties")
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(keystorePropertiesFile.inputStream())
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(keystoreProperties["storeFile"] as String)
+            storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+        }
+    }
+
     defaultConfig {
-        applicationId = "com.safy.app"
+        applicationId = "com.valhallatech.safy"
         minSdk = 21
         targetSdk = 35
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 

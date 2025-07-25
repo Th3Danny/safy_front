@@ -7,9 +7,8 @@ import 'package:safy/report/domain/usecases/get_clusters_use_case.dart';
 
 /// Mixin para gestión de clusters de zonas peligrosas
 mixin ClustersMixin on ChangeNotifier {
-  
   // Propiedades de clusters
-  List<Marker> _clusterMarkers = [];
+  final List<Marker> _clusterMarkers = [];
   List<Marker> get clusterMarkers => _clusterMarkers;
 
   bool _showClusters = true;
@@ -28,33 +27,44 @@ mixin ClustersMixin on ChangeNotifier {
   GetClustersUseCase? get getClustersUseCase;
 
   // Cargar clusters de zonas peligrosas
-  Future<void> loadDangerousClusters(LatLng currentLocation) async {
+  Future<void> loadDangerousClusters(
+    LatLng currentLocation, {
+    double zoom = 15.0,
+  }) async {
     if (_clustersLoading) return; // Evitar cargas múltiples
-    
+
     _clustersLoading = true;
     _clustersError = null;
     notifyListeners();
 
     try {
-      print('[ClustersMixin] 📍 Cargando clusters de zonas peligrosas cerca de: ${currentLocation.latitude}, ${currentLocation.longitude}');
-      
+      print(
+        '[ClustersMixin] 📍 Cargando clusters de zonas peligrosas cerca de: ${currentLocation.latitude}, ${currentLocation.longitude}',
+      );
+
       if (getClustersUseCase != null) {
         _clusters = await getClustersUseCase!.execute(
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude,
         );
 
-        print('[ClustersMixin] 📊 Cargados ${_clusters.length} clusters desde API');
-        
+        print(
+          '[ClustersMixin] 📊 Cargados ${_clusters.length} clusters desde API',
+        );
+
         if (_clusters.isNotEmpty) {
-          _createClusterMarkers(_clusters);
-          print('[ClustersMixin] ✅ Marcadores de clusters creados exitosamente');
+          _createClusterMarkers(_clusters, zoom: zoom);
+          print(
+            '[ClustersMixin] ✅ Marcadores de clusters creados exitosamente',
+          );
         } else {
           print('[ClustersMixin] ℹ️ No hay clusters cercanos');
           _clusterMarkers.clear();
         }
       } else {
-        print('[ClustersMixin] ⚠️ GetClustersUseCase no disponible, usando datos ficticios');
+        print(
+          '[ClustersMixin] ⚠️ GetClustersUseCase no disponible, usando datos ficticios',
+        );
         _loadFakeClusters();
       }
     } catch (e) {
@@ -68,88 +78,97 @@ mixin ClustersMixin on ChangeNotifier {
     }
   }
 
-  void _createClusterMarkers(List<ClusterEntity> clusters) {
+  void _createClusterMarkers(
+    List<ClusterEntity> clusters, {
+    double zoom = 15.0,
+  }) {
     _clusterMarkers.clear();
 
+    if (zoom < 12.0) {
+      // No mostrar clusters si el zoom es muy bajo
+      print(
+        '[ClustersMixin] 🔍 Zoom demasiado alejado (<12), no se muestran clusters.',
+      );
+      return;
+    }
+
     for (final cluster in clusters) {
-      final (color, icon) = _getClusterStyle(cluster.dominantIncidentType, cluster.severityNumber);
-      final markerSize = _getClusterMarkerSize(cluster.severityNumber);
+      final (color, icon) = _getClusterStyle(
+        cluster.dominantIncidentType,
+        cluster.severityNumber,
+      );
+
+      // Escalado según zoom, tamaño mínimo 8
+      double clusterSize =
+          _getClusterSizeByReports(cluster.reportCount) * _getZoomScale(zoom);
+      if (clusterSize < 8.0) clusterSize = 8.0;
 
       _clusterMarkers.add(
         Marker(
           key: Key('cluster_${cluster.clusterId}'),
           point: LatLng(cluster.centerLatitude, cluster.centerLongitude),
-          width: markerSize,
-          height: markerSize,
+          width: clusterSize,
+          height: clusterSize,
           child: GestureDetector(
             onTap: () => _onClusterTapped(cluster),
             child: Container(
               decoration: BoxDecoration(
                 color: color.withOpacity(0.2),
                 shape: BoxShape.circle,
-                border: Border.all(color: color, width: 4),
+                border: Border.all(color: color, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withOpacity(0.5),
-                    blurRadius: 12,
-                    spreadRadius: 4,
+                    color: color.withOpacity(0.3),
+                    blurRadius: 6,
+                    spreadRadius: 1,
                   ),
                 ],
               ),
               child: Stack(
                 children: [
-                  // Icono principal del tipo de incidente dominante
                   Center(
-                    child: Icon(
-                      icon, 
-                      color: color, 
-                      size: 28
-                    )
+                    child: Icon(icon, color: color, size: clusterSize * 0.4),
                   ),
-                  
-                  // Badge de severidad
                   Positioned(
-                    top: 2,
-                    right: 2,
+                    top: clusterSize * 0.05,
+                    right: clusterSize * 0.05,
                     child: Container(
-                      width: 24,
-                      height: 24,
+                      width: clusterSize * 0.35,
+                      height: clusterSize * 0.35,
                       decoration: BoxDecoration(
                         color: color,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: Center(
                         child: Text(
                           '${cluster.severityNumber}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: clusterSize * 0.2,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  
-                  // Indicador de cluster con cantidad de reportes
                   Positioned(
-                    bottom: 2,
-                    left: 2,
+                    bottom: clusterSize * 0.05,
+                    left: clusterSize * 0.05,
                     child: Container(
-                      width: 20,
-                      height: 20,
+                      width: clusterSize * 0.32,
+                      height: clusterSize * 0.32,
                       decoration: BoxDecoration(
                         color: Colors.blue,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: Center(
                         child: Text(
                           '${cluster.reportCount}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: clusterSize * 0.18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -164,7 +183,25 @@ mixin ClustersMixin on ChangeNotifier {
       );
     }
 
-    print('[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters');
+    print(
+      '[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters',
+    );
+  }
+
+  // ✅ NUEVO: Función que calcula tamaño fijo basado en número de reportes
+  double _getClusterSizeByReports(int reportCount) {
+    // Tamaños fijos basados en cantidad de reportes
+    if (reportCount >= 20) return 70.0; // Zona MUY peligrosa
+    if (reportCount >= 15) return 65.0; // Zona alta actividad
+    if (reportCount >= 10) return 60.0; // Zona actividad moderada-alta
+    if (reportCount >= 5) return 55.0; // Zona actividad moderada
+    if (reportCount >= 3) return 50.0; // Zona actividad baja-moderada
+    return 45.0; // Zona actividad mínima
+  }
+
+  double _getZoomScale(double zoom) {
+    // Zoom base 15.0, escala 1.0. Si alejas, reduce tamaño; si acercas, aumenta.
+    return 1.0 / (1.0 + (15.0 - zoom) * 0.25).clamp(0.5, 2.0);
   }
 
   (Color, IconData) _getClusterStyle(String incidentType, int severity) {
@@ -225,18 +262,34 @@ mixin ClustersMixin on ChangeNotifier {
     print('[ClustersMixin] ⚠️ Severidad: ${cluster.severity}');
     print('[ClustersMixin] 🌍 Zona: ${cluster.zone}');
     print('[ClustersMixin] 📝 Descripción: ${cluster.description}');
-    
+
     onClusterSelected(cluster);
   }
 
   void _loadFakeClusters() {
     // Datos ficticios para desarrollo/testing
     _clusterMarkers.clear();
-    
+
     final fakeClusters = [
       (16.7580, -93.1300, Colors.red, 5, 'ROBBERY_ASSAULT', 'Asaltos/Robos', 3),
-      (16.7520, -93.1280, Colors.orange, 3, 'STREET_HARASSMENT', 'Acoso Callejero', 2),
-      (16.7600, -93.1350, Colors.red, 4, 'GANG_VIOLENCE', 'Violencia Pandillas', 4),
+      (
+        16.7520,
+        -93.1280,
+        Colors.orange,
+        3,
+        'STREET_HARASSMENT',
+        'Acoso Callejero',
+        2,
+      ),
+      (
+        16.7600,
+        -93.1350,
+        Colors.red,
+        4,
+        'GANG_VIOLENCE',
+        'Violencia Pandillas',
+        4,
+      ),
     ];
 
     for (int i = 0; i < fakeClusters.length; i++) {
@@ -245,8 +298,12 @@ mixin ClustersMixin on ChangeNotifier {
         Marker(
           key: Key('fake_cluster_$i'),
           point: LatLng(cluster.$1, cluster.$2),
-          width: _getClusterMarkerSize(cluster.$4),
-          height: _getClusterMarkerSize(cluster.$4),
+          width:
+              _getClusterMarkerSize(cluster.$4) *
+              _getZoomScale(15.0), // Use _getZoomScale for fake data
+          height:
+              _getClusterMarkerSize(cluster.$4) *
+              _getZoomScale(15.0), // Use _getZoomScale for fake data
           child: Container(
             decoration: BoxDecoration(
               color: cluster.$3.withOpacity(0.2),
@@ -255,7 +312,9 @@ mixin ClustersMixin on ChangeNotifier {
             ),
             child: Stack(
               children: [
-                Center(child: Icon(Icons.dangerous, color: cluster.$3, size: 28)),
+                Center(
+                  child: Icon(Icons.dangerous, color: cluster.$3, size: 28),
+                ),
                 Positioned(
                   bottom: 2,
                   left: 2,
@@ -285,8 +344,10 @@ mixin ClustersMixin on ChangeNotifier {
         ),
       );
     }
-    
-    print('[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters ficticios');
+
+    print(
+      '[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters ficticios',
+    );
   }
 
   void toggleClusters() {
@@ -299,7 +360,10 @@ mixin ClustersMixin on ChangeNotifier {
     const dangerRadius = 150.0; // metros
 
     for (final cluster in _clusters) {
-      final clusterPoint = LatLng(cluster.centerLatitude, cluster.centerLongitude);
+      final clusterPoint = LatLng(
+        cluster.centerLatitude,
+        cluster.centerLongitude,
+      );
       final distance = Distance().as(LengthUnit.Meter, point, clusterPoint);
       if (distance <= dangerRadius && cluster.severityNumber >= 4) {
         return true;
@@ -311,9 +375,12 @@ mixin ClustersMixin on ChangeNotifier {
   // Obtener información de seguridad de la zona
   String getZoneSafetyInfo(LatLng point) {
     for (final cluster in _clusters) {
-      final clusterPoint = LatLng(cluster.centerLatitude, cluster.centerLongitude);
+      final clusterPoint = LatLng(
+        cluster.centerLatitude,
+        cluster.centerLongitude,
+      );
       final distance = Distance().as(LengthUnit.Meter, point, clusterPoint);
-      
+
       if (distance <= 200) {
         return '⚠️ Zona ${cluster.severity.toLowerCase()}: ${cluster.dominantIncidentName} (${cluster.reportCount} reportes)';
       }

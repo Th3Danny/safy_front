@@ -1,7 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
+import 'package:go_router/go_router.dart';
+import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 
 class DangerZoneOverlay extends StatefulWidget {
   const DangerZoneOverlay({super.key});
@@ -16,6 +17,8 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
   late Animation<double> _pulseAnimation;
   late Animation<Offset> _slideAnimation;
 
+  bool _isVisible = true;
+
   @override
   void initState() {
     super.initState();
@@ -25,19 +28,15 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
     );
 
     _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
 
     _animationController.repeat(reverse: true);
   }
@@ -50,6 +49,7 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
 
   @override
   Widget build(BuildContext context) {
+    if (!_isVisible) return const SizedBox.shrink();
     return Consumer<MapViewModel>(
       builder: (context, mapViewModel, child) {
         return SlideTransition(
@@ -62,10 +62,7 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.red.shade600,
-                      Colors.red.shade700,
-                    ],
+                    colors: [Colors.red.shade600, Colors.red.shade700],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -163,7 +160,11 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
                     // Botón para cerrar
                     TextButton.icon(
                       onPressed: () => _dismissWarning(),
-                      icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       label: const Text(
                         'Entendido, continuar',
                         style: TextStyle(color: Colors.white, fontSize: 12),
@@ -184,7 +185,7 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
     if (mapViewModel.startPoint == null) {
       mapViewModel.setStartPoint(mapViewModel.currentLocation);
     }
-    
+
     // Aquí podrías implementar lógica para sugerir un destino seguro
     // o recalcular la ruta actual evitando zonas peligrosas
     ScaffoldMessenger.of(context).showSnackBar(
@@ -196,19 +197,29 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
   }
 
   void _reportIncident(BuildContext context) {
-    Navigator.pushNamed(
-      context,
-      '/create-report',
-      arguments: {
-        'location': context.read<MapViewModel>().currentLocation,
-        'preselected_type': 'danger_zone',
-      },
+    // Navegar a la pantalla de reporte con ubicación actual
+    final mapViewModel = context.read<MapViewModel>();
+
+    // ✅ CAMBIO: Usar context.go en lugar de Navigator.pushNamed
+    context.go(AppRoutesConstant.createReport);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('📝 Abriendo formulario de reporte...'),
+        backgroundColor: Colors.blue,
+      ),
     );
   }
 
   void _dismissWarning() {
-    // Aquí podrías guardar que el usuario ya vio esta advertencia
-    // para no mostrarla nuevamente en la misma sesión
+    
+    setState(() {
+      _isVisible = false;
+    });
+
+    void dismissWarning() {
+      // Aquí podrías guardar que el usuario ya vio esta advertencia
+      // para no mostrarla nuevamente en la misma sesión
+    }
   }
 }
-

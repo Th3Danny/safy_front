@@ -23,8 +23,13 @@ import '../widgets/viewmodel/markers_mixin.dart';
 /// ViewModel principal del mapa que integra todas las funcionalidades
 /// usando mixins para mejor organización y mantenibilidad
 class MapViewModel extends ChangeNotifier
-    with LocationMixin, RouteMixin, ClustersMixin, ReportsMixin, SearchMixin, MarkersMixin {
-  
+    with
+        LocationMixin,
+        RouteMixin,
+        ClustersMixin,
+        ReportsMixin,
+        SearchMixin,
+        MarkersMixin {
   // ============================================================================
   // DEPENDENCIAS E INYECCIÓN
   // ============================================================================
@@ -47,7 +52,20 @@ class MapViewModel extends ChangeNotifier
     this.getOpenRouteUseCase,
     this.getReportsForMapUseCase,
     this.getClustersUseCase, // NUEVO
-  });
+  }) {
+    // Listener para cambios de zoom
+    _mapController.mapEventStream.listen((event) {
+      if (event is MapEventMove ||
+          event is MapEventMoveEnd ||
+          event is MapEventMoveStart) {
+        final newZoom = _mapController.camera.zoom;
+        if (newZoom != _currentZoom) {
+          _currentZoom = newZoom;
+          notifyListeners();
+        }
+      }
+    });
+  }
 
   // ============================================================================
   // CONFIGURACIÓN DEL MAPA
@@ -68,6 +86,9 @@ class MapViewModel extends ChangeNotifier
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  double _currentZoom = 15.0;
+  double get currentZoom => _currentZoom;
+
   // ============================================================================
   // TODOS LOS MARCADORES PARA EL MAPA
   // ============================================================================
@@ -75,20 +96,20 @@ class MapViewModel extends ChangeNotifier
   // Combinar todos los marcadores para mostrar en el mapa
   List<Marker> get allMapMarkers {
     final allMarkers = <Marker>[];
-    
+
     // Agregar marcadores de ubicación y rutas
     allMarkers.addAll(markers);
-    
+
     // Agregar clusters de zonas peligrosas si están activados
     if (showClusters) {
       allMarkers.addAll(clusterMarkers);
     }
-    
+
     // Agregar reportes individuales si están activados (por si los necesitas después)
     if (showDangerZones) {
       allMarkers.addAll(dangerMarkers);
     }
-    
+
     return allMarkers;
   }
 
@@ -99,26 +120,26 @@ class MapViewModel extends ChangeNotifier
   Future<void> initializeMap() async {
     try {
       print('[MapViewModel] 🚀 Inicializando mapa...');
-      
+
       // 1. Obtener ubicación actual
       await determineCurrentLocation();
       print('[MapViewModel] ✅ Ubicación inicial obtenida');
-      
+
       // 2. Cargar clusters de zonas peligrosas basados en ubicación actual
       await loadDangerousClustersWithCurrentLocation();
-      
+
       // 3. Opcional: Cargar reportes individuales (si los necesitas)
       // await loadDangerZonesWithCurrentLocation();
-      
+
       // 4. Crear marcador de ubicación actual
       createCurrentLocationMarker(currentLocation, false);
-      
+
       // 5. Iniciar seguimiento de ubicación
       startLocationTracking();
 
       _isLoading = false;
       notifyListeners();
-      
+
       print('[MapViewModel] 🎉 Mapa inicializado correctamente');
     } catch (e) {
       print('[MapViewModel] ❌ Error inicializando mapa: $e');
@@ -132,14 +153,11 @@ class MapViewModel extends ChangeNotifier
   Future<void> loadDangerousClustersWithCurrentLocation() async {
     try {
       print('[MapViewModel] 📍 Cargando clusters de zonas peligrosas...');
-      
-      // Obtener ubicación fresca para asegurar precisión
       final freshLocation = await getCurrentLocationForReports();
-      
-      // Cargar clusters de zonas peligrosas
-      await loadDangerousClusters(freshLocation);
-      
-      print('[MapViewModel] ✅ Clusters de zonas peligrosas cargados correctamente');
+      await loadDangerousClusters(freshLocation, zoom: currentZoom);
+      print(
+        '[MapViewModel] ✅ Clusters de zonas peligrosas cargados correctamente',
+      );
     } catch (e) {
       print('[MapViewModel] ❌ Error cargando clusters: $e');
       _errorMessage = 'Error cargando zonas peligrosas: $e';
@@ -151,10 +169,8 @@ class MapViewModel extends ChangeNotifier
   Future<void> loadDangerZonesWithCurrentLocation() async {
     try {
       print('[MapViewModel] 📍 Cargando reportes individuales...');
-      
       final freshLocation = await getCurrentLocationForReports();
-      await loadDangerZones(freshLocation);
-      
+      await loadDangerZones(freshLocation, zoom: currentZoom);
       print('[MapViewModel] ✅ Reportes individuales cargados correctamente');
     } catch (e) {
       print('[MapViewModel] ❌ Error cargando reportes individuales: $e');
@@ -210,7 +226,9 @@ class MapViewModel extends ChangeNotifier
   void onLocationChanged(LatLng newLocation, double distanceMoved) {
     // Si se movió más de 1km, recargar clusters
     if (distanceMoved > 1000) {
-      print('[MapViewModel] 🔄 Recargando clusters por cambio de ubicación (${distanceMoved.toInt()}m)');
+      print(
+        '[MapViewModel] 🔄 Recargando clusters por cambio de ubicación (${distanceMoved.toInt()}m)',
+      );
       loadDangerousClusters(newLocation);
     }
   }
@@ -222,12 +240,19 @@ class MapViewModel extends ChangeNotifier
   @override
   void onClusterSelected(ClusterEntity cluster) {
     if (_mapReady) {
-      final clusterLocation = LatLng(cluster.centerLatitude, cluster.centerLongitude);
+      final clusterLocation = LatLng(
+        cluster.centerLatitude,
+        cluster.centerLongitude,
+      );
       _mapController.move(clusterLocation, 17.0);
-      
-      print('[MapViewModel] 🎯 Cluster seleccionado: ${cluster.dominantIncidentName}');
-      print('[MapViewModel] 📊 Información: ${cluster.reportCount} reportes, zona ${cluster.zone}');
-      
+
+      print(
+        '[MapViewModel] 🎯 Cluster seleccionado: ${cluster.dominantIncidentName}',
+      );
+      print(
+        '[MapViewModel] 📊 Información: ${cluster.reportCount} reportes, zona ${cluster.zone}',
+      );
+
       // Opcional: Mostrar información detallada del cluster
       _showClusterDetails(cluster);
     }
@@ -243,7 +268,8 @@ class MapViewModel extends ChangeNotifier
   void _showClusterDetails(ClusterEntity cluster) {
     // Aquí puedes implementar una función para mostrar más detalles
     // Por ejemplo, un bottom sheet o dialog con información del cluster
-    _errorMessage = 'Zona ${cluster.severity}: ${cluster.dominantIncidentName} (${cluster.reportCount} reportes)';
+    _errorMessage =
+        'Zona ${cluster.severity}: ${cluster.dominantIncidentName} (${cluster.reportCount} reportes)';
     notifyListeners();
   }
 
@@ -261,7 +287,9 @@ class MapViewModel extends ChangeNotifier
 
   @override
   void onDangerZonesToggled(bool visible) {
-    print('[MapViewModel] 👁️ Reportes individuales ${visible ? 'mostrados' : 'ocultados'}');
+    print(
+      '[MapViewModel] 👁️ Reportes individuales ${visible ? 'mostrados' : 'ocultados'}',
+    );
     notifyListeners(); // Importante para actualizar allMapMarkers
   }
 
@@ -293,7 +321,9 @@ class MapViewModel extends ChangeNotifier
 
   @override
   void onRouteSelected(RouteOption route) {
-    print('[MapViewModel] 🛣️ Ruta seleccionada: ${route.name} - ${route.safetyText}');
+    print(
+      '[MapViewModel] 🛣️ Ruta seleccionada: ${route.name} - ${route.safetyText}',
+    );
   }
 
   @override

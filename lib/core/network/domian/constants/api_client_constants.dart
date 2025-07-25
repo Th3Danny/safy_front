@@ -10,7 +10,8 @@ class ApiConstants {
   static const String profile = '/auth/profile';
 
   // 🔧 CORREGIR ENDPOINTS DE REPORTS
-  static const String reports = '/reports'; 
+  static const String reports = '/reports';
+  static const String reportById = '/reports/my-reports?page=0&size=10'; 
   static const String createReport = '/reports'; 
   //static const String nearbyReports = '/reports/nearby';
  static const String nearbyReports = '/reports-nearby/smart-nearby';

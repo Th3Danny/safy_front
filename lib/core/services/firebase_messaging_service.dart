@@ -1,7 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-
 class FirebaseMessagingService {
   static final FirebaseMessagingService _instance =
       FirebaseMessagingService._internal();
@@ -58,16 +57,17 @@ class FirebaseMessagingService {
   Future<void> _showLocalNotification(RemoteNotification notification) async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-      'safy_channel',
-      'Notificaciones SAFY',
-      channelDescription: 'Canal para notificaciones críticas de SAFY',
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-    );
+          'safy_channel',
+          'Notificaciones SAFY',
+          channelDescription: 'Canal para notificaciones críticas de SAFY',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+        );
 
-    const NotificationDetails notificationDetails =
-        NotificationDetails(android: androidDetails);
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+    );
 
     await _flutterLocalNotificationsPlugin.show(
       notification.hashCode,
@@ -75,5 +75,9 @@ class FirebaseMessagingService {
       notification.body,
       notificationDetails,
     );
+  }
+
+  Future<String?> getToken() async {
+    return await _messaging.getToken();
   }
 }

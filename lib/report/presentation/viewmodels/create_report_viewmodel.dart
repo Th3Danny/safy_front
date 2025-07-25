@@ -72,7 +72,7 @@ class CreateReportViewModel extends ChangeNotifier {
         isAnonymous: isAnonymous,
       );
       _errorMessage = null; // 👈 Asegurar que no hay error
-      print('[CreateReportViewModel] ✅ Reporte creado: ${_reporterName}');
+      print('[CreateReportViewModel] ✅ Reporte creado: $_reporterName');
     } on ReportValidationException catch (e) {
       _errorMessage =
           'Errores de validación: ${e.fieldErrors.values.expand((x) => x).join(', ')}';

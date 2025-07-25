@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:safy/report/domain/entities/report.dart';
 import 'package:safy/report/domain/exceptions/report_exceptions.dart';
 import 'package:safy/report/domain/usecases/get_reports_use_case.dart';
+// ❌ QUITAR: import 'package:geolocator/geolocator.dart';
 
 class GetReportsViewModel extends ChangeNotifier {
   final GetReportsUseCase _getReportsUseCase;
@@ -18,6 +19,7 @@ class GetReportsViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get hasError => _errorMessage != null;
 
+  // ✅ CORREGIDO: SIN coordenadas para MIS reportes
   Future<void> loadReports({
     required String userId,
     int? page,
@@ -27,18 +29,20 @@ class GetReportsViewModel extends ChangeNotifier {
     _clearError();
 
     try {
+      // ✅ SIN coordenadas = obtener MIS reportes
       _reports = await _getReportsUseCase.execute(
         userId: userId,
         page: page,
         pageSize: pageSize,
+        // ✅ NO pasar latitude/longitude para obtener MIS reportes
       );
-      
-      print('[GetReportsViewModel] Reportes cargados: ${_reports.length}');
+            
+      print('[GetReportsViewModel] MIS reportes cargados: ${_reports.length}');
     } on ReportExceptions catch (e) {
       _setError(e.message);
       print('[GetReportsViewModel] Error de dominio: ${e.message}');
     } catch (e) {
-      _setError('Ocurrió un error inesperado al cargar los reportes.');
+      _setError('Ocurrió un error inesperado al cargar mis reportes.');
       print('[GetReportsViewModel] Error inesperado: $e');
     } finally {
       _setLoading(false);

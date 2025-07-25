@@ -8,7 +8,6 @@ import 'package:safy/auth/domain/exceptions/auth_exceptions.dart';
 import 'package:safy/auth/domain/repositories/auth_repository.dart';
 import 'package:safy/core/session/session_manager.dart';
 
-
 class AuthRepositoryImpl implements AuthRepository {
   final AuthApiClient _apiClient;
   final SessionManager _sessionManager;
@@ -41,7 +40,6 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       return _sessionManager.currentSession!;
-
     } on DioException catch (e) {
       throw _mapDioErrorToAuthException(e);
     } on AuthException {
@@ -65,6 +63,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String confirmPassword,
     String? phoneNumber,
     required String role,
+    String? fcmToken,
   }) async {
     try {
       //  SINTAXIS CORRECTA: Constructor de RegisterRequestDto
@@ -81,6 +80,7 @@ class AuthRepositoryImpl implements AuthRepository {
         confirmPassword: confirmPassword,
         phoneNumber: phoneNumber,
         role: role, // Asignar rol por defecto
+        fcmToken: fcmToken,
       );
 
       final response = await _apiClient.signUp(requestDto);
@@ -95,13 +95,14 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       return _sessionManager.currentSession!;
-
     } on DioException catch (e) {
       throw _mapDioErrorToAuthException(e);
     } on AuthException {
       rethrow;
     } catch (e) {
-      throw AuthException('Error inesperado durante el registro: ${e.toString()}');
+      throw AuthException(
+        'Error inesperado durante el registro: ${e.toString()}',
+      );
     }
   }
 
@@ -181,13 +182,17 @@ class AuthRepositoryImpl implements AuthRepository {
       case 400:
         return const InvalidCredentialsException('Credenciales inválidas');
       case 401:
-        return const InvalidCredentialsException('Usuario o contraseña incorrectos');
+        return const InvalidCredentialsException(
+          'Usuario o contraseña incorrectos',
+        );
       case 403:
         return const AccountNotActiveException('Cuenta desactivada');
       case 404:
         return const UserNotFoundException('Usuario no encontrado');
       case 409:
-        return const EmailAlreadyExistsException('El correo ya está registrado');
+        return const EmailAlreadyExistsException(
+          'El correo ya está registrado',
+        );
       case 422:
         final errors = e.response?.data?['errors'] as Map<String, dynamic>?;
         if (errors != null) {
@@ -205,7 +210,9 @@ class AuthRepositoryImpl implements AuthRepository {
           return const AuthException('Tiempo de conexión agotado');
         }
         if (e.type == DioExceptionType.connectionError) {
-          return const AuthException('Error de conexión. Verifica tu internet.');
+          return const AuthException(
+            'Error de conexión. Verifica tu internet.',
+          );
         }
         return AuthException('Error de red: ${e.message}');
     }

@@ -18,8 +18,9 @@ class SignUpUseCase {
     required String email,
     required String password,
     required String confirmPassword,
-    String? phoneNumber, 
+    String? phoneNumber,
     required String role,
+    String? fcmToken,
   }) async {
     // Validaciones de negocio
     _validateRegistrationData(
@@ -48,6 +49,7 @@ class SignUpUseCase {
       password: password,
       confirmPassword: confirmPassword,
       phoneNumber: null,
+      fcmToken: fcmToken,
     );
   }
 
@@ -83,9 +85,13 @@ class SignUpUseCase {
     if (username.trim().isEmpty) {
       errors['username'] = ['El nombre de usuario es requerido'];
     } else if (username.trim().length < 3) {
-      errors['username'] = ['El nombre de usuario debe tener al menos 3 caracteres'];
+      errors['username'] = [
+        'El nombre de usuario debe tener al menos 3 caracteres',
+      ];
     } else if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(username.trim())) {
-      errors['username'] = ['El nombre de usuario solo puede contener letras, números y guiones bajos'];
+      errors['username'] = [
+        'El nombre de usuario solo puede contener letras, números y guiones bajos',
+      ];
     }
 
     // Validar edad
@@ -98,7 +104,9 @@ class SignUpUseCase {
     // Validar email
     if (email.trim().isEmpty) {
       errors['email'] = ['El correo electrónico es requerido'];
-    } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(email.trim())) {
+    } else if (!RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    ).hasMatch(email.trim())) {
       errors['email'] = ['Formato de correo electrónico inválido'];
     }
 

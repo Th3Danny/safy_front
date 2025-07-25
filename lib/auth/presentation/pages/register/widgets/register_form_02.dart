@@ -7,6 +7,8 @@ import 'package:safy/auth/presentation/pages/login/widgets/custom_text_field.dar
 import 'package:safy/auth/presentation/pages/register/widgets/job_selector.dart';
 import 'package:safy/auth/presentation/viewmodels/register_viewmodel.dart';
 import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
+import 'package:safy/core/services/firebase_messaging_service.dart';
+import 'package:safy/core/session/session_manager.dart';
 
 class RegisterForm02 extends StatefulWidget {
   final Map<String, dynamic>? registerData;
@@ -29,16 +31,18 @@ class _RegisterForm02State extends State<RegisterForm02> {
   @override
   void initState() {
     super.initState();
-    
+
     // 🔧 Obtener la MISMA instancia de GetIt
     _registerViewModel = GetIt.instance<RegisterViewModel>();
-    print('[RegisterForm02] ViewModel hashCode: ${_registerViewModel.hashCode}');
-    
+    print(
+      '[RegisterForm02] ViewModel hashCode: ${_registerViewModel.hashCode}',
+    );
+
     _registerViewModel.addListener(_onViewModelChanged);
 
     // ✅ Ir a la página 1 sin notificar
     _registerViewModel.goToPage(1);
-    
+
     // 🔧 Cargar datos después del primer frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadExistingData();
@@ -70,7 +74,7 @@ class _RegisterForm02State extends State<RegisterForm02> {
     print('=== DEBUG FORM 2 - VERIFICACIÓN DE DATOS ===');
     print('Form2 ViewModel hashCode: ${_registerViewModel.hashCode}');
     _registerViewModel.printCurrentState();
-    
+
     // Si los datos están vacíos, hay un problema
     if (_registerViewModel.name.isEmpty) {
       print(' ERROR: Los datos del Form1 se perdieron!');
@@ -95,11 +99,14 @@ class _RegisterForm02State extends State<RegisterForm02> {
 
       // ✅ Navegar al login si registro fue exitoso
       if (_registerViewModel.lastSuccessfulSession != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (mounted) {
+            await SessionManager.instance.clearSession();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('¡Registro exitoso! Ahora puedes iniciar sesión.'),
+                content: Text(
+                  '¡Registro exitoso! Ahora puedes iniciar sesión.',
+                ),
                 backgroundColor: Colors.green,
               ),
             );
@@ -122,7 +129,12 @@ class _RegisterForm02State extends State<RegisterForm02> {
     if (_formKey.currentState!.validate()) {
       // 🔄 Sincronizar datos actuales
       _syncFormDataToViewModel();
-      
+
+      // Obtener el FCM token antes de registrar
+      final fcmToken = await FirebaseMessagingService().getToken();
+      print('[RegisterForm02] FCM Token obtenido para registro: $fcmToken');
+      _registerViewModel.setFcmToken(fcmToken);
+
       // 🔍 Debug: imprimir estado final antes del registro
       print('=== DEBUG FORM 2 - ANTES DEL REGISTRO ===');
       _registerViewModel.printCurrentState();
@@ -131,7 +143,7 @@ class _RegisterForm02State extends State<RegisterForm02> {
       //  Verificar que se puede enviar
       if (_registerViewModel.canSubmit) {
         final success = await _registerViewModel.signUp();
-        
+
         if (success) {
           print(' Registro exitoso desde register_form_02.dart');
         } else {
@@ -153,9 +165,7 @@ class _RegisterForm02State extends State<RegisterForm02> {
   Widget build(BuildContext context) {
     // 🔧 Mostrar loading mientras se cargan los datos iniciales
     if (_isLoadingData) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     return Form(
@@ -168,9 +178,15 @@ class _RegisterForm02State extends State<RegisterForm02> {
             padding: const EdgeInsets.all(8),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: _registerViewModel.name.isEmpty ? Colors.red.shade50 : Colors.green.shade50,
+              color:
+                  _registerViewModel.name.isEmpty
+                      ? Colors.red.shade50
+                      : Colors.green.shade50,
               border: Border.all(
-                color: _registerViewModel.name.isEmpty ? Colors.red.shade300 : Colors.green.shade300
+                color:
+                    _registerViewModel.name.isEmpty
+                        ? Colors.red.shade300
+                        : Colors.green.shade300,
               ),
               borderRadius: BorderRadius.circular(8),
             ),
@@ -178,19 +194,42 @@ class _RegisterForm02State extends State<RegisterForm02> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _registerViewModel.name.isEmpty ? 'ERROR - Datos perdidos:' : 'DEBUG - Datos recibidos:',
+                  _registerViewModel.name.isEmpty
+                      ? 'ERROR - Datos perdidos:'
+                      : 'DEBUG - Datos recibidos:',
                   style: TextStyle(
-                    fontWeight: FontWeight.bold, 
+                    fontWeight: FontWeight.bold,
                     fontSize: 12,
-                    color: _registerViewModel.name.isEmpty ? Colors.red.shade700 : Colors.green.shade700,
+                    color:
+                        _registerViewModel.name.isEmpty
+                            ? Colors.red.shade700
+                            : Colors.green.shade700,
                   ),
                 ),
-                Text('Nombre: "${_registerViewModel.name}"', style: TextStyle(fontSize: 11)),
-                Text('Apellido: "${_registerViewModel.lastName}"', style: TextStyle(fontSize: 11)),
-                Text('Usuario: "${_registerViewModel.username}"', style: TextStyle(fontSize: 11)),
-                Text('Edad: ${_registerViewModel.age}', style: TextStyle(fontSize: 11)),
-                Text('Género: ${_registerViewModel.selectedGender.value}', style: TextStyle(fontSize: 11)),
-                Text('HashCode: ${_registerViewModel.hashCode}', style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic)),
+                Text(
+                  'Nombre: "${_registerViewModel.name}"',
+                  style: TextStyle(fontSize: 11),
+                ),
+                Text(
+                  'Apellido: "${_registerViewModel.lastName}"',
+                  style: TextStyle(fontSize: 11),
+                ),
+                Text(
+                  'Usuario: "${_registerViewModel.username}"',
+                  style: TextStyle(fontSize: 11),
+                ),
+                Text(
+                  'Edad: ${_registerViewModel.age}',
+                  style: TextStyle(fontSize: 11),
+                ),
+                Text(
+                  'Género: ${_registerViewModel.selectedGender.value}',
+                  style: TextStyle(fontSize: 11),
+                ),
+                Text(
+                  'HashCode: ${_registerViewModel.hashCode}',
+                  style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
+                ),
               ],
             ),
           ),
@@ -259,7 +298,9 @@ class _RegisterForm02State extends State<RegisterForm02> {
               if (value == null || value.trim().isEmpty) {
                 return 'Email is required';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value.trim())) {
                 return 'Enter a valid email';
               }
               return null;
@@ -269,7 +310,7 @@ class _RegisterForm02State extends State<RegisterForm02> {
           const SizedBox(height: 16),
 
           // Phone Number field
-          // CustomTextField( 
+          // CustomTextField(
           //   controller: TextEditingController(text: _registerViewModel.phoneNumber),
           //   label: 'Phone Number',
           //   hint: '123-456-7890',
@@ -389,7 +430,10 @@ class _RegisterForm02State extends State<RegisterForm02> {
 
           // Sign Up button
           CustomButton(
-            text: _registerViewModel.isLoading ? 'Creating account...' : 'Sign Up',
+            text:
+                _registerViewModel.isLoading
+                    ? 'Creating account...'
+                    : 'Sign Up',
             onPressed: _validateAndSubmit,
             isLoading: _registerViewModel.isLoading,
           ),
