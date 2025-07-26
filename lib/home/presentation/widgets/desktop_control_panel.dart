@@ -1,15 +1,12 @@
-
 import 'package:flutter/material.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
-
+import 'package:go_router/go_router.dart';
+import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 
 class DesktopControlPanel extends StatelessWidget {
   final MapViewModel mapViewModel;
 
-  const DesktopControlPanel({
-    super.key,
-    required this.mapViewModel,
-  });
+  const DesktopControlPanel({super.key, required this.mapViewModel});
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +19,13 @@ class DesktopControlPanel extends StatelessWidget {
           // Título del panel
           Text(
             'Panel de Control',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Sección de controles del mapa
           _buildSection(
             title: 'Controles del Mapa',
@@ -40,10 +37,11 @@ class DesktopControlPanel extends StatelessWidget {
                 onChanged: (_) => mapViewModel.toggleDangerZones(),
                 secondary: Icon(
                   Icons.warning,
-                  color: mapViewModel.showDangerZones ? Colors.red : Colors.grey,
+                  color:
+                      mapViewModel.showDangerZones ? Colors.red : Colors.grey,
                 ),
               ),
-              
+
               ListTile(
                 leading: const Icon(Icons.my_location, color: Colors.blue),
                 title: const Text('Centrar en mi ubicación'),
@@ -53,32 +51,26 @@ class DesktopControlPanel extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
-          // Sección de transporte
-          _buildSection(
-            title: 'Modo de Transporte',
-            children: [
-              _buildTransportOption('walk', 'Caminar', Icons.directions_walk),
-              _buildTransportOption('car', 'Auto', Icons.directions_car),
-              _buildTransportOption('bus', 'Transporte público', Icons.directions_bus),
-            ],
-          ),
-          
+
+          // Sección de modo de transporte deshabilitada para esta versión. Reactivar en el futuro si es necesario.
+          // _buildSection(
+          //   title: 'Modo de Transporte',
+          //   children: [
+          //     _buildTransportOption('walk', 'Caminar', Icons.directions_walk),
+          //     _buildTransportOption('car', 'Auto', Icons.directions_car),
+          //     _buildTransportOption('bus', 'Transporte público', Icons.directions_bus),
+          //   ],
+          // ),
           const SizedBox(height: 20),
-          
+
           // Información de ruta actual
           if (mapViewModel.routeOptions.isNotEmpty)
-            _buildSection(
-              title: 'Ruta Actual',
-              children: [
-                _buildRouteInfo(),
-              ],
-            ),
-          
+            _buildSection(title: 'Ruta Actual', children: [_buildRouteInfo()]),
+
           const Spacer(),
-          
+
           // Acciones rápidas
           _buildSection(
             title: 'Acciones Rápidas',
@@ -86,19 +78,19 @@ class DesktopControlPanel extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.add_box, color: Colors.red),
                 title: const Text('Reportar incidente'),
-                onTap: () => Navigator.pushNamed(context, '/create-report'),
+                onTap: () => context.go(AppRoutesConstant.createReport),
               ),
-              
+
               ListTile(
                 leading: const Icon(Icons.local_hospital, color: Colors.green),
                 title: const Text('Contactos de emergencia'),
-                onTap: () => Navigator.pushNamed(context, '/emergency-contacts'),
+                onTap: () => context.go(AppRoutesConstant.helpInstitutions),
               ),
-              
+
               ListTile(
                 leading: const Icon(Icons.settings, color: Colors.grey),
                 title: const Text('Configuración'),
-                onTap: () => Navigator.pushNamed(context, '/settings'),
+                onTap: () => context.go(AppRoutesConstant.settings),
               ),
             ],
           ),
@@ -143,7 +135,7 @@ class DesktopControlPanel extends StatelessWidget {
 
   Widget _buildTransportOption(String mode, String label, IconData icon) {
     final isSelected = mapViewModel.selectedTransportMode == mode;
-    
+
     return RadioListTile<String>(
       value: mode,
       groupValue: mapViewModel.selectedTransportMode,
@@ -153,17 +145,15 @@ class DesktopControlPanel extends StatelessWidget {
         }
       },
       title: Text(label),
-      secondary: Icon(
-        icon,
-        color: isSelected ? Colors.blue : Colors.grey,
-      ),
+      secondary: Icon(icon, color: isSelected ? Colors.blue : Colors.grey),
     );
   }
 
   Widget _buildRouteInfo() {
-    final recommendedRoute = mapViewModel.routeOptions
-        .where((route) => route.isRecommended)
-        .firstOrNull;
+    final recommendedRoute =
+        mapViewModel.routeOptions
+            .where((route) => route.isRecommended)
+            .firstOrNull;
 
     if (recommendedRoute == null) {
       return const ListTile(
@@ -196,7 +186,7 @@ class DesktopControlPanel extends StatelessWidget {
             ),
           ),
         ),
-        
+
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

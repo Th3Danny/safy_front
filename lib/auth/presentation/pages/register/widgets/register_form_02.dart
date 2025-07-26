@@ -7,7 +7,7 @@ import 'package:safy/auth/presentation/pages/login/widgets/custom_text_field.dar
 import 'package:safy/auth/presentation/pages/register/widgets/job_selector.dart';
 import 'package:safy/auth/presentation/viewmodels/register_viewmodel.dart';
 import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
-import 'package:safy/core/services/firebase_messaging_service.dart';
+import 'package:safy/core/services/firebase/firebase_messaging_service.dart';
 import 'package:safy/core/session/session_manager.dart';
 
 class RegisterForm02 extends StatefulWidget {

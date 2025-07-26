@@ -8,7 +8,7 @@ import 'package:safy/home/presentation/widgets/map_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_fab.dart';
 import 'package:safy/home/presentation/widgets/place_search_widget.dart';
 import 'package:safy/home/presentation/widgets/route_options_widget.dart';
-import 'package:go_router/go_router.dart';
+
 
 class MobileMapLayout extends StatelessWidget {
   const MobileMapLayout({super.key});
@@ -22,13 +22,14 @@ class MobileMapLayout extends StatelessWidget {
             children: [
               // 🌍 Mapa principal
               const MapWidget(),
-              
+
               // 🎯 Controles del mapa (ACTUALIZADO con todos los parámetros)
               Positioned(
                 top: 50,
                 right: 16,
                 child: MapControlsWidget(
-                  onLocationPressed: () => mapViewModel.centerOnCurrentLocation(),
+                  onLocationPressed:
+                      () => mapViewModel.centerOnCurrentLocation(),
                   onToggleDangerZones: () => mapViewModel.toggleDangerZones(),
                   onToggleClusters: () => mapViewModel.toggleClusters(),
                   onRefreshClusters: () => mapViewModel.refreshDangerousZones(),
@@ -47,7 +48,8 @@ class MobileMapLayout extends StatelessWidget {
               ),
 
               // 📋 Opciones de ruta (cuando hay rutas calculadas)
-              if (mapViewModel.routeOptions.isNotEmpty && mapViewModel.showRoutePanel) 
+              if (mapViewModel.routeOptions.isNotEmpty &&
+                  mapViewModel.showRoutePanel)
                 Positioned(
                   top: 180, // Ajustado para dar espacio al PlaceSearchWidget
                   left: 16,
@@ -70,13 +72,14 @@ class MobileMapLayout extends StatelessWidget {
               ),
 
               // ⚠️ Mensaje de error (mejorado para clusters)
-              if (mapViewModel.errorMessage != null || mapViewModel.clustersError != null)
+              if (mapViewModel.errorMessage != null ||
+                  mapViewModel.clustersError != null)
                 Positioned(
                   bottom: 100,
                   left: 16,
                   right: 16,
                   child: _buildErrorMessage(
-                    context, 
+                    context,
                     mapViewModel.errorMessage ?? mapViewModel.clustersError!,
                     () => mapViewModel.clearError(),
                   ),
@@ -97,7 +100,11 @@ class MobileMapLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorMessage(BuildContext context, String message, VoidCallback onDismiss) {
+  Widget _buildErrorMessage(
+    BuildContext context,
+    String message,
+    VoidCallback onDismiss,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(16),
@@ -122,7 +129,7 @@ class MobileMapLayout extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
-              Icons.error_outline, 
+              Icons.error_outline,
               color: Colors.red.shade700,
               size: 20,
             ),
@@ -144,10 +151,7 @@ class MobileMapLayout extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   message,
-                  style: TextStyle(
-                    color: Colors.red.shade700,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.red.shade700, fontSize: 12),
                 ),
               ],
             ),
@@ -160,11 +164,7 @@ class MobileMapLayout extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               child: Container(
                 padding: const EdgeInsets.all(8),
-                child: Icon(
-                  Icons.close,
-                  color: Colors.red.shade600,
-                  size: 18,
-                ),
+                child: Icon(Icons.close, color: Colors.red.shade600, size: 18),
               ),
             ),
           ),
@@ -223,10 +223,7 @@ class MobileMapLayout extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Cargando zonas peligrosas...',
-                  style: TextStyle(
-                    color: Colors.blue.shade700,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
                 ),
               ],
             ),
@@ -247,17 +244,20 @@ class MobileMapLayout extends StatelessWidget {
 
   void _handleNavigationTap(BuildContext context, String type) {
     final mapViewModel = context.read<MapViewModel>();
-    
+
     switch (type) {
       case 'add':
-        context.go('/create-report');
+        mapViewModel.clearRoute();
+        // Aquí puedes mostrar el panel de rutas o enfocar el mapa si es necesario
+        // Por ejemplo: mapViewModel.showRoutePanel();
         break;
-      case 'walk':
-      case 'car':
-      case 'bus':
-        mapViewModel.setTransportMode(type);
-        _showTransportModeMessage(context, type);
-        break;
+      // Los siguientes modos de transporte se reactivarán en una versión futura:
+      // case 'walk':
+      // case 'car':
+      // case 'bus':
+      //   mapViewModel.setTransportMode(type);
+      //   _showTransportModeMessage(context, type);
+      //   break;
     }
   }
 
@@ -267,15 +267,13 @@ class MobileMapLayout extends StatelessWidget {
       'car': 'Auto',
       'bus': 'Transporte público',
     };
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Modo de transporte: ${modeNames[mode]}'),
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }

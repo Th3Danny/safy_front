@@ -11,7 +11,7 @@ class ReportResponseDto {
   final String? address;
   final String reporterName;
   final bool isAnonymous;
-  final int severity; // Assuming 'severity' is always guaranteed to be an int from the server in valid responses.
+  final int severity; 
   final String? imageUrl;
   final String? audioUrl;
   final DateTime? createdAt;
@@ -50,9 +50,7 @@ class ReportResponseDto {
   });
 
   /// Factory method to create a ReportResponseDto from a JSON map.
-  /// It expects the report data to be nested under a 'data' key.
   factory ReportResponseDto.fromJson(Map<String, dynamic> json) {
-    // Safely access the 'data' key, which contains the actual report details.
     final Map<String, dynamic>? data = json['data'] as Map<String, dynamic>?;
 
     // If 'data' is null, or not a Map, this indicates a malformed response.
@@ -137,16 +135,15 @@ class ReportResponseDto {
       id: id.toString(),
       title: title,
       description: description,
-      incident_type: incidentType, // Changed from incidentType to incident_type as per domain entity
+      incident_type: incidentType, 
       latitude: latitude,
       longitude: longitude,
       address: address,
       reporterName: reporterName,
-      reporterEmail: null, // As per previous note, backend doesn't return email here
+      reporterEmail: null, 
       severity: severity,
       isAnonymous: isAnonymous,
-      // If ReportInfoEntity has a dateTime field, you'll need to decide which DateTime to use.
-      // Example: dateTime: createdAt ?? DateTime.now(),
+      
     );
   }
 

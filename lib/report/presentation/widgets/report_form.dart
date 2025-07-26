@@ -469,63 +469,72 @@ class _ReportFormState extends State<ReportForm> {
   }
 
   Future<void> _getCurrentLocation() async {
-    if (_isLoadingLocation) return;
+  if (_isLoadingLocation) return;
 
-    setState(() => _isLoadingLocation = true);
+  setState(() => _isLoadingLocation = true);
 
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw 'Los servicios de ubicación están deshabilitados';
-      }
+  try {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw 'Los servicios de ubicación están deshabilitados';
+    }
 
-      LocationPermission permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw 'Permisos de ubicación denegados';
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw 'Permisos de ubicación denegados permanentemente';
-      }
-
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
-
-      if (mounted) {
-        setState(() {
-          _latitude = position.latitude;
-          _longitude = position.longitude;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ubicación obtenida exitosamente'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingLocation = false);
+        throw 'Permisos de ubicación denegados';
       }
     }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw 'Permisos de ubicación denegados permanentemente';
+    }
+
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+      timeLimit: const Duration(seconds: 10),
+    );
+
+    if (mounted) {
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+        // Opcional: Si tienes una forma de obtener la dirección inversa (geocoding)
+        // podrías asignarla aquí también a _addressController.text
+      });
+
+      // ¡IMPORTANTE! Actualiza el ViewModel con la ubicación
+      Provider.of<CreateReportViewModel>(context, listen: false).updateLocation(
+        position.latitude,
+        position.longitude,
+        _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ubicación obtenida exitosamente'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => _isLoadingLocation = false);
+    }
   }
+}
 
   void _handleSubmitReport(CreateReportViewModel viewModel) async {
     print('[ReportForm] 🚀 Iniciando creación de reporte...');
