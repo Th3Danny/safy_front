@@ -314,6 +314,7 @@ class RegisterViewModel extends ChangeNotifier {
     print('Gender: ${_selectedGender.value}');
     print('JobType: ${_selectedJobType.value}');
     print('Email: "$_email"');
+    print('FCM Token: "${_fcmToken ?? ""}"');
     print('Password: "${_password.isNotEmpty ? "***" : ""}"');
     print('ConfirmPassword: "${_confirmPassword.isNotEmpty ? "***" : ""}"');
     print('canGoToNextPage: $canGoToNextPage');
