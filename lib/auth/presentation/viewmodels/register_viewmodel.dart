@@ -364,6 +364,7 @@ class RegisterViewModel extends ChangeNotifier {
       print(
         '[RegisterViewModel] Registro exitoso para: ${session.user.username} (hashCode: ${hashCode})',
       );
+
       return true;
     } on ValidationException catch (e) {
       _handleValidationError(e);
