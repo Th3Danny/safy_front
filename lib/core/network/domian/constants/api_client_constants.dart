@@ -1,7 +1,6 @@
 class ApiConstants {
-  
-  static const String baseUrl = 'https://gateway.devquailityup.xyz'; 
-  
+  static const String baseUrl = 'https://gateway.devquailityup.xyz';
+
   // Auth endpoints
   static const String login = '/auth/login';
   static const String register = '/auth/register';
@@ -9,12 +8,15 @@ class ApiConstants {
   static const String logout = '/auth/logout';
   static const String profile = '/auth/profile';
 
+  // Device endpoints
+  static const String registerDevice = '/devices/register';
+
   // 🔧 CORREGIR ENDPOINTS DE REPORTS
   static const String reports = '/reports';
-  static const String reportById = '/reports/my-reports?page=0&size=10'; 
-  static const String createReport = '/reports'; 
+  static const String reportById = '/reports/my-reports?page=0&size=10';
+  static const String createReport = '/reports';
   //static const String nearbyReports = '/reports/nearby';
- static const String nearbyReports = '/reports-nearby/smart-nearby';
+  static const String nearbyReports = '/reports-nearby/smart-nearby';
 
   // Map endpoints
   static const String heatmap = '/map/heatmap';

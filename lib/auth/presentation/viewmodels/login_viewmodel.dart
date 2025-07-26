@@ -1,11 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:safy/auth/domain/usecases/sign_in_use_case.dart';
 import 'package:safy/core/session/session_manager.dart';
+import 'package:safy/core/services/device/device_registration_service.dart';
+import 'package:safy/core/services/firebase/firebase_messaging_service.dart';
+import 'package:safy/home/domain/entities/location.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/exceptions/auth_exceptions.dart';
 
 class LoginViewModel extends ChangeNotifier {
   final SignInUseCase _signInUseCase;
+  final DeviceRegistrationService _deviceRegistrationService =
+      DeviceRegistrationService();
+  final FirebaseMessagingService _firebaseMessagingService =
+      FirebaseMessagingService();
 
   LoginViewModel(this._signInUseCase);
 
@@ -84,8 +92,6 @@ class LoginViewModel extends ChangeNotifier {
     _setLoading(true);
     _clearError();
 
-
-
     try {
       print('[LoginViewModel] 🌐 Llamando a SignInUseCase...');
       final session = await _signInUseCase.execute(
@@ -95,7 +101,9 @@ class LoginViewModel extends ChangeNotifier {
 
       print('[LoginViewModel] ✅ SignInUseCase exitoso');
       print('[LoginViewModel] 👤 Usuario recibido: ${session.user.username}');
-      print('[LoginViewModel] 🔑 Token recibido: ${session.accessToken.substring(0, 20)}...');
+      print(
+        '[LoginViewModel] 🔑 Token recibido: ${session.accessToken.substring(0, 20)}...',
+      );
       print('[LoginViewModel] ⏰ Expira en: ${session.expiresAt}');
 
       // Calcular expiresIn en segundos
@@ -112,13 +120,17 @@ class LoginViewModel extends ChangeNotifier {
       );
 
       print('[LoginViewModel] ✅ Sesión creada en SessionManager');
-      
+
       // Verificar inmediatamente el estado del SessionManager
       final sessionManager = SessionManager.instance;
       print('[LoginViewModel] 🔍 Verificación inmediata:');
       print('[LoginViewModel] 🔍   - isLoggedIn: ${sessionManager.isLoggedIn}');
-      print('[LoginViewModel] 🔍   - currentUser: ${sessionManager.currentUser?.username}');
-      print('[LoginViewModel] 🔍   - accessToken presente: ${sessionManager.accessToken != null}');
+      print(
+        '[LoginViewModel] 🔍   - currentUser: ${sessionManager.currentUser?.username}',
+      );
+      print(
+        '[LoginViewModel] 🔍   - accessToken presente: ${sessionManager.accessToken != null}',
+      );
 
       _lastSuccessfulSession = session;
 
@@ -129,9 +141,14 @@ class LoginViewModel extends ChangeNotifier {
       }
 
       print('[LoginViewModel] 🎉 ========== LOGIN COMPLETADO ==========');
-      print('[LoginViewModel] 🎉 Estado final - isLoggedIn: ${sessionManager.isLoggedIn}');
+      print(
+        '[LoginViewModel] 🎉 Estado final - isLoggedIn: ${sessionManager.isLoggedIn}',
+      );
+
+      // 📱 Registrar dispositivo después del login exitoso
+      await _registerDeviceAfterLogin();
+
       return true;
-      
     } on ValidationException catch (e) {
       print('[LoginViewModel] ❌ ValidationException: ${e.message}');
       _setError(_formatValidationError(e));
@@ -150,6 +167,90 @@ class LoginViewModel extends ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Método para obtener la ubicación actual
+  Future<Location?> _getCurrentLocation() async {
+    try {
+      print('[LoginViewModel] 📍 Obteniendo ubicación actual...');
+
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print('[LoginViewModel] ⚠️ Servicios de ubicación deshabilitados');
+        return null;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          print('[LoginViewModel] ⚠️ Permisos de ubicación denegados');
+          return null;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        print(
+          '[LoginViewModel] ⚠️ Permisos de ubicación denegados permanentemente',
+        );
+        return null;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      final location = Location(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        timestamp: DateTime.now(),
+      );
+
+      print(
+        '[LoginViewModel] ✅ Ubicación obtenida: ${location.latitude}, ${location.longitude}',
+      );
+      return location;
+    } catch (e) {
+      print('[LoginViewModel] ❌ Error obteniendo ubicación: $e');
+      return null;
+    }
+  }
+
+  // Método para registrar el dispositivo después del login
+  Future<void> _registerDeviceAfterLogin() async {
+    try {
+      print('[LoginViewModel] 📱 Registrando dispositivo después del login...');
+
+      // Obtener FCM token
+      final fcmToken = await _firebaseMessagingService.getToken();
+      if (fcmToken == null || fcmToken.isEmpty) {
+        print('[LoginViewModel] ⚠️ No hay FCM token disponible');
+        return;
+      }
+
+      print(
+        '[LoginViewModel] 🔐 FCM Token obtenido: ${fcmToken.substring(0, 20)}...',
+      );
+
+      // Intentar obtener ubicación actual
+      final location = await _getCurrentLocation();
+
+      if (location != null) {
+        await _deviceRegistrationService.registerDevice(
+          fcmToken: fcmToken,
+          location: location,
+        );
+      } else {
+        // Usar ubicación por defecto si no se puede obtener la ubicación
+        await _deviceRegistrationService.registerDeviceWithDefaultLocation(
+          fcmToken: fcmToken,
+        );
+      }
+    } catch (e) {
+      print('[LoginViewModel] ❌ Error registrando dispositivo: $e');
+      // No lanzar excepción para no interrumpir el flujo de login
     }
   }
 

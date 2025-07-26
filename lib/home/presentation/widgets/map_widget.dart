@@ -4,7 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
-
+import 'package:go_router/go_router.dart';
 class MapWidget extends StatelessWidget {
   const MapWidget({super.key});
 
@@ -182,11 +182,11 @@ class MapWidget extends StatelessWidget {
           // Botón para reportar incidente en esta ubicación
           OutlinedButton.icon(
             onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(
-                context,
+              Navigator.pop(context); // Cerrar el bottom sheet
+              // ✅ CORRECCIÓN: Usar context.go para navegar
+              context.go(
                 '/create-report',
-                arguments: {'location': point},
+                extra: {'location': point}, // Usa 'extra' para pasar objetos complejos
               );
             },
             icon: const Icon(Icons.report_problem, color: Colors.orange),

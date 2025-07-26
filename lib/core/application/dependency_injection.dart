@@ -9,6 +9,8 @@ import 'package:safy/auth/presentation/viewmodels/login_viewmodel.dart';
 import 'package:safy/auth/presentation/viewmodels/register_viewmodel.dart';
 import 'package:safy/core/network/domian/config/dio_config.dart';
 import 'package:safy/core/services/firebase/firebase_messaging_service.dart';
+import 'package:safy/core/services/device/device_info_service.dart';
+import 'package:safy/core/services/device/device_registration_service.dart';
 import 'package:safy/core/session/session_manager.dart';
 import 'package:safy/home/application/maps_injector.dart';
 import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
@@ -51,6 +53,15 @@ Future<void> setupDependencyInjection({SharedPreferences? sharedPreferences}) as
   // Firebase Messaging Service
   sl.registerLazySingleton<FirebaseMessagingService>(
     () => FirebaseMessagingService(),
+  );
+
+  // Device Services
+  sl.registerLazySingleton<DeviceInfoService>(
+    () => DeviceInfoService(),
+  );
+
+  sl.registerLazySingleton<DeviceRegistrationService>(
+    () => DeviceRegistrationService(),
   );
 
   // ===== FEATURE DEPENDENCIES =====
