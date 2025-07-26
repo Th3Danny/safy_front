@@ -47,7 +47,7 @@ dependencies:
   firebase_core: ^2.31.0
   firebase_messaging: ^14.7.4
   flutter_local_notifications: ^17.1.2
-  
+  web_socket_channel: ^2.4.0
 
   
 

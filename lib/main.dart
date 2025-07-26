@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:safy/core/application/dependency_injection.dart';
 import 'package:safy/core/router/app_router.dart';
-import 'package:safy/core/services/firebase_messaging_service.dart';
+import 'package:safy/core/services/firebase/firebase_messaging_service.dart';
 import 'package:safy/core/session/session_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:safy/core/services/firebase_message_handler.dart';
+import 'package:safy/core/services/firebase/firebase_message_handler.dart';
 import 'package:geolocator/geolocator.dart';
 
 void main() async {

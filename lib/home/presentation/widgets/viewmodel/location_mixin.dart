@@ -4,7 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
 
-import 'package:safy/core/services/notification_service.dart';
+import 'package:safy/core/services/firebase/notification_service.dart';
 
 /// Mixin para gestión de ubicación del usuario
 mixin LocationMixin on ChangeNotifier {

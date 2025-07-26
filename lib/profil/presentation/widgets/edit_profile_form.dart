@@ -5,7 +5,9 @@ import 'package:safy/auth/presentation/pages/register/widgets/job_selector.dart'
 import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 import 'package:safy/shared/widget/custom_text_field.dart';
 import 'package:safy/shared/widget/profile_avatar.dart';
-
+import 'package:provider/provider.dart';
+import 'package:safy/auth/presentation/viewmodels/auth_state_view_model.dart';
+import 'package:safy/auth/domain/entities/user.dart';
 
 class EditProfileForm extends StatefulWidget {
   const EditProfileForm({super.key});
@@ -16,41 +18,61 @@ class EditProfileForm extends StatefulWidget {
 
 class _EditProfileFormState extends State<EditProfileForm> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController(text: 'Chivemoon');
-  final _emailController = TextEditingController(text: 'yaz@gmail.com');
-  final _passwordController = TextEditingController(text: '••••••••••••');
+  late TextEditingController _usernameController;
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
   bool _obscurePassword = true;
-  String? _selectedJob = 'Student';
+  String? _selectedJob;
+  final List<String> _jobs = ['Student', 'Employees', 'Businessman', 'Tourist'];
+  bool _controllersInitialized = false;
 
-  final List<String> _jobs = [
-    'Student',
-    'Employees',
-    'Businessman',
-    'Tourist'
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authVM = Provider.of<AuthStateViewModel>(context, listen: false);
+      if (!authVM.isInitialized) {
+        authVM.initialize();
+      }
+    });
+  }
+
+  void _initControllersIfNeeded(AuthStateViewModel authVM) {
+    if (_controllersInitialized) return;
+    final user = authVM.currentUser;
+    _usernameController = TextEditingController(text: user?.username ?? '');
+    _emailController = TextEditingController(text: user?.email ?? '');
+    _passwordController = TextEditingController(text: '');
+    _selectedJob ??= user?.job ?? _jobs.first;
+    _controllersInitialized = true;
+  }
 
   @override
   void dispose() {
-    _usernameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    if (_controllersInitialized) {
+      _usernameController.dispose();
+      _emailController.dispose();
+      _passwordController.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final authVM = Provider.of<AuthStateViewModel>(context);
+    if (!authVM.isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    _initControllersIfNeeded(authVM);
     return Form(
       key: _formKey,
       child: Column(
         children: [
           // Avatar de perfil
-          const ProfileAvatar(
-            radius: 50,
-            showEditButton: true,
-          ),
-          
+          const ProfileAvatar(radius: 50, showEditButton: true),
+
           const SizedBox(height: 32),
-          
+
           // Username field
           CustomTextField(
             controller: _usernameController,
@@ -63,9 +85,9 @@ class _EditProfileFormState extends State<EditProfileForm> {
               return null;
             },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Email field
           CustomTextField(
             controller: _emailController,
@@ -76,15 +98,17 @@ class _EditProfileFormState extends State<EditProfileForm> {
               if (value == null || value.isEmpty) {
                 return 'Email is required';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
                 return 'Enter a valid email';
               }
               return null;
             },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Password field
           CustomTextField(
             controller: _passwordController,
@@ -109,9 +133,9 @@ class _EditProfileFormState extends State<EditProfileForm> {
               return null;
             },
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Job selector
           JobSelector(
             selectedJob: _selectedJob,
@@ -122,9 +146,9 @@ class _EditProfileFormState extends State<EditProfileForm> {
               });
             },
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Save button
           CustomButton(
             text: 'Guardar',
@@ -139,23 +163,35 @@ class _EditProfileFormState extends State<EditProfileForm> {
     );
   }
 
-  void _handleSaveProfile() {
-    final profileData = {
-      'username': _usernameController.text,
-      'email': _emailController.text,
-      'job': _selectedJob,
-    };
-    
-    print('Profile Data: $profileData');
-    
+  void _handleSaveProfile() async {
+    final authVM = Provider.of<AuthStateViewModel>(context, listen: false);
+    final currentUser = authVM.currentUser;
+    if (currentUser == null) return;
+
+    // Crear nuevo UserInfoEntity con los datos editados
+    final updatedUser = UserInfoEntity(
+      id: currentUser.id,
+      name: currentUser.name, // Puedes agregar campos editables si lo deseas
+      lastName: currentUser.lastName,
+      secondLastName: currentUser.secondLastName,
+      username: _usernameController.text,
+      email: _emailController.text,
+      phoneNumber: currentUser.phoneNumber,
+      job: _selectedJob ?? currentUser.job,
+      role: currentUser.role,
+      verified: currentUser.verified,
+      isActive: currentUser.isActive,
+    );
+
+    // Actualizar en AuthStateViewModel (esto también actualiza SessionManager y backend si implementas la llamada)
+    authVM.updateUser(updatedUser);
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Profile updated successfully!'),
         backgroundColor: Colors.green,
       ),
     );
-    
     context.go(AppRoutesConstant.settings);
-
   }
 }

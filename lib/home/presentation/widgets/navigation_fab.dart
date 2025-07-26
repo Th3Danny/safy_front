@@ -74,43 +74,44 @@ class NavigationFab extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Botones de navegación
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavButton(context, Icons.add, 'add', 'Nueva\nRuta'),
-                    _buildNavButton(
-                      context,
-                      Icons.directions_walk,
-                      'walk',
-                      'Caminar',
-                    ),
-                    _buildNavButton(
-                      context,
-                      Icons.directions_car,
-                      'car',
-                      'Auto',
-                    ),
-                    _buildNavButton(
-                      context,
-                      Icons.directions_bus,
-                      'bus',
-                      'Transporte',
-                    ),
-                  ],
-                ),
+                // // Botones de navegación
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+                //   children: [
+                //     _buildNavButton(context, Icons.add, 'add', 'Nueva\nRuta'),
+                //     // Los siguientes modos de transporte se reactivarán en una versión futura:
+                //     // _buildNavButton(
+                //     //   context,
+                //     //   Icons.directions_walk,
+                //     //   'walk',
+                //     //   'Caminar',
+                //     // ),
+                //     // _buildNavButton(
+                //     //   context,
+                //     //   Icons.directions_car,
+                //     //   'car',
+                //     //   'Auto',
+                //     // ),
+                //     // _buildNavButton(
+                //     //   context,
+                //     //   Icons.directions_bus,
+                //     //   'bus',
+                //     //   'Transporte',
+                //     // ),
+                //   ],
+                // ),
 
-                const SizedBox(height: 16),
-                const Text(
-                  'Nueva Ruta',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                // const SizedBox(height: 16),
+                // const Text(
+                //   'Nueva Ruta',
+                //   style: TextStyle(
+                //     fontSize: 16,
+                //     color: Colors.black54,
+                //     fontWeight: FontWeight.w500,
+                //   ),
+                // ),
 
-                const SizedBox(height: 24),
+                // const SizedBox(height: 24),
 
                 // Contenido adicional
                 Container(
@@ -123,7 +124,10 @@ class NavigationFab extends StatelessWidget {
                     children: [
                       // 👈 SECCIÓN DE REPORTES ACTUALIZADA
                       InkWell(
-                        onTap: () => context.go(AppRoutesConstant.myReports), // 👈 Navegar a mis reportes
+                        onTap:
+                            () => context.go(
+                              AppRoutesConstant.myReports,
+                            ), // 👈 Navegar a mis reportes
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           padding: const EdgeInsets.all(12),

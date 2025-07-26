@@ -18,6 +18,7 @@ class CreateReportScreen extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(24.0),
           child: ReportForm(),
+          
         ),
       ),
     );
