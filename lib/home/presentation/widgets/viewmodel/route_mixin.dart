@@ -5,7 +5,6 @@ import 'dart:math' as math;
 
 /// Mixin para gestión de rutas y navegación
 mixin RouteMixin on ChangeNotifier {
-  
   // Propiedades de rutas
   LatLng? _startPoint;
   LatLng? get startPoint => _startPoint;
@@ -33,6 +32,21 @@ mixin RouteMixin on ChangeNotifier {
       calculateRoutes();
     }
     notifyListeners();
+  }
+
+  // 🎯 NUEVO: Establecer automáticamente la posición actual como punto de inicio
+  void setCurrentLocationAsStart() {
+    // Obtener la ubicación actual del LocationMixin
+    final currentLocation = (this as dynamic).currentLocation;
+    if (currentLocation != null) {
+      _startPoint = currentLocation;
+      onStartPointChanged(currentLocation);
+      if (_endPoint != null) {
+        calculateRoutes();
+      }
+      notifyListeners();
+      print('[RouteMixin] 🎯 Punto de inicio establecido en ubicación actual');
+    }
   }
 
   void clearStartPoint() {
@@ -102,7 +116,10 @@ mixin RouteMixin on ChangeNotifier {
       );
 
       // Ruta alternativa
-      final altRoute = await _calculateAlternativeRouteReal(_startPoint!, _endPoint!);
+      final altRoute = await _calculateAlternativeRouteReal(
+        _startPoint!,
+        _endPoint!,
+      );
       final altSafety = calculateRouteSafety(altRoute);
 
       _routeOptions.add(
@@ -163,12 +180,18 @@ mixin RouteMixin on ChangeNotifier {
       final safeRoute = <LatLng>[start];
 
       if (safeWaypoints.isNotEmpty) {
-        final firstSegment = await _calculateRealRoute(start, safeWaypoints.first);
+        final firstSegment = await _calculateRealRoute(
+          start,
+          safeWaypoints.first,
+        );
         safeRoute.addAll(firstSegment.skip(1));
       }
 
       for (int i = 0; i < safeWaypoints.length - 1; i++) {
-        final segment = await _calculateRealRoute(safeWaypoints[i], safeWaypoints[i + 1]);
+        final segment = await _calculateRealRoute(
+          safeWaypoints[i],
+          safeWaypoints[i + 1],
+        );
         safeRoute.addAll(segment.skip(1));
       }
 
@@ -183,7 +206,10 @@ mixin RouteMixin on ChangeNotifier {
     }
   }
 
-  Future<List<LatLng>> _calculateAlternativeRouteReal(LatLng start, LatLng end) async {
+  Future<List<LatLng>> _calculateAlternativeRouteReal(
+    LatLng start,
+    LatLng end,
+  ) async {
     final midLat = (start.latitude + end.latitude) / 2;
     final midLng = (start.longitude + end.longitude) / 2;
     final altPoint = LatLng(midLat - 0.001, midLng + 0.003);
@@ -218,9 +244,17 @@ mixin RouteMixin on ChangeNotifier {
     const searchStep = 100;
     const angleStep = 30;
 
-    for (int radius = searchStep; radius <= maxSearchRadius; radius += searchStep) {
+    for (
+      int radius = searchStep;
+      radius <= maxSearchRadius;
+      radius += searchStep
+    ) {
       for (int angle = 0; angle < 360; angle += angleStep) {
-        final candidate = _getPointAtDistance(dangerousPoint, radius.toDouble(), angle.toDouble());
+        final candidate = _getPointAtDistance(
+          dangerousPoint,
+          radius.toDouble(),
+          angle.toDouble(),
+        );
         if (!isPointInDangerZone(candidate)) {
           return candidate;
         }
@@ -229,7 +263,11 @@ mixin RouteMixin on ChangeNotifier {
     return null;
   }
 
-  LatLng _getPointAtDistance(LatLng center, double distanceMeters, double angleDegrees) {
+  LatLng _getPointAtDistance(
+    LatLng center,
+    double distanceMeters,
+    double angleDegrees,
+  ) {
     const earthRadius = 6371000;
     final distRad = distanceMeters / earthRadius;
     final bearingRad = angleDegrees * (3.14159 / 180);
@@ -242,7 +280,8 @@ mixin RouteMixin on ChangeNotifier {
           math.cos(lat1Rad) * math.sin(distRad) * math.cos(bearingRad),
     );
 
-    final lon2Rad = lon1Rad +
+    final lon2Rad =
+        lon1Rad +
         math.atan2(
           math.sin(bearingRad) * math.sin(distRad) * math.cos(lat1Rad),
           math.cos(distRad) - math.sin(lat1Rad) * math.sin(lat2Rad),
@@ -251,7 +290,11 @@ mixin RouteMixin on ChangeNotifier {
     return LatLng(lat2Rad * (180 / 3.14159), lon2Rad * (180 / 3.14159));
   }
 
-  List<LatLng> _getPointsAlongPath(LatLng start, LatLng end, {double intervalMeters = 500}) {
+  List<LatLng> _getPointsAlongPath(
+    LatLng start,
+    LatLng end, {
+    double intervalMeters = 500,
+  }) {
     final points = <LatLng>[];
     final totalDistance = Distance().as(LengthUnit.Meter, start, end);
 
@@ -264,14 +307,19 @@ mixin RouteMixin on ChangeNotifier {
     for (int i = 1; i < numPoints; i++) {
       final fraction = i / numPoints;
       final lat = start.latitude + (end.latitude - start.latitude) * fraction;
-      final lng = start.longitude + (end.longitude - start.longitude) * fraction;
+      final lng =
+          start.longitude + (end.longitude - start.longitude) * fraction;
       points.add(LatLng(lat, lng));
     }
 
     return points;
   }
 
-  List<LatLng> _optimizeWaypoints(List<LatLng> waypoints, LatLng start, LatLng end) {
+  List<LatLng> _optimizeWaypoints(
+    List<LatLng> waypoints,
+    LatLng start,
+    LatLng end,
+  ) {
     if (waypoints.isEmpty) return waypoints;
 
     final optimized = <LatLng>[];
@@ -309,7 +357,11 @@ mixin RouteMixin on ChangeNotifier {
   double _calculateDistance(List<LatLng> route) {
     double totalDistance = 0;
     for (int i = 0; i < route.length - 1; i++) {
-      totalDistance += Distance().as(LengthUnit.Kilometer, route[i], route[i + 1]);
+      totalDistance += Distance().as(
+        LengthUnit.Kilometer,
+        route[i],
+        route[i + 1],
+      );
     }
     return totalDistance;
   }
@@ -328,6 +380,7 @@ mixin RouteMixin on ChangeNotifier {
   }
 
   void clearRoute() {
+    print('[RouteMixin] 🧹 Limpiando ruta actual...');
     _startPoint = null;
     _endPoint = null;
     _currentRoute.clear();
@@ -347,7 +400,6 @@ mixin RouteMixin on ChangeNotifier {
   void onRoutesCleared();
   void onRouteError(String error);
   void onRoutesPanelShow();
-
 }
 
 // Clase RouteOption

@@ -36,16 +36,14 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
       vsync: this,
     );
 
-    _expandAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _expandAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
     // Seleccionar la ruta recomendada por defecto
-    _selectedRouteIndex = widget.routes.indexWhere((route) => route.isRecommended);
+    _selectedRouteIndex = widget.routes.indexWhere(
+      (route) => route.isRecommended,
+    );
     if (_selectedRouteIndex == -1) _selectedRouteIndex = 0;
 
     // Seleccionar automáticamente la ruta recomendada
@@ -125,7 +123,7 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
             );
           },
         ),
-        
+
         // Panel compacto (siempre visible)
         _buildCompactPanel(),
       ],
@@ -204,9 +202,9 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
                     size: 16,
                   ),
                 ),
-                
+
                 const SizedBox(width: 12),
-                
+
                 // Información de la ruta
                 Expanded(
                   child: Column(
@@ -220,13 +218,19 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: isSelected ? Colors.blue[700] : Colors.grey[800],
+                                color:
+                                    isSelected
+                                        ? Colors.blue[700]
+                                        : Colors.grey[800],
                               ),
                             ),
                           ),
                           if (route.isRecommended)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.green,
                                 borderRadius: BorderRadius.circular(8),
@@ -245,20 +249,21 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
                       const SizedBox(height: 4),
                       Text(
                         '${route.distance.toStringAsFixed(1)} km • ${route.duration} min • ${route.safetyLevel.toInt()}% segura',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Indicador de selección
                 if (isSelected)
                   Icon(Icons.check_circle, color: Colors.blue, size: 20)
                 else
-                  Icon(Icons.radio_button_unchecked, color: Colors.grey[400], size: 20),
+                  Icon(
+                    Icons.radio_button_unchecked,
+                    color: Colors.grey[400],
+                    size: 20,
+                  ),
               ],
             ),
           ),
@@ -299,9 +304,9 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
               size: 16,
             ),
           ),
-          
+
           const SizedBox(width: 8),
-          
+
           // Información de la ruta
           Expanded(
             child: Column(
@@ -321,7 +326,10 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
                     ),
                     if (selectedRoute.isRecommended)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.green,
                           borderRadius: BorderRadius.circular(8),
@@ -340,15 +348,12 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
                 const SizedBox(height: 2),
                 Text(
                   '${selectedRoute.distance.toStringAsFixed(1)} km • ${selectedRoute.duration} min • ${selectedRoute.safetyLevel.toInt()}% segura',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          
+
           // Botones de acción
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -358,12 +363,14 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
                 IconButton(
                   onPressed: _toggleExpanded,
                   icon: Icon(
-                    _isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                    _isExpanded
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_up,
                     color: Colors.grey[600],
                   ),
                   tooltip: _isExpanded ? 'Minimizar' : 'Ver todas',
                 ),
-              
+
               // Botón de navegación
               ElevatedButton.icon(
                 onPressed: () => _startNavigation(selectedRoute),
@@ -372,13 +379,16 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: selectedRoute.safetyColor,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   minimumSize: Size.zero,
                 ),
               ),
-              
+
               const SizedBox(width: 4),
-              
+
               // Botón cerrar - SOLUCIONADO
               IconButton(
                 onPressed: _closePanel, // Usar el método seguro
@@ -401,7 +411,12 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
 
   void _startNavigation(RouteOption route) {
     final mapViewModel = GetIt.instance<MapViewModel>();
-    mapViewModel.startNavigation();
+
+    // 🧹 Limpiar todas las rutas previas antes de iniciar nueva navegación
+    mapViewModel.clearAllRoutes();
+
+    // Iniciar navegación con seguimiento dinámico
+    mapViewModel.startNavigationWithTracking();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -409,9 +424,7 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
           children: [
             Icon(Icons.navigation, color: Colors.white),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text('Navegación iniciada: ${route.name}'),
-            ),
+            Expanded(child: Text('Navegación iniciada: ${route.name}')),
           ],
         ),
         backgroundColor: route.safetyColor,

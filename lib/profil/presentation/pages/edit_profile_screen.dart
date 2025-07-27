@@ -11,7 +11,7 @@ class EditProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: const CustomAppBar(
-        title: 'Edit Profil',
+        title: 'Editar Perfil',
         showBackButton: true,
       ),
       body: const SingleChildScrollView(
