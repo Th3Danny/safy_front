@@ -160,13 +160,43 @@ class ReportApiClient {
   //   }
   // }
 
-  Future<ReportResponseDto> getReportById(String id) async {
+   Future<ReportResponseDto> getReportById(String id) async {
     try {
+      print('[ReportApiClient] 🔍 Obteniendo reporte por ID: $id');
       final response = await _dio.get('${ApiConstants.reports}/$id');
-      return ReportResponseDto.fromJson(response.data);
+
+      print('[ReportApiClient] ✅ Respuesta recibida para ID $id: ${response.statusCode}');
+      print('[ReportApiClient] 📋 Tipo de data: ${response.data.runtimeType}');
+
+      if (response.data == null) {
+        throw FormatException('La respuesta del servidor para el reporte con ID $id es nula.');
+      }
+
+      // Asegurarse de que el nivel superior de response.data es un Map
+      if (response.data is! Map<String, dynamic>) {
+        throw FormatException('La respuesta del servidor para el reporte con ID $id no es un mapa JSON válido.');
+      }
+
+      final Map<String, dynamic> responseMap = response.data as Map<String, dynamic>;
+
+      // CORRECCIÓN CLAVE AQUÍ: Extraer el objeto del reporte del campo 'data'
+      if (!responseMap.containsKey('data') || responseMap['data'] is! Map<String, dynamic>) {
+        throw FormatException('La respuesta del servidor para el reporte con ID $id no contiene la clave "data" o está malformada.');
+      }
+
+      final Map<String, dynamic> reportData = responseMap['data'] as Map<String, dynamic>;
+      print('[ReportApiClient] ✅ Reporte individual extraído de "data".');
+
+      // Ahora, pasa el `reportData` (que es el JSON del reporte individual)
+      // a ReportResponseDto.fromJson
+      return ReportResponseDto.fromJson(reportData);
     } on DioException catch (e) {
+      print('[ReportApiClient] ❌ Error en getReportById: ${e.message}');
       _handleDioError(e);
       rethrow;
+    } catch (e) {
+      print('[ReportApiClient] ❌ Error inesperado en getReportById: $e');
+      throw ReportExceptions('Error al obtener reporte por ID $id: $e');
     }
   }
 
@@ -178,30 +208,44 @@ class ReportApiClient {
       print('[ReportApiClient] 📋 Obteniendo MIS reportes');
 
       final response = await _dio.get(
-        '/reports/my-reports', // ✅ Usar la ruta correcta
+        '/reports/my-reports',
         queryParameters: {'page': page ?? 0, 'size': pageSize ?? 10},
       );
 
       print(
         '[ReportApiClient] ✅ Respuesta MIS reportes: ${response.statusCode}',
       );
-      print('[ReportApiClient] 📋 Respuesta completa: ${response.data}');
+      print('[ReportApiClient] 📋 Respuesta completa: ${response.data}'); //
 
-      // ✅ Parsear según la estructura de tu respuesta
-      if (response.data != null && response.data['data'] != null) {
-        final data = response.data['data'];
-        if (data['reports'] != null) {
-          final reports = data['reports'] as List;
-          print('[ReportApiClient] ✅ Encontrados ${reports.length} reportes');
-
-          return reports
-              .map((json) => ReportResponseDto.fromJson(json))
-              .toList();
-        }
+      // **CORRECCIÓN INICIA AQUÍ**
+      if (response.data == null) {
+        throw FormatException('La respuesta del servidor es nula.');
       }
 
-      print('[ReportApiClient] ⚠️ No se encontraron reportes en la respuesta');
-      return <ReportResponseDto>[];
+      if (response.data is! Map<String, dynamic>) {
+        throw FormatException('La respuesta del servidor no es un mapa JSON válido.');
+      }
+
+      final Map<String, dynamic> responseMap = response.data as Map<String, dynamic>; // Explicit cast
+
+      if (!responseMap.containsKey('data') || responseMap['data'] is! Map<String, dynamic>) {
+        throw FormatException('La respuesta del servidor no contiene la clave "data" o está malformada.'); //
+      }
+
+      final Map<String, dynamic> data = responseMap['data'] as Map<String, dynamic>; // Explicit cast
+
+      if (!data.containsKey('reports') || data['reports'] is! List) {
+        throw FormatException('La clave "reports" no se encontró o no es una lista dentro de "data".'); //
+      }
+
+      final List<dynamic> reportsJson = data['reports'] as List<dynamic>; // Explicit cast
+      print('[ReportApiClient] ✅ Encontrados ${reportsJson.length} reportes'); //
+
+      return reportsJson
+          .map((jsonItem) => ReportResponseDto.fromJson(jsonItem as Map<String, dynamic>)) // Cast each item
+          .toList();
+      // **CORRECCIÓN TERMINA AQUÍ**
+
     } on DioException catch (e) {
       print('[ReportApiClient] ❌ Error en MIS reportes: ${e.message}');
       _handleDioError(e);
@@ -211,6 +255,7 @@ class ReportApiClient {
       throw ReportExceptions('Error al obtener mis reportes: $e');
     }
   }
+
 
   Future<ReportResponseDto> createReport(ReportRequestDto requestDto) async {
     try {
