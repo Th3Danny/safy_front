@@ -4,7 +4,9 @@ import 'package:safy/shared/widget/custom_app_bar.dart';
 
 
 class CreateReportScreen extends StatelessWidget {
-  const CreateReportScreen({super.key});
+  final Map<String, dynamic>? extraData;
+  
+  const CreateReportScreen({super.key, this.extraData});
 
   @override
   Widget build(BuildContext context) {
@@ -14,11 +16,10 @@ class CreateReportScreen extends StatelessWidget {
         title: 'Reporte',
         showBackButton: true,
       ),
-      body: const SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.all(24.0),
-          child: ReportForm(),
-          
+          padding: const EdgeInsets.all(24.0),
+          child: ReportForm(extraData: extraData),
         ),
       ),
     );

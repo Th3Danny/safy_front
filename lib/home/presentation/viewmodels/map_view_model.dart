@@ -20,6 +20,7 @@ import '../widgets/viewmodel/reports_mixin.dart';
 import '../widgets/viewmodel/search_mixin.dart';
 import '../widgets/viewmodel/markers_mixin.dart';
 import '../widgets/viewmodel/navigation_tracking_mixin.dart';
+import 'package:safy/core/services/security/gps_spoofing_detector.dart';
 
 /// ViewModel principal del mapa que integra todas las funcionalidades
 /// usando mixins para mejor organización y mantenibilidad
@@ -214,126 +215,6 @@ class MapViewModel extends ChangeNotifier
         _mapController.move(location, _mapController.camera.zoom);
       }
     }
-
-    // 🚨 NUEVO: Verificar si entró a una zona peligrosa
-    _checkDangerZoneEntry(location);
-  }
-
-  // 🚨 NUEVO: Verificar entrada a zona peligrosa
-  void _checkDangerZoneEntry(LatLng location) {
-    if (isLocationDangerous(location)) {
-      print(
-        '[MapViewModel] ⚠️ Usuario entró a zona peligrosa en: ${location.latitude}, ${location.longitude}',
-      );
-
-      // Notificar al usuario (se manejará en la UI)
-      _errorMessage =
-          '⚠️ Zona peligrosa detectada. Considera usar una ruta alternativa.';
-      notifyListeners();
-    }
-  }
-
-  // 🛡️ NUEVO: Sugerir ruta segura automáticamente
-  void _suggestSafeRoute() {
-    print('[MapViewModel] 🛡️ Sugiriendo ruta segura...');
-
-    // Establecer posición actual como punto de inicio
-    setCurrentLocationAsStart();
-
-    // Generar destinos seguros cercanos
-    final safeDestinations = _generateSafeDestinations();
-
-    if (safeDestinations.isNotEmpty) {
-      // Mostrar selector de destinos seguros
-      _showSafeDestinationSelector(safeDestinations);
-    } else {
-      _errorMessage = '⚠️ No se encontraron destinos seguros cercanos.';
-      notifyListeners();
-    }
-  }
-
-  // 🎯 NUEVO: Generar destinos seguros cercanos
-  List<Map<String, dynamic>> _generateSafeDestinations() {
-    final destinations = <Map<String, dynamic>>[];
-
-    // Generar puntos seguros en diferentes direcciones
-    final directions = [
-      {'lat': 0.005, 'lng': 0.005, 'name': 'Noreste'},
-      {'lat': 0.005, 'lng': -0.005, 'name': 'Noroeste'},
-      {'lat': -0.005, 'lng': 0.005, 'name': 'Sureste'},
-      {'lat': -0.005, 'lng': -0.005, 'name': 'Suroeste'},
-      {'lat': 0.01, 'lng': 0.0, 'name': 'Norte'},
-      {'lat': -0.01, 'lng': 0.0, 'name': 'Sur'},
-      {'lat': 0.0, 'lng': 0.01, 'name': 'Este'},
-      {'lat': 0.0, 'lng': -0.01, 'name': 'Oeste'},
-    ];
-
-    for (final direction in directions) {
-      final safePoint = LatLng(
-        currentLocation.latitude + (direction['lat'] as double),
-        currentLocation.longitude + (direction['lng'] as double),
-      );
-
-      // Verificar que el punto esté fuera de zonas peligrosas
-      if (!isLocationDangerous(safePoint)) {
-        destinations.add({
-          'location': safePoint,
-          'name': 'Zona Segura - ${direction['name']}',
-          'distance': _calculateDistanceBetweenPoints(
-            currentLocation,
-            safePoint,
-          ),
-        });
-      }
-    }
-
-    // Ordenar por distancia
-    destinations.sort(
-      (a, b) => (a['distance'] as double).compareTo(b['distance'] as double),
-    );
-
-    return destinations.take(5).toList();
-  }
-
-  // 🎯 NUEVO: Calcular distancia entre dos puntos
-  double _calculateDistanceBetweenPoints(LatLng point1, LatLng point2) {
-    const double earthRadius = 6371000; // metros
-    final double lat1Rad = point1.latitude * (3.14159 / 180);
-    final double lat2Rad = point2.latitude * (3.14159 / 180);
-    final double deltaLatRad =
-        (point2.latitude - point1.latitude) * (3.14159 / 180);
-    final double deltaLngRad =
-        (point2.longitude - point1.longitude) * (3.14159 / 180);
-
-    final double a =
-        (deltaLatRad / 2).abs() * (deltaLatRad / 2).abs() +
-        lat1Rad.abs() *
-            lat2Rad.abs() *
-            (deltaLngRad / 2).abs() *
-            (deltaLngRad / 2).abs();
-    final double c = 2 * (a.abs().clamp(0, 1));
-
-    return earthRadius * c;
-  }
-
-  // 🎯 NUEVO: Mostrar selector de destinos seguros
-  void _showSafeDestinationSelector(List<Map<String, dynamic>> destinations) {
-    // Esta función se implementará en la UI
-    print(
-      '[MapViewModel] 🎯 Mostrando ${destinations.length} destinos seguros',
-    );
-
-    // Por ahora, establecer el primer destino como ejemplo
-    if (destinations.isNotEmpty) {
-      final firstDestination = destinations.first;
-      final location = firstDestination['location'] as LatLng;
-      final name = firstDestination['name'] as String;
-
-      setEndPoint(location);
-
-      _errorMessage = '🛡️ Calculando ruta segura a: $name';
-      notifyListeners();
-    }
   }
 
   @override
@@ -460,8 +341,8 @@ class MapViewModel extends ChangeNotifier
     clearRouteMarkers();
     hideRoutePanel();
 
-    // Limpiar también las rutas del RouteMixin
-    clearRoute();
+    // NO llamar a clearRoute() aquí para evitar recursión infinita
+    // Las rutas ya se limpian en el RouteMixin
 
     notifyListeners();
   }
@@ -506,12 +387,24 @@ class MapViewModel extends ChangeNotifier
     LatLng placeLocation,
     LatLng currentLocation,
   ) {
+    print(
+      '[MapViewModel] 🔍 Lugar seleccionado: ${place.displayName}',
+    ); // Debug print
     _mapController.move(placeLocation, 15.0);
     addDestinationMarker(placeLocation, place.displayName);
     setEndPoint(placeLocation);
 
     if (startPoint == null) {
+      print(
+        '[MapViewModel] 📍 Estableciendo punto de inicio en ubicación actual.',
+      ); // Debug print
       setStartPoint(currentLocation);
+    } else {
+      print(
+        '[MapViewModel] 📍 Ya existe un punto de inicio. Recalculando rutas.',
+      ); // Debug print
+      // No necesitas llamar a calculateRoutes() aquí, ya que setEndPoint() o setStartPoint() lo harán automáticamente
+      // si ambos puntos están definidos.
     }
   }
 
@@ -641,9 +534,6 @@ class MapViewModel extends ChangeNotifier
   void clearAllRoutes() {
     print('[MapViewModel] 🧹 Limpiando todas las rutas y marcadores...');
 
-    // Limpiar rutas del RouteMixin
-    clearRoute();
-
     // Limpiar marcadores de ruta
     clearRouteMarkers();
 
@@ -652,6 +542,9 @@ class MapViewModel extends ChangeNotifier
 
     // Limpiar errores
     _errorMessage = null;
+
+    // Limpiar rutas del RouteMixin sin recursión
+    clearRouteSilently();
 
     notifyListeners();
   }
@@ -670,6 +563,22 @@ class MapViewModel extends ChangeNotifier
 
     // Iniciar seguimiento de navegación
     startNavigationTracking(currentRoute, currentLocation);
+  }
+
+  // ⏹️ NUEVO: Método para detener navegación
+  void stopNavigation() {
+    print('[MapViewModel] ⏹️ Deteniendo navegación...');
+
+    // Detener navegación del LocationMixin
+    super.stopNavigation();
+
+    // Detener seguimiento de navegación
+    stopNavigationTracking();
+
+    // Limpiar todas las rutas
+    clearAllRoutes();
+
+    notifyListeners();
   }
 
   void clearError() {
@@ -714,8 +623,17 @@ class MapViewModel extends ChangeNotifier
   void onDestinationReached() {
     print('[MapViewModel] 🎯 ¡Destino alcanzado!');
 
-    // Detener navegación automáticamente
-    stopNavigation();
+    // Detener navegación automáticamente sin recursión
+    print('[MapViewModel] ⏹️ Deteniendo navegación por destino alcanzado...');
+
+    // Detener navegación del LocationMixin
+    super.stopNavigation();
+
+    // Detener seguimiento de navegación
+    stopNavigationTracking();
+
+    // Limpiar todas las rutas
+    clearAllRoutes();
 
     // Notificar al usuario (se manejará en la UI)
     _errorMessage = null;
@@ -741,6 +659,25 @@ class MapViewModel extends ChangeNotifier
     final distance = _calculateTotalDistance(route);
     const double speed = 5.0; // km/h para caminar
     return (distance / speed * 60).round();
+  }
+
+  // ============================================================================
+  // 🔒 IMPLEMENTACIÓN DE CALLBACKS DE SEGURIDAD GPS
+  // ============================================================================
+
+  @override
+  void onGpsSpoofingDetected(SpoofingDetectionResult result) {
+    print('[MapViewModel] 🔒 GPS Falso detectado en MapViewModel');
+    print('[MapViewModel] 🎯 Nivel de riesgo: ${result.riskLevel}');
+    print(
+      '[MapViewModel] 📊 Puntuación: ${(result.riskScore * 100).toStringAsFixed(1)}%',
+    );
+
+    // NO mostrar mensaje de error en el mapa, solo notificar
+    // El GPS falso se maneja solo con notificaciones, no como error del mapa
+
+    // Notificar cambios
+    notifyListeners();
   }
 
   // ============================================================================

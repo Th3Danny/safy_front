@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:go_router/go_router.dart';
+
 class MapWidget extends StatelessWidget {
   const MapWidget({super.key});
 
@@ -63,15 +64,17 @@ class MapWidget extends StatelessWidget {
 
   void _handleMapTap(BuildContext context, LatLng point) {
     final mapViewModel = context.read<MapViewModel>();
-    
+
     // Obtener información de seguridad de la ubicación tocada
     final safetyInfo = mapViewModel.getLocationSafetyInfo(point);
-    
+
     // Mostrar diálogo para seleccionar punto de inicio o destino
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildLocationSelector(context, point, mapViewModel, safetyInfo),
+      builder:
+          (context) =>
+              _buildLocationSelector(context, point, mapViewModel, safetyInfo),
     );
   }
 
@@ -123,14 +126,16 @@ class MapWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: safetyInfo.startsWith('⚠️') 
-                  ? Colors.orange.shade50 
-                  : Colors.green.shade50,
+              color:
+                  safetyInfo.startsWith('⚠️')
+                      ? Colors.orange.shade50
+                      : Colors.green.shade50,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: safetyInfo.startsWith('⚠️') 
-                    ? Colors.orange.shade200 
-                    : Colors.green.shade200,
+                color:
+                    safetyInfo.startsWith('⚠️')
+                        ? Colors.orange.shade200
+                        : Colors.green.shade200,
               ),
             ),
             child: Text(
@@ -138,50 +143,56 @@ class MapWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: safetyInfo.startsWith('⚠️') 
-                    ? Colors.orange.shade800 
-                    : Colors.green.shade800,
+                color:
+                    safetyInfo.startsWith('⚠️')
+                        ? Colors.orange.shade800
+                        : Colors.green.shade800,
               ),
               textAlign: TextAlign.center,
             ),
           ),
           const SizedBox(height: 16),
 
-          // Botones de acción
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    mapViewModel.setStartPoint(point);
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.play_arrow, color: Colors.white),
-                  label: const Text('Punto de inicio'),
-                  style: ElevatedButton.styleFrom(
+          // 🎯 NUEVO: Solo botón de destino (automáticamente usa ubicación actual como inicio)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                // 🎯 Establecer automáticamente la posición actual como punto de inicio
+                mapViewModel.setCurrentLocationAsStart();
+
+                // Establecer el punto tocado como destino
+                mapViewModel.setEndPoint(point);
+
+                Navigator.pop(context);
+
+                // Mostrar confirmación
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.navigation, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Calculando ruta desde tu ubicación a: ${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}',
+                          ),
+                        ),
+                      ],
+                    ),
                     backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    duration: const Duration(seconds: 2),
                   ),
-                ),
+                );
+              },
+              icon: const Icon(Icons.navigation, color: Colors.white),
+              label: const Text('Crear Ruta a este punto'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    mapViewModel.setEndPoint(point);
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.stop, color: Colors.white),
-                  label: const Text('Destino'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -192,7 +203,9 @@ class MapWidget extends StatelessWidget {
               // ✅ CORRECCIÓN: Usar context.go para navegar
               context.go(
                 '/create-report',
-                extra: {'location': point}, // Usa 'extra' para pasar objetos complejos
+                extra: {
+                  'location': point,
+                }, // Usa 'extra' para pasar objetos complejos
               );
             },
             icon: const Icon(Icons.report_problem, color: Colors.orange),
@@ -209,9 +222,10 @@ class MapWidget extends StatelessWidget {
   }
 
   Widget _buildRouteInfoLayer(MapViewModel mapViewModel) {
-    final recommendedRoute = mapViewModel.routeOptions
-        .where((route) => route.isRecommended)
-        .firstOrNull;
+    final recommendedRoute =
+        mapViewModel.routeOptions
+            .where((route) => route.isRecommended)
+            .firstOrNull;
 
     if (recommendedRoute == null) return const SizedBox.shrink();
 
@@ -252,10 +266,7 @@ class MapWidget extends StatelessWidget {
                 ),
                 Text(
                   '${recommendedRoute.duration} min',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,

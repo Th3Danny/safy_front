@@ -8,11 +8,14 @@ import 'package:safy/report/presentation/viewmodels/create_report_viewmodel.dart
 import 'package:safy/report/domain/value_objects/incident_type.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
 final sl = GetIt.instance;
 
 class ReportForm extends StatefulWidget {
-  const ReportForm({super.key});
+  final Map<String, dynamic>? extraData;
+
+  const ReportForm({super.key, this.extraData});
 
   @override
   State<ReportForm> createState() => _ReportFormState();
@@ -51,6 +54,53 @@ class _ReportFormState extends State<ReportForm> {
       'color': Colors.purple,
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 🎯 NUEVO: Inicializar con datos del widget si están disponibles
+    if (widget.extraData != null) {
+      final location = widget.extraData!['location'] as LatLng?;
+      if (location != null) {
+        _latitude = location.latitude;
+        _longitude = location.longitude;
+
+        // Actualizar el ViewModel con la ubicación
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Provider.of<CreateReportViewModel>(
+              context,
+              listen: false,
+            ).updateLocation(
+              location.latitude,
+              location.longitude,
+              null, // No tenemos dirección por defecto
+            );
+
+            // Mostrar confirmación
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.location_on, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Ubicación establecida: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -469,72 +519,77 @@ class _ReportFormState extends State<ReportForm> {
   }
 
   Future<void> _getCurrentLocation() async {
-  if (_isLoadingLocation) return;
+    if (_isLoadingLocation) return;
 
-  setState(() => _isLoadingLocation = true);
+    setState(() => _isLoadingLocation = true);
 
-  try {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw 'Los servicios de ubicación están deshabilitados';
-    }
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw 'Los servicios de ubicación están deshabilitados';
+      }
 
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+      LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        throw 'Permisos de ubicación denegados';
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw 'Permisos de ubicación denegados';
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw 'Permisos de ubicación denegados permanentemente';
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      if (mounted) {
+        setState(() {
+          _latitude = position.latitude;
+          _longitude = position.longitude;
+          // Opcional: Si tienes una forma de obtener la dirección inversa (geocoding)
+          // podrías asignarla aquí también a _addressController.text
+        });
+
+        // ¡IMPORTANTE! Actualiza el ViewModel con la ubicación
+        Provider.of<CreateReportViewModel>(
+          context,
+          listen: false,
+        ).updateLocation(
+          position.latitude,
+          position.longitude,
+          _addressController.text.trim().isEmpty
+              ? null
+              : _addressController.text.trim(),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ubicación obtenida exitosamente'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingLocation = false);
       }
     }
-
-    if (permission == LocationPermission.deniedForever) {
-      throw 'Permisos de ubicación denegados permanentemente';
-    }
-
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-      timeLimit: const Duration(seconds: 10),
-    );
-
-    if (mounted) {
-      setState(() {
-        _latitude = position.latitude;
-        _longitude = position.longitude;
-        // Opcional: Si tienes una forma de obtener la dirección inversa (geocoding)
-        // podrías asignarla aquí también a _addressController.text
-      });
-
-      // ¡IMPORTANTE! Actualiza el ViewModel con la ubicación
-      Provider.of<CreateReportViewModel>(context, listen: false).updateLocation(
-        position.latitude,
-        position.longitude,
-        _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ubicación obtenida exitosamente'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  } finally {
-    if (mounted) {
-      setState(() => _isLoadingLocation = false);
-    }
   }
-}
 
   void _handleSubmitReport(CreateReportViewModel viewModel) async {
     print('[ReportForm] 🚀 Iniciando creación de reporte...');

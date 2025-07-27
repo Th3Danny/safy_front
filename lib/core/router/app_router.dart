@@ -115,11 +115,13 @@ class AppRouter {
       GoRoute(
         path: AppRoutesConstant.createReport,
         name: 'create-report',
-        pageBuilder:
-            (context, state) => MaterialPage(
-              key: state.pageKey,
-              child: const CreateReportScreen(),
-            ),
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return MaterialPage(
+            key: state.pageKey,
+            child: CreateReportScreen(extraData: extra),
+          );
+        },
       ),
 
       GoRoute(
@@ -242,14 +244,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   void _checkAndNavigate() {
     print('[AuthWrapper] 🚀 Verificando navegación...');
-    
+
     // Usar WidgetsBinding para asegurar que el widget esté montado
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _hasNavigated) return;
-      
+
       final sessionManager = SessionManager.instance;
-      print('[AuthWrapper] 🔍 SessionManager isLoggedIn: ${sessionManager.isLoggedIn}');
-      
+      print(
+        '[AuthWrapper] 🔍 SessionManager isLoggedIn: ${sessionManager.isLoggedIn}',
+      );
+
       if (sessionManager.isLoggedIn) {
         print('[AuthWrapper] ✅ Navegando a home - sesión válida');
         _hasNavigated = true;
@@ -295,10 +299,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
             const SizedBox(height: 8),
             const Text(
               'Zonas Seguras',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 40),
             SizedBox(
@@ -306,21 +307,19 @@ class _AuthWrapperState extends State<AuthWrapper> {
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade700),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Colors.green.shade700,
+                ),
               ),
             ),
             const SizedBox(height: 16),
             const Text(
               'Verificando sesión...',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
           ],
         ),
       ),
     );
   }
-
 }

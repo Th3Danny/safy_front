@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'dart:async';
 
 import 'package:safy/core/services/firebase/notification_service.dart';
+import 'package:safy/core/services/security/gps_spoofing_detector.dart';
 
 /// Mixin para gestión de ubicación del usuario
 mixin LocationMixin on ChangeNotifier {
@@ -18,6 +19,14 @@ mixin LocationMixin on ChangeNotifier {
   StreamSubscription<Position>? _positionStream;
   bool _isNavigating = false;
   bool get isNavigating => _isNavigating;
+
+  // 🔒 NUEVO: Detector de GPS falso
+  final GpsSpoofingDetector _spoofingDetector = GpsSpoofingDetector();
+  SpoofingDetectionResult? _lastSpoofingResult;
+  SpoofingDetectionResult? get lastSpoofingResult => _lastSpoofingResult;
+
+  // Contador para detección más persistente
+  int _spoofingDetectionCount = 0;
 
   // Determinar ubicación actual
   Future<void> determineCurrentLocation() async {
@@ -69,7 +78,7 @@ mixin LocationMixin on ChangeNotifier {
 
     final locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 10, // Actualizar cada 10 metros
+      distanceFilter: 5, // Actualizar cada 5 metros (más frecuente)
     );
 
     _positionStream = Geolocator.getPositionStream(
@@ -110,6 +119,9 @@ mixin LocationMixin on ChangeNotifier {
       // onLocationChanged(newLocation, distance);
     }
 
+    // 🔒 NUEVO: Detectar GPS falso
+    _detectSpoofing(position);
+
     // Notificar si está cerca de una zona peligrosa
     _checkProximityToDangerZones(newLocation);
 
@@ -128,6 +140,49 @@ mixin LocationMixin on ChangeNotifier {
         );
         break;
       }
+    }
+  }
+
+  // 🔒 NUEVO: Método para detectar GPS falso
+  Future<void> _detectSpoofing(Position position) async {
+    try {
+      print('[LocationMixin] 🔒 Verificando autenticidad de GPS...');
+
+      // Usar detección inmediata para Fake GPS
+      final result = await _spoofingDetector.detectFakeGpsImmediately(position);
+
+      // Lógica mejorada para detección más persistente
+      if (result.isSpoofed) {
+        _spoofingDetectionCount++;
+
+        // Si es GPS falso, siempre actualizar y notificar
+        _lastSpoofingResult = result;
+
+        print(
+          '[LocationMixin] ⚠️ GPS FALSO DETECTADO! Riesgo: ${result.riskLevel} (Detección #$_spoofingDetectionCount)',
+        );
+
+        // Notificar al usuario sobre GPS falso con mensaje más claro
+        NotificationService().showDangerZoneNotification(
+          title: '🚨 Ubicación Falsa Detectada',
+          body:
+              'Tu ubicación parece ser falsa. Riesgo: ${result.riskLevel} (${(result.riskScore * 100).toStringAsFixed(0)}%)',
+        );
+
+        // Callback para el ViewModel principal
+        onGpsSpoofingDetected(result);
+      } else {
+        // Si es GPS real, solo actualizar si antes era falso
+        if (_lastSpoofingResult?.isSpoofed == true) {
+          _lastSpoofingResult = result;
+          _spoofingDetectionCount = 0;
+          print(
+            '[LocationMixin] ✅ GPS parece ser real (Riesgo: ${result.riskLevel})',
+          );
+        }
+      }
+    } catch (e) {
+      print('[LocationMixin] ❌ Error en detección de GPS falso: $e');
     }
   }
 
@@ -151,10 +206,10 @@ mixin LocationMixin on ChangeNotifier {
     notifyListeners();
   }
 
-    // 🧹 NUEVO: Método para limpiar rutas previas
+  // 🧹 NUEVO: Método para limpiar rutas previas
   void clearPreviousRoutes() {
     print('[LocationMixin] 🧹 Limpiando rutas previas...');
-    
+
     // Notificar al ViewModel principal para limpiar rutas
     onRoutesCleared();
   }
@@ -225,6 +280,11 @@ mixin LocationMixin on ChangeNotifier {
   void onLocationUpdated(LatLng location);
   void onLocationCentered(LatLng location);
   void onLocationError(String error);
+
+  // 🔒 NUEVO: Callback para GPS falso detectado
+  void onGpsSpoofingDetected(SpoofingDetectionResult result) {
+    // Implementar en el ViewModel principal
+  }
 
   // Callback opcional para cambios significativos de ubicación
   void onLocationChanged(LatLng newLocation, double distanceMoved) {

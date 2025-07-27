@@ -3,6 +3,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:safy/report/domain/entities/report.dart';
 import 'package:safy/report/domain/usecases/get_reports_for_map_use_case.dart';
+import 'package:get_it/get_it.dart';
+import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
+import 'package:safy/report/domain/entities/cluster_entity.dart';
 
 /// Mixin para gestión de reportes y zonas peligrosas
 mixin ReportsMixin on ChangeNotifier {
@@ -53,7 +56,9 @@ mixin ReportsMixin on ChangeNotifier {
 
     if (zoom < 12.0) {
       // No mostrar reportes si el zoom es muy bajo
-      print('[ReportsMixin] 🔍 Zoom demasiado alejado (<12), no se muestran reportes.');
+      print(
+        '[ReportsMixin] 🔍 Zoom demasiado alejado (<12), no se muestran reportes.',
+      );
       return;
     }
 
@@ -213,19 +218,41 @@ mixin ReportsMixin on ChangeNotifier {
   }
 
   bool isPointInDangerZone(LatLng point) {
-    const dangerRadius = 100.0;
+    try {
+      // 🚨 NUEVO: Verificar contra datos reales de clusters de peligros
+      final mapViewModel = GetIt.instance<MapViewModel>();
+      final dangerousClusters = mapViewModel.clusters;
 
-    for (final dangerMarker in _dangerMarkers) {
-      final distance = Distance().as(
-        LengthUnit.Meter,
-        point,
-        dangerMarker.point,
-      );
-      if (distance <= dangerRadius) {
-        return true;
+      if (dangerousClusters.isEmpty) {
+        print(
+          '[ReportsMixin] ⚠️ No hay datos de clusters de peligros disponibles',
+        );
+        return false;
       }
+
+      for (final cluster in dangerousClusters) {
+        final distance = Distance().as(
+          LengthUnit.Meter,
+          point,
+          LatLng(cluster.centerLatitude, cluster.centerLongitude),
+        );
+
+        // Radio del cluster basado en la severidad y cantidad de reportes
+        final clusterRadius = _calculateClusterRadius(cluster);
+
+        if (distance <= clusterRadius) {
+          print(
+            '[ReportsMixin] ⚠️ Punto en zona peligrosa: ${point.latitude}, ${point.longitude} (distancia: ${distance.toInt()}m, radio: ${clusterRadius.toInt()}m)',
+          );
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      print('[ReportsMixin] ❌ Error verificando zona peligrosa: $e');
+      return false;
     }
-    return false;
   }
 
   double calculateRouteSafety(List<LatLng> route) {
@@ -235,22 +262,25 @@ mixin ReportsMixin on ChangeNotifier {
     int totalChecks = 0;
     int dangerousChecks = 0;
 
+    // 🚨 SOLUCIÓN DRÁSTICA: Usar solo los puntos principales de la ruta
     final checkPoints = <LatLng>[];
-    checkPoints.addAll(route);
 
-    for (int i = 0; i < route.length - 1; i++) {
-      final intermediatePoints = _getPointsAlongPath(
-        route[i],
-        route[i + 1],
-        intervalMeters: 50,
-      );
-      checkPoints.addAll(intermediatePoints);
+    // Agregar solo puntos principales (cada 3 puntos para reducir drásticamente)
+    for (int i = 0; i < route.length; i += 3) {
+      checkPoints.add(route[i]);
     }
 
+    // Asegurar que siempre tengamos al menos 2 puntos
+    if (checkPoints.length < 2 && route.length >= 2) {
+      checkPoints.add(route.last);
+    }
+
+    // 🚨 Verificar contra marcadores de peligro (datos reales)
     for (final point in checkPoints) {
       totalChecks++;
       bool isInDanger = false;
 
+      // Verificar contra marcadores de peligro (datos reales)
       for (final dangerMarker in _dangerMarkers) {
         final distance = Distance().as(
           LengthUnit.Meter,
@@ -258,15 +288,19 @@ mixin ReportsMixin on ChangeNotifier {
           dangerMarker.point,
         );
 
+        // Penalización basada en distancia
         if (distance <= 50) {
-          safetyScore -= 15;
+          safetyScore -= 20; // Muy cerca de zona peligrosa
           dangerousChecks++;
           isInDanger = true;
+          break; // Salir del bucle una vez que se encuentra peligro
         } else if (distance <= 100) {
-          safetyScore -= 8;
+          safetyScore -= 12; // Cerca de zona peligrosa
           isInDanger = true;
         } else if (distance <= 200) {
-          safetyScore -= 3;
+          safetyScore -= 6; // Moderadamente cerca
+        } else if (distance <= 500) {
+          safetyScore -= 2; // Levemente cerca
         }
       }
 
@@ -275,27 +309,87 @@ mixin ReportsMixin on ChangeNotifier {
       }
     }
 
+    // 🕐 Factor de hora del día
+    final hour = DateTime.now().hour;
+    if (hour >= 6 && hour <= 18) {
+      safetyScore += 8; // Día: más seguro
+    } else if (hour >= 19 && hour <= 22) {
+      safetyScore -= 5; // Noche temprana: moderadamente peligroso
+    } else {
+      safetyScore -= 15; // Noche tardía: muy peligroso
+    }
+
+    // 📊 Factor de densidad de peligros
     if (totalChecks > 0) {
       final dangerPercentage = dangerousChecks / totalChecks;
-      if (dangerPercentage > 0.3) {
-        safetyScore -= 20;
+      if (dangerPercentage > 0.4) {
+        safetyScore -= 25; // Muchos puntos peligrosos
+      } else if (dangerPercentage > 0.2) {
+        safetyScore -= 15; // Algunos puntos peligrosos
+      } else if (dangerPercentage > 0.1) {
+        safetyScore -= 8; // Pocos puntos peligrosos
       }
     }
 
-    final hour = DateTime.now().hour;
-    if (hour >= 6 && hour <= 18) {
-      safetyScore += 5;
-    } else {
-      safetyScore -= 10;
+    // 🎯 Factor de longitud de ruta
+    final routeLength = _calculateRouteLength(route);
+    if (routeLength > 5000) {
+      // Más de 5km
+      safetyScore -= 5; // Rutas largas son más peligrosas
     }
 
     final finalScore = safetyScore.clamp(0.0, 100.0);
 
+    // Solo imprimir una vez por ruta para evitar spam
     print(
-      '[ReportsMixin] 📊 Seguridad calculada: ${finalScore.toInt()}% ($dangerousChecks/$totalChecks puntos peligrosos)',
+      '[ReportsMixin] 📊 Seguridad calculada: ${finalScore.toInt()}% ($dangerousChecks/$totalChecks puntos peligrosos, ${route.length} puntos de ruta)',
     );
 
     return finalScore;
+  }
+
+  // 🎯 NUEVO: Calcular longitud total de la ruta
+  double _calculateRouteLength(List<LatLng> route) {
+    if (route.length < 2) return 0.0;
+
+    double totalLength = 0.0;
+    for (int i = 0; i < route.length - 1; i++) {
+      totalLength += Distance().as(LengthUnit.Meter, route[i], route[i + 1]);
+    }
+    return totalLength;
+  }
+
+  // 🎯 NUEVO: Calcular radio del cluster basado en severidad y reportes
+  double _calculateClusterRadius(ClusterEntity cluster) {
+    // Radio base según severidad
+    double baseRadius = 150.0; // Radio base en metros
+
+    // Ajustar según severidad
+    switch (cluster.severity.toUpperCase()) {
+      case 'CRITICAL':
+        baseRadius = 300.0;
+        break;
+      case 'HIGH':
+        baseRadius = 250.0;
+        break;
+      case 'MEDIUM':
+        baseRadius = 200.0;
+        break;
+      case 'LOW':
+        baseRadius = 150.0;
+        break;
+      default:
+        baseRadius = 200.0;
+    }
+
+    // Ajustar según cantidad de reportes
+    if (cluster.reportCount > 10) {
+      baseRadius += 100.0;
+    } else if (cluster.reportCount > 5) {
+      baseRadius += 50.0;
+    }
+
+    return baseRadius;
   }
 
   List<LatLng> _getPointsAlongPath(
