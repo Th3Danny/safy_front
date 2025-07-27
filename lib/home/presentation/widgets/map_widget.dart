@@ -21,6 +21,12 @@ class MapWidget extends StatelessWidget {
             maxZoom: 18,
             onMapReady: () => mapViewModel.onMapReady(),
             onTap: (tapPosition, point) => _handleMapTap(context, point),
+            onPositionChanged: (position, hasGesture) {
+              // 🔄 Listener automático para cambios de zoom y posición
+              if (hasGesture) {
+                mapViewModel.onMapPositionChanged(position);
+              }
+            },
           ),
           children: [
             // Capa base del mapa
