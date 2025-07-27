@@ -32,7 +32,7 @@ class MapOverlayWidgets extends StatelessWidget {
                       mapViewModel.selectRoute(route);
                     },
                     onClearRoute: () {
-                      mapViewModel.clearRoute();
+                      mapViewModel.clearAllRoutes();
                     },
                   ),
                 ),

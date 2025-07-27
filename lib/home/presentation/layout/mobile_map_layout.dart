@@ -57,7 +57,7 @@ class MobileMapLayout extends StatelessWidget {
                   child: FloatingRouteControl(
                     routes: mapViewModel.routeOptions,
                     onRouteSelected: (route) => mapViewModel.selectRoute(route),
-                    onClearRoute: () => mapViewModel.clearRoute(),
+                    onClearRoute: () => mapViewModel.clearAllRoutes(),
                     onClose: () => mapViewModel.hideRoutePanel(),
                   ),
                 ),

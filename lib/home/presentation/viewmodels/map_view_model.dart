@@ -340,8 +340,8 @@ class MapViewModel extends ChangeNotifier
     clearRouteMarkers();
     hideRoutePanel();
 
-    // Limpiar también las rutas del RouteMixin
-    clearRoute();
+    // NO llamar a clearRoute() aquí para evitar recursión infinita
+    // Las rutas ya se limpian en el RouteMixin
 
     notifyListeners();
   }
@@ -386,12 +386,18 @@ class MapViewModel extends ChangeNotifier
     LatLng placeLocation,
     LatLng currentLocation,
   ) {
+    print('[MapViewModel] 🔍 Lugar seleccionado: ${place.displayName}'); // Debug print
     _mapController.move(placeLocation, 15.0);
     addDestinationMarker(placeLocation, place.displayName);
     setEndPoint(placeLocation);
 
     if (startPoint == null) {
+      print('[MapViewModel] 📍 Estableciendo punto de inicio en ubicación actual.'); // Debug print
       setStartPoint(currentLocation);
+    } else {
+      print('[MapViewModel] 📍 Ya existe un punto de inicio. Recalculando rutas.'); // Debug print
+      // No necesitas llamar a calculateRoutes() aquí, ya que setEndPoint() o setStartPoint() lo harán automáticamente
+      // si ambos puntos están definidos.
     }
   }
 
@@ -521,9 +527,6 @@ class MapViewModel extends ChangeNotifier
   void clearAllRoutes() {
     print('[MapViewModel] 🧹 Limpiando todas las rutas y marcadores...');
 
-    // Limpiar rutas del RouteMixin
-    clearRoute();
-
     // Limpiar marcadores de ruta
     clearRouteMarkers();
 
@@ -532,6 +535,9 @@ class MapViewModel extends ChangeNotifier
 
     // Limpiar errores
     _errorMessage = null;
+
+    // Limpiar rutas del RouteMixin sin recursión
+    clearRouteSilently();
 
     notifyListeners();
   }
@@ -550,6 +556,22 @@ class MapViewModel extends ChangeNotifier
 
     // Iniciar seguimiento de navegación
     startNavigationTracking(currentRoute, currentLocation);
+  }
+
+  // ⏹️ NUEVO: Método para detener navegación
+  void stopNavigation() {
+    print('[MapViewModel] ⏹️ Deteniendo navegación...');
+
+    // Detener navegación del LocationMixin
+    super.stopNavigation();
+
+    // Detener seguimiento de navegación
+    stopNavigationTracking();
+
+    // Limpiar todas las rutas
+    clearAllRoutes();
+
+    notifyListeners();
   }
 
   void clearError() {
@@ -594,8 +616,17 @@ class MapViewModel extends ChangeNotifier
   void onDestinationReached() {
     print('[MapViewModel] 🎯 ¡Destino alcanzado!');
 
-    // Detener navegación automáticamente
-    stopNavigation();
+    // Detener navegación automáticamente sin recursión
+    print('[MapViewModel] ⏹️ Deteniendo navegación por destino alcanzado...');
+
+    // Detener navegación del LocationMixin
+    super.stopNavigation();
+
+    // Detener seguimiento de navegación
+    stopNavigationTracking();
+
+    // Limpiar todas las rutas
+    clearAllRoutes();
 
     // Notificar al usuario (se manejará en la UI)
     _errorMessage = null;
