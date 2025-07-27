@@ -382,6 +382,102 @@ class MapViewModel extends ChangeNotifier
   }
 
   // ============================================================================
+  // LISTENER AUTOMÁTICO PARA CAMBIOS DE MAPA
+  // ============================================================================
+
+  // Variables para controlar la frecuencia de actualización
+  DateTime _lastClusterUpdate = DateTime.now();
+  static const Duration _clusterUpdateCooldown = Duration(
+    seconds: 1,
+  ); // Reducido a 1 segundo para mejor respuesta
+  double _lastZoom = 15.0;
+  LatLng _lastCenter = LatLng(16.7569, -93.1292);
+  bool _isUpdatingClusters =
+      false; // Evitar actualizaciones múltiples simultáneas
+
+  /// Listener automático para cambios de posición y zoom del mapa
+  void onMapPositionChanged(dynamic position) {
+    // Evitar actualizaciones múltiples simultáneas
+    if (_isUpdatingClusters) {
+      return;
+    }
+
+    final newZoom = position.zoom ?? _lastZoom;
+    final newCenter = position.center ?? _lastCenter;
+    final now = DateTime.now();
+
+    // Verificar si ha pasado suficiente tiempo desde la última actualización
+    if (now.difference(_lastClusterUpdate) < _clusterUpdateCooldown) {
+      return;
+    }
+
+    // Detectar cambios significativos
+    final zoomChanged =
+        (newZoom - _lastZoom).abs() >
+        0.3; // Reducido a 0.3 para mayor sensibilidad
+    final centerChanged =
+        _calculateDistance(newCenter, _lastCenter) >
+        300; // Reducido a 300 metros
+
+    if (zoomChanged || centerChanged) {
+      print('[MapViewModel] 🔄 Cambio detectado en el mapa:');
+      print('[MapViewModel] 📍 Zoom: $_lastZoom → $newZoom');
+      print('[MapViewModel] 📍 Centro: $_lastCenter → $newCenter');
+      print(
+        '[MapViewModel] 🔍 Distancia movida: ${_calculateDistance(newCenter, _lastCenter).toInt()}m',
+      );
+
+      _lastZoom = newZoom;
+      _lastCenter = newCenter;
+      _lastClusterUpdate = now;
+
+      // Actualizar clusters automáticamente
+      _updateClustersForNewPosition(newCenter, newZoom);
+    }
+  }
+
+  /// Actualizar clusters para la nueva posición y zoom
+  Future<void> _updateClustersForNewPosition(
+    LatLng newCenter,
+    double newZoom,
+  ) async {
+    if (_isUpdatingClusters) return; // Evitar actualizaciones múltiples
+
+    try {
+      _isUpdatingClusters = true;
+      print('[MapViewModel] 🔄 Actualizando clusters para nueva posición...');
+
+      // Solo actualizar si los clusters están visibles
+      if (showClusters) {
+        await loadDangerousClusters(newCenter, zoom: newZoom);
+        print('[MapViewModel] ✅ Clusters actualizados automáticamente');
+      }
+    } catch (e) {
+      print('[MapViewModel] ❌ Error actualizando clusters automáticamente: $e');
+    } finally {
+      _isUpdatingClusters = false;
+    }
+  }
+
+  /// Calcular distancia entre dos puntos en metros
+  double _calculateDistance(LatLng point1, LatLng point2) {
+    const Distance distance = Distance();
+    return distance.as(LengthUnit.Meter, point1, point2);
+  }
+
+  /// Obtener información del estado del listener automático
+  Map<String, dynamic> getAutoUpdateInfo() {
+    return {
+      'isUpdating': _isUpdatingClusters,
+      'lastUpdate': _lastClusterUpdate,
+      'currentZoom': _lastZoom,
+      'currentCenter': _lastCenter,
+      'showClusters': showClusters,
+      'clustersCount': clusterMarkers.length,
+    };
+  }
+
+  // ============================================================================
   // MÉTODOS PÚBLICOS PARA REFRESCAR DATOS
   // ============================================================================
 
