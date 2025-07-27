@@ -11,7 +11,7 @@ class ReportResponseDto {
   final String? address;
   final String reporterName;
   final bool isAnonymous;
-  final int severity; 
+  final int severity;
   final String? imageUrl;
   final String? audioUrl;
   final DateTime? createdAt;
@@ -49,65 +49,59 @@ class ReportResponseDto {
     this.comments,
   });
 
-  /// Factory method to create a ReportResponseDto from a JSON map.
+  /// Factory method to create a ReportResponseDto from a JSON map representing a single report.
   factory ReportResponseDto.fromJson(Map<String, dynamic> json) {
-    final Map<String, dynamic>? data = json['data'] as Map<String, dynamic>?;
-
-    // If 'data' is null, or not a Map, this indicates a malformed response.
-    if (data == null) {
-      throw FormatException('La respuesta del servidor no contiene la clave "data" o está malformada.');
-    }
-
+    // CORREGIDO: Elimina la línea `final Map<String, dynamic>? data = json['data'] as Map<String, dynamic>?;`
+    // y accede directamente a las propiedades del mapa `json`
+    // porque este `json` ya es el objeto de un reporte individual.
     return ReportResponseDto(
-      // Access fields from the 'data' map
-      id: data['id'] as int,
-      title: data['title'] as String,
-      description: data['description'] as String,
-      incidentType: data['incident_type'] as String,
-      status: data['status'] as String,
-      latitude: (data['latitude'] as num).toDouble(),
-      longitude: (data['longitude'] as num).toDouble(),
-      address: data['address'] as String?, // Nullable string, use 'as String?'
-      reporterName: data['reporter_name'] as String,
-      isAnonymous: data['is_anonymous'] as bool,
-      // Assuming 'severity' is always an int when present. If it can be null, change to 'as int?'
-      severity: data['severity'] as int,
-      imageUrl: data['image_url'] as String?, // Nullable string
-      audioUrl: data['audio_url'] as String?, // Nullable string
-      
-      // Handle DateTime parsing, providing null if the value from JSON is null
-      createdAt: data['created_at'] != null ? _parseDateTime(data['created_at']) : null,
-      updatedAt: data['updated_at'] != null ? _parseDateTime(data['updated_at']) : null,
-      
-      // Nullable int fields
-      verifiedBy: data['verified_by'] as int?,
-      verifiedAt: data['verified_at'] != null ? _parseDateTime(data['verified_at']) : null,
-      verificationNotes: data['verification_notes'] as String?, // Nullable string
-      
-      // Nullable int fields
-      resolvedBy: data['resolved_by'] as int?,
-      resolvedAt: data['resolved_at'] != null ? _parseDateTime(data['resolved_at']) : null,
-      resolutionNotes: data['resolution_notes'] as String?, // Nullable string
-      comments: data['comments'] as String?, // Nullable string
+      id: json['id'] as int,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      incidentType: json['incident_type'] as String,
+      status: json['status'] as String,
+      latitude: (json['latitude'] as num).toDouble(), // Casteo seguro para double
+      longitude: (json['longitude'] as num).toDouble(), // Casteo seguro para double
+      address: json['address'] as String?, // Nullable string, usa 'as String?'
+      reporterName: json['reporter_name'] as String,
+      isAnonymous: json['is_anonymous'] as bool,
+      severity: (json['severity'] as num).toInt(), // Casteo seguro para int
+      imageUrl: json['image_url'] as String?, // Nullable string
+      audioUrl: json['audio_url'] as String?, // Nullable string
+
+      // Manejo de DateTime, proporcionando null si el valor del JSON es null
+      createdAt: json['created_at'] != null ? _parseDateTime(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? _parseDateTime(json['updated_at']) : null,
+
+      // Campos int nulos
+      verifiedBy: (json['verified_by'] as num?)?.toInt(), // Casteo seguro para int nulo
+      verifiedAt: json['verified_at'] != null ? _parseDateTime(json['verified_at']) : null,
+      verificationNotes: json['verification_notes'] as String?, // String nulo
+
+      // Campos int nulos
+      resolvedBy: (json['resolved_by'] as num?)?.toInt(), // Casteo seguro para int nulo
+      resolvedAt: json['resolved_at'] != null ? _parseDateTime(json['resolved_at']) : null,
+      resolutionNotes: json['resolution_notes'] as String?, // String nulo
+      comments: json['comments'] as String?, // String nulo (si es un string simple; si es un objeto o lista, se necesita más parsing)
     );
   }
 
-  /// Helper method to parse dynamic date values (String or List<int>) into DateTime.
-  /// Returns null if the value is null or cannot be parsed.
+  /// Método auxiliar para parsear valores de fecha dinámicos (String o List<int>) a DateTime.
+  /// Devuelve null si el valor es null o no puede ser parseado.
   static DateTime? _parseDateTime(dynamic dateValue) {
     if (dateValue == null) return null;
 
-    // If it's a list (e.g., [year, month, day, hour, minute, second, nano])
+    // Si es una lista (por ejemplo, [año, mes, día, hora, minuto, segundo, nano])
     if (dateValue is List && dateValue.length >= 6) {
       try {
         return DateTime(
-          dateValue[0], // year
-          dateValue[1], // month
-          dateValue[2], // day
-          dateValue[3], // hour
-          dateValue[4], // minute
-          dateValue[5], // second
-          (dateValue.length > 6 ? (dateValue[6] as int) ~/ 1000000 : 0), // milliseconds from nanos
+          dateValue[0] as int, // año
+          dateValue[1] as int, // mes
+          dateValue[2] as int, // día
+          dateValue[3] as int, // hora
+          dateValue[4] as int, // minuto
+          dateValue[5] as int, // segundo
+          (dateValue.length > 6 ? (dateValue[6] as int) ~/ 1000000 : 0), // milisegundos de nanosegundos
         );
       } catch (e) {
         print('[ReportResponseDto] Error parsing date from array: $dateValue -> $e');
@@ -115,7 +109,7 @@ class ReportResponseDto {
       }
     }
 
-    // If it's an ISO 8601 string
+    // Si es un string ISO 8601
     if (dateValue is String) {
       try {
         return DateTime.parse(dateValue);
@@ -124,26 +118,32 @@ class ReportResponseDto {
         return null;
       }
     }
-    
-    // If it's neither, return null
+
+    // Si no es ninguno de los anteriores, devuelve null
     return null;
   }
 
-  /// Converts the DTO to a domain entity (ReportInfoEntity).
+  /// Convierte el DTO a una entidad de dominio (ReportInfoEntity).
   ReportInfoEntity toDomainEntity() {
     return ReportInfoEntity(
       id: id.toString(),
       title: title,
       description: description,
-      incident_type: incidentType, 
+      incident_type: incidentType,
       latitude: latitude,
       longitude: longitude,
       address: address,
       reporterName: reporterName,
-      reporterEmail: null, 
+      reporterEmail: null, // Este campo no está en tu DTO ni en la respuesta del servidor
       severity: severity,
       isAnonymous: isAnonymous,
-      
+      // Considera añadir más campos si ReportInfoEntity los necesita
+      // como status, imageUrl, audioUrl, createdAt, updatedAt, etc.
+      // status: status,
+      // imageUrl: imageUrl,
+      // audioUrl: audioUrl,
+      // createdAt: createdAt,
+      // updatedAt: updatedAt,
     );
   }
 
