@@ -33,18 +33,19 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                 decoration: InputDecoration(
                   hintText: 'Buscar lugar...',
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          onPressed: () {
-                            _searchController.clear();
-                            mapViewModel.clearSearch();
-                            setState(() {
-                              _showResults = false;
-                            });
-                          },
-                          icon: const Icon(Icons.clear),
-                        )
-                      : null,
+                  suffixIcon:
+                      _searchController.text.isNotEmpty
+                          ? IconButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              mapViewModel.clearSearch();
+                              setState(() {
+                                _showResults = false;
+                              });
+                            },
+                            icon: const Icon(Icons.clear),
+                          )
+                          : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -56,14 +57,17 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                     _showResults = value.isNotEmpty;
                   });
                   if (value.length > 2) {
-                    mapViewModel.searchPlaces(value .trim(), mapViewModel.currentLocation);
+                    mapViewModel.searchPlaces(
+                      value.trim(),
+                      mapViewModel.currentLocation,
+                    );
                   } else {
                     mapViewModel.clearSearch();
                   }
                 },
               ),
             ),
-            
+
             // Resultados de búsqueda
             if (_showResults && mapViewModel.searchResults.isNotEmpty)
               Container(
@@ -83,7 +87,8 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: mapViewModel.searchResults.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  separatorBuilder:
+                      (context, index) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final place = mapViewModel.searchResults[index];
                     return ListTile(
@@ -93,16 +98,20 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: place.address != null 
-                          ? Text(
-                              place.address!,
-                              style: TextStyle(color: Colors.grey[600]),
-                            )
-                          : Text(
-                              '${place.latitude.toStringAsFixed(4)}, ${place.longitude.toStringAsFixed(4)}',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
+                      subtitle:
+                          place.address != null
+                              ? Text(
+                                place.address!,
+                                style: TextStyle(color: Colors.grey[600]),
+                              )
+                              : Text(
+                                '${place.latitude.toStringAsFixed(4)}, ${place.longitude.toStringAsFixed(4)}',
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
                       onTap: () {
+                        // 🎯 NUEVO: Establecer automáticamente la posición actual como punto de inicio
+                        mapViewModel.setCurrentLocationAsStart();
+
                         // Seleccionar lugar y calcular ruta automáticamente
                         mapViewModel.selectPlace(
                           place,
@@ -112,16 +121,21 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                         setState(() {
                           _showResults = false;
                         });
-                        
+
                         // Mostrar SnackBar de confirmación
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Row(
                               children: [
-                                const Icon(Icons.navigation, color: Colors.white),
+                                const Icon(
+                                  Icons.navigation,
+                                  color: Colors.white,
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: Text('Calculando ruta a: ${place.displayName}'),
+                                  child: Text(
+                                    'Calculando ruta desde tu ubicación a: ${place.displayName}',
+                                  ),
                                 ),
                               ],
                             ),
@@ -134,14 +148,14 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                   },
                 ),
               ),
-            
+
             // Indicador de carga
             if (mapViewModel.isSearching)
               const Padding(
                 padding: EdgeInsets.all(16),
                 child: CircularProgressIndicator(),
               ),
-              
+
             // Mostrar error si existe
             if (mapViewModel.errorMessage != null)
               Container(

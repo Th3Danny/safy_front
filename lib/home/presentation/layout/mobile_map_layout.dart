@@ -8,7 +8,7 @@ import 'package:safy/home/presentation/widgets/map_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_fab.dart';
 import 'package:safy/home/presentation/widgets/place_search_widget.dart';
 import 'package:safy/home/presentation/widgets/route_options_widget.dart';
-
+import 'package:safy/home/presentation/widgets/navigation_progress_widget.dart';
 
 class MobileMapLayout extends StatelessWidget {
   const MobileMapLayout({super.key});
@@ -93,6 +93,9 @@ class MobileMapLayout extends StatelessWidget {
                   right: 16,
                   child: _buildLoadingIndicator(),
                 ),
+
+              // 🧭 Widget de progreso de navegación
+              const NavigationProgressWidget(),
             ],
           );
         },
@@ -247,9 +250,17 @@ class MobileMapLayout extends StatelessWidget {
 
     switch (type) {
       case 'add':
-        mapViewModel.clearRoute();
-        // Aquí puedes mostrar el panel de rutas o enfocar el mapa si es necesario
-        // Por ejemplo: mapViewModel.showRoutePanel();
+        // 🧹 Limpiar todas las rutas previas antes de iniciar nueva navegación
+        mapViewModel.clearAllRoutes();
+
+        // Mostrar mensaje de confirmación
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🧹 Rutas limpiadas. Listo para nueva navegación.'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
         break;
       // Los siguientes modos de transporte se reactivarán en una versión futura:
       // case 'walk':

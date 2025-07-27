@@ -19,6 +19,7 @@ import '../widgets/viewmodel/clusters_mixin.dart';
 import '../widgets/viewmodel/reports_mixin.dart';
 import '../widgets/viewmodel/search_mixin.dart';
 import '../widgets/viewmodel/markers_mixin.dart';
+import '../widgets/viewmodel/navigation_tracking_mixin.dart';
 
 /// ViewModel principal del mapa que integra todas las funcionalidades
 /// usando mixins para mejor organización y mantenibilidad
@@ -29,7 +30,8 @@ class MapViewModel extends ChangeNotifier
         ClustersMixin,
         ReportsMixin,
         SearchMixin,
-        MarkersMixin {
+        MarkersMixin,
+        NavigationTrackingMixin {
   // ============================================================================
   // DEPENDENCIAS E INYECCIÓN
   // ============================================================================
@@ -203,8 +205,134 @@ class MapViewModel extends ChangeNotifier
   @override
   void onLocationUpdated(LatLng location) {
     createCurrentLocationMarker(location, isNavigating);
-    if (isNavigating && _mapReady) {
-      _mapController.move(location, _mapController.camera.zoom);
+
+    // Si estamos navegando, actualizar el seguimiento de navegación
+    if (isNavigating) {
+      updateNavigationPosition(location);
+
+      if (_mapReady) {
+        _mapController.move(location, _mapController.camera.zoom);
+      }
+    }
+
+    // 🚨 NUEVO: Verificar si entró a una zona peligrosa
+    _checkDangerZoneEntry(location);
+  }
+
+  // 🚨 NUEVO: Verificar entrada a zona peligrosa
+  void _checkDangerZoneEntry(LatLng location) {
+    if (isLocationDangerous(location)) {
+      print(
+        '[MapViewModel] ⚠️ Usuario entró a zona peligrosa en: ${location.latitude}, ${location.longitude}',
+      );
+
+      // Notificar al usuario (se manejará en la UI)
+      _errorMessage =
+          '⚠️ Zona peligrosa detectada. Considera usar una ruta alternativa.';
+      notifyListeners();
+    }
+  }
+
+  // 🛡️ NUEVO: Sugerir ruta segura automáticamente
+  void _suggestSafeRoute() {
+    print('[MapViewModel] 🛡️ Sugiriendo ruta segura...');
+
+    // Establecer posición actual como punto de inicio
+    setCurrentLocationAsStart();
+
+    // Generar destinos seguros cercanos
+    final safeDestinations = _generateSafeDestinations();
+
+    if (safeDestinations.isNotEmpty) {
+      // Mostrar selector de destinos seguros
+      _showSafeDestinationSelector(safeDestinations);
+    } else {
+      _errorMessage = '⚠️ No se encontraron destinos seguros cercanos.';
+      notifyListeners();
+    }
+  }
+
+  // 🎯 NUEVO: Generar destinos seguros cercanos
+  List<Map<String, dynamic>> _generateSafeDestinations() {
+    final destinations = <Map<String, dynamic>>[];
+
+    // Generar puntos seguros en diferentes direcciones
+    final directions = [
+      {'lat': 0.005, 'lng': 0.005, 'name': 'Noreste'},
+      {'lat': 0.005, 'lng': -0.005, 'name': 'Noroeste'},
+      {'lat': -0.005, 'lng': 0.005, 'name': 'Sureste'},
+      {'lat': -0.005, 'lng': -0.005, 'name': 'Suroeste'},
+      {'lat': 0.01, 'lng': 0.0, 'name': 'Norte'},
+      {'lat': -0.01, 'lng': 0.0, 'name': 'Sur'},
+      {'lat': 0.0, 'lng': 0.01, 'name': 'Este'},
+      {'lat': 0.0, 'lng': -0.01, 'name': 'Oeste'},
+    ];
+
+    for (final direction in directions) {
+      final safePoint = LatLng(
+        currentLocation.latitude + (direction['lat'] as double),
+        currentLocation.longitude + (direction['lng'] as double),
+      );
+
+      // Verificar que el punto esté fuera de zonas peligrosas
+      if (!isLocationDangerous(safePoint)) {
+        destinations.add({
+          'location': safePoint,
+          'name': 'Zona Segura - ${direction['name']}',
+          'distance': _calculateDistanceBetweenPoints(
+            currentLocation,
+            safePoint,
+          ),
+        });
+      }
+    }
+
+    // Ordenar por distancia
+    destinations.sort(
+      (a, b) => (a['distance'] as double).compareTo(b['distance'] as double),
+    );
+
+    return destinations.take(5).toList();
+  }
+
+  // 🎯 NUEVO: Calcular distancia entre dos puntos
+  double _calculateDistanceBetweenPoints(LatLng point1, LatLng point2) {
+    const double earthRadius = 6371000; // metros
+    final double lat1Rad = point1.latitude * (3.14159 / 180);
+    final double lat2Rad = point2.latitude * (3.14159 / 180);
+    final double deltaLatRad =
+        (point2.latitude - point1.latitude) * (3.14159 / 180);
+    final double deltaLngRad =
+        (point2.longitude - point1.longitude) * (3.14159 / 180);
+
+    final double a =
+        (deltaLatRad / 2).abs() * (deltaLatRad / 2).abs() +
+        lat1Rad.abs() *
+            lat2Rad.abs() *
+            (deltaLngRad / 2).abs() *
+            (deltaLngRad / 2).abs();
+    final double c = 2 * (a.abs().clamp(0, 1));
+
+    return earthRadius * c;
+  }
+
+  // 🎯 NUEVO: Mostrar selector de destinos seguros
+  void _showSafeDestinationSelector(List<Map<String, dynamic>> destinations) {
+    // Esta función se implementará en la UI
+    print(
+      '[MapViewModel] 🎯 Mostrando ${destinations.length} destinos seguros',
+    );
+
+    // Por ahora, establecer el primer destino como ejemplo
+    if (destinations.isNotEmpty) {
+      final firstDestination = destinations.first;
+      final location = firstDestination['location'] as LatLng;
+      final name = firstDestination['name'] as String;
+
+      setEndPoint(location);
+
+      _errorMessage = '🛡️ Calculando ruta segura a: $name';
+      notifyListeners();
     }
   }
 
@@ -328,8 +456,14 @@ class MapViewModel extends ChangeNotifier
 
   @override
   void onRoutesCleared() {
+    print('[MapViewModel] 🧹 Limpiando rutas del mapa...');
     clearRouteMarkers();
     hideRoutePanel();
+
+    // Limpiar también las rutas del RouteMixin
+    clearRoute();
+
+    notifyListeners();
   }
 
   @override
@@ -503,6 +637,41 @@ class MapViewModel extends ChangeNotifier
     notifyListeners();
   }
 
+  // 🧹 NUEVO: Método para limpiar completamente todas las rutas
+  void clearAllRoutes() {
+    print('[MapViewModel] 🧹 Limpiando todas las rutas y marcadores...');
+
+    // Limpiar rutas del RouteMixin
+    clearRoute();
+
+    // Limpiar marcadores de ruta
+    clearRouteMarkers();
+
+    // Ocultar panel de rutas
+    hideRoutePanel();
+
+    // Limpiar errores
+    _errorMessage = null;
+
+    notifyListeners();
+  }
+
+  // 🧭 NUEVO: Método para iniciar navegación con seguimiento
+  void startNavigationWithTracking() {
+    if (currentRoute.isEmpty) {
+      print('[MapViewModel] ⚠️ No hay ruta para navegar');
+      return;
+    }
+
+    print('[MapViewModel] 🧭 Iniciando navegación con seguimiento...');
+
+    // Iniciar navegación normal
+    startNavigation();
+
+    // Iniciar seguimiento de navegación
+    startNavigationTracking(currentRoute, currentLocation);
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();
@@ -516,6 +685,62 @@ class MapViewModel extends ChangeNotifier
   // Verificar si una ubicación está en zona peligrosa
   bool isLocationDangerous(LatLng location) {
     return isPointInDangerousCluster(location);
+  }
+
+  // ============================================================================
+  // IMPLEMENTACIÓN DE CALLBACKS DE NAVIGATION_TRACKING_MIXIN
+  // ============================================================================
+
+  @override
+  void updateRouteDisplay(List<LatLng> route) {
+    print(
+      '[MapViewModel] 🛣️ Actualizando visualización de ruta: ${route.length} puntos',
+    );
+    // Actualizar la ruta actual del RouteMixin
+    selectRoute(
+      RouteOption(
+        name: 'Ruta en Progreso',
+        points: route,
+        distance: _calculateTotalDistance(route),
+        duration: _calculateTotalDuration(route),
+        safetyLevel: 85.0,
+        isRecommended: true,
+      ),
+    );
+    notifyListeners();
+  }
+
+  @override
+  void onDestinationReached() {
+    print('[MapViewModel] 🎯 ¡Destino alcanzado!');
+
+    // Detener navegación automáticamente
+    stopNavigation();
+
+    // Notificar al usuario (se manejará en la UI)
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  // Métodos auxiliares para cálculos
+  double _calculateTotalDistance(List<LatLng> route) {
+    if (route.length < 2) return 0.0;
+
+    double totalDistance = 0.0;
+    for (int i = 0; i < route.length - 1; i++) {
+      totalDistance += Distance().as(
+        LengthUnit.Kilometer,
+        route[i],
+        route[i + 1],
+      );
+    }
+    return totalDistance;
+  }
+
+  int _calculateTotalDuration(List<LatLng> route) {
+    final distance = _calculateTotalDistance(route);
+    const double speed = 5.0; // km/h para caminar
+    return (distance / speed * 60).round();
   }
 
   // ============================================================================

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -134,6 +133,10 @@ mixin LocationMixin on ChangeNotifier {
 
   void startNavigation() {
     print('[LocationMixin] 🧭 Iniciando navegación...');
+
+    // 🧹 Limpiar rutas previas antes de iniciar nueva navegación
+    clearPreviousRoutes();
+
     _isNavigating = true;
     _positionStream?.cancel();
     startLocationTracking();
@@ -146,6 +149,19 @@ mixin LocationMixin on ChangeNotifier {
     _positionStream?.cancel();
     startLocationTracking();
     notifyListeners();
+  }
+
+    // 🧹 NUEVO: Método para limpiar rutas previas
+  void clearPreviousRoutes() {
+    print('[LocationMixin] 🧹 Limpiando rutas previas...');
+    
+    // Notificar al ViewModel principal para limpiar rutas
+    onRoutesCleared();
+  }
+
+  // Callback abstracto para limpiar rutas (implementar en ViewModel)
+  void onRoutesCleared() {
+    // Implementar en el ViewModel principal
   }
 
   Future<void> centerOnCurrentLocation() async {

@@ -13,6 +13,7 @@ import 'package:safy/home/domain/repositories/open_route_repository.dart';
 import 'package:safy/home/domain/repositories/places_repository.dart';
 import 'package:safy/home/domain/repositories/route_repository.dart';
 import 'package:safy/home/domain/usecases/calculate_route_use_case.dart';
+import 'package:safy/home/domain/usecases/calculate_safe_routes_use_case.dart';
 import 'package:safy/home/domain/usecases/check_danger_zones_use_case.dart';
 import 'package:safy/home/domain/usecases/get_current_location_use_case.dart';
 import 'package:safy/home/domain/usecases/get_danger_zones_use_case.dart';
@@ -20,6 +21,7 @@ import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model_enhanced.dart';
+import 'package:safy/report/domain/repositories/report_repository.dart';
 
 Future<void> setupMapsDependencies() async {
   print('[MapsDI] 🗺️ Configurando dependencias de mapas...');
@@ -70,6 +72,15 @@ Future<void> setupMapsDependencies() async {
     () => CalculateRouteUseCase(GetIt.instance<RouteRepository>()),
   );
   
+  // 🛡️ NUEVO: Caso de uso para rutas seguras mejorado
+  GetIt.instance.registerLazySingleton<CalculateSafeRoutesUseCase>(
+    () => CalculateSafeRoutesUseCase(
+      GetIt.instance<RouteRepository>(),
+      GetIt.instance<DangerZoneRepository>(),
+      GetIt.instance<ReportRepository>(), // Opcional: para clusters
+    ),
+  );
+  
   GetIt.instance.registerLazySingleton<GetCurrentLocationUseCase>(
     () => GetCurrentLocationUseCase(),
   );
@@ -110,6 +121,7 @@ Future<void> setupMapsDependencies() async {
       getCurrentLocationUseCase: GetIt.instance<GetCurrentLocationUseCase>(),
       checkDangerZonesUseCase: GetIt.instance<CheckDangerZonesUseCase>(),
       getDangerZonesUseCase: GetIt.instance<GetDangerZonesUseCase>(),
+      calculateSafeRoutesUseCase: GetIt.instance<CalculateSafeRoutesUseCase>(),
     ),
   );
   
