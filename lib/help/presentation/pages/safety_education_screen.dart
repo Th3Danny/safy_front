@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:safy/shared/widget/custom_app_bar.dart';
 import 'package:safy/help/presentation/widgets/safety_info_widgets.dart';
 import 'package:safy/help/presentation/widgets/specific_safety_widgets.dart';
+import 'package:url_launcher/url_launcher.dart'; 
 
 class SafetyEducationScreen extends StatefulWidget {
   const SafetyEducationScreen({super.key});
@@ -24,6 +25,23 @@ class _SafetyEducationScreenState extends State<SafetyEducationScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  // Función para realizar la llamada (similar a la anterior)
+  Future<void> _callNumber(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      print('Could not launch $phoneNumber');
+      // Mostrar un SnackBar al usuario
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo realizar la llamada.')),
+      );
+    }
   }
 
   @override
@@ -93,7 +111,7 @@ class _SafetyEducationScreenState extends State<SafetyEducationScreen>
           ),
         ],
       ),
-      
+
       // Botón flotante para acceso rápido a emergencias
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showEmergencyDialog(context),
@@ -132,28 +150,31 @@ class _SafetyEducationScreenState extends State<SafetyEducationScreen>
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // MODIFICADO: Cambiando la llamada a _callNumber con números de prueba
               _buildEmergencyButton(
                 '911',
                 'Emergencias generales',
                 Icons.local_police,
                 Colors.red,
-                () => _callNumber('911'),
+                () => _callNumber('9511234567'), // Número de prueba
               ),
               const SizedBox(height: 12),
+              // MODIFICADO: Cambiando la llamada a _callNumber con números de prueba
               _buildEmergencyButton(
                 '089',
                 'Denuncia anónima',
                 Icons.phone,
                 Colors.orange,
-                () => _callNumber('089'),
+                () => _callNumber('9519876543'), // Número de prueba
               ),
               const SizedBox(height: 12),
+              // MODIFICADO: Cambiando la llamada a _callNumber con números de prueba
               _buildEmergencyButton(
                 '961-614-9350',
                 'Dirección Chiapas',
                 Icons.location_city,
                 Colors.blue,
-                () => _callNumber('9616149350'),
+                () => _callNumber('9614445566'), // Número de prueba
               ),
             ],
           ),
@@ -216,11 +237,5 @@ class _SafetyEducationScreenState extends State<SafetyEducationScreen>
         ),
       ),
     );
-  }
-
-  void _callNumber(String number) {
-    // TODO: Implementar la llamada telefónica
-    // url_launcher: launchUrl(Uri.parse('tel:$number'))
-    print('Llamando a: $number');
   }
 }
