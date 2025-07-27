@@ -20,6 +20,7 @@ import '../widgets/viewmodel/reports_mixin.dart';
 import '../widgets/viewmodel/search_mixin.dart';
 import '../widgets/viewmodel/markers_mixin.dart';
 import '../widgets/viewmodel/navigation_tracking_mixin.dart';
+import 'package:safy/core/services/security/gps_spoofing_detector.dart';
 
 /// ViewModel principal del mapa que integra todas las funcionalidades
 /// usando mixins para mejor organización y mantenibilidad
@@ -386,16 +387,22 @@ class MapViewModel extends ChangeNotifier
     LatLng placeLocation,
     LatLng currentLocation,
   ) {
-    print('[MapViewModel] 🔍 Lugar seleccionado: ${place.displayName}'); // Debug print
+    print(
+      '[MapViewModel] 🔍 Lugar seleccionado: ${place.displayName}',
+    ); // Debug print
     _mapController.move(placeLocation, 15.0);
     addDestinationMarker(placeLocation, place.displayName);
     setEndPoint(placeLocation);
 
     if (startPoint == null) {
-      print('[MapViewModel] 📍 Estableciendo punto de inicio en ubicación actual.'); // Debug print
+      print(
+        '[MapViewModel] 📍 Estableciendo punto de inicio en ubicación actual.',
+      ); // Debug print
       setStartPoint(currentLocation);
     } else {
-      print('[MapViewModel] 📍 Ya existe un punto de inicio. Recalculando rutas.'); // Debug print
+      print(
+        '[MapViewModel] 📍 Ya existe un punto de inicio. Recalculando rutas.',
+      ); // Debug print
       // No necesitas llamar a calculateRoutes() aquí, ya que setEndPoint() o setStartPoint() lo harán automáticamente
       // si ambos puntos están definidos.
     }
@@ -652,6 +659,25 @@ class MapViewModel extends ChangeNotifier
     final distance = _calculateTotalDistance(route);
     const double speed = 5.0; // km/h para caminar
     return (distance / speed * 60).round();
+  }
+
+  // ============================================================================
+  // 🔒 IMPLEMENTACIÓN DE CALLBACKS DE SEGURIDAD GPS
+  // ============================================================================
+
+  @override
+  void onGpsSpoofingDetected(SpoofingDetectionResult result) {
+    print('[MapViewModel] 🔒 GPS Falso detectado en MapViewModel');
+    print('[MapViewModel] 🎯 Nivel de riesgo: ${result.riskLevel}');
+    print(
+      '[MapViewModel] 📊 Puntuación: ${(result.riskScore * 100).toStringAsFixed(1)}%',
+    );
+
+    // NO mostrar mensaje de error en el mapa, solo notificar
+    // El GPS falso se maneja solo con notificaciones, no como error del mapa
+
+    // Notificar cambios
+    notifyListeners();
   }
 
   // ============================================================================

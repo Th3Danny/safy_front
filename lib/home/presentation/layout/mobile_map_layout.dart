@@ -9,6 +9,7 @@ import 'package:safy/home/presentation/widgets/navigation_fab.dart';
 import 'package:safy/home/presentation/widgets/place_search_widget.dart';
 import 'package:safy/home/presentation/widgets/route_options_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_progress_widget.dart';
+import 'package:safy/home/presentation/widgets/gps_security_widget.dart';
 
 class MobileMapLayout extends StatelessWidget {
   const MobileMapLayout({super.key});
@@ -71,8 +72,9 @@ class MobileMapLayout extends StatelessWidget {
                 onNavigationTap: (type) => _handleNavigationTap(context, type),
               ),
 
-              // ⚠️ Mensaje de error (mejorado para clusters)
-              if (mapViewModel.errorMessage != null ||
+              // ⚠️ Mensaje de error (mejorado para clusters) - EXCLUYENDO GPS FALSO
+              if ((mapViewModel.errorMessage != null &&
+                      !mapViewModel.errorMessage!.contains('GPS Falso')) ||
                   mapViewModel.clustersError != null)
                 Positioned(
                   bottom: 100,
@@ -96,6 +98,17 @@ class MobileMapLayout extends StatelessWidget {
 
               // 🧭 Widget de progreso de navegación
               const NavigationProgressWidget(),
+
+              // 🔒 Widget de seguridad GPS - SOLO CUANDO HAY GPS FALSO
+              if (mapViewModel.lastSpoofingResult?.isSpoofed == true)
+                Positioned(
+                  top: 120,
+                  left: 16,
+                  child: GpsSecurityWidget(
+                    spoofingResult: mapViewModel.lastSpoofingResult,
+                    onTap: () => _showGpsSecurityDetails(context, mapViewModel),
+                  ),
+                ),
             ],
           );
         },
@@ -286,6 +299,25 @@ class MobileMapLayout extends StatelessWidget {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
+    );
+  }
+
+  // 🔒 NUEVO: Método para mostrar detalles de seguridad GPS
+  void _showGpsSecurityDetails(
+    BuildContext context,
+    MapViewModel mapViewModel,
+  ) {
+    if (mapViewModel.lastSpoofingResult == null) return;
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            child: GpsSecurityDetailsWidget(
+              spoofingResult: mapViewModel.lastSpoofingResult!,
+              onClose: () => Navigator.of(context).pop(),
+            ),
+          ),
     );
   }
 }

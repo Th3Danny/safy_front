@@ -10,6 +10,7 @@ import 'package:safy/home/domain/entities/route.dart';
 import 'package:safy/home/domain/entities/location.dart';
 import 'package:safy/home/domain/value_objects/safety_level.dart';
 import 'package:safy/home/domain/value_objects/value_objects.dart';
+import 'package:safy/home/presentation/widgets/gps_security_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
