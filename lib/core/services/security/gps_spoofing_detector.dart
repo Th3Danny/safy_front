@@ -17,13 +17,15 @@ class GpsSpoofingDetector {
   final List<Position> _locationHistory = [];
   final int _maxHistorySize = 10;
 
-  // Umbrales de detección - PERMISIVOS CON GPS REAL PERO EFECTIVOS CONTRA FAKE GPS
-  static const double _maxSpeedKmh = 120.0; // Velocidad máxima permisiva
-  static const double _minAccuracyMeters = 15.0; // Precisión mínima permisiva
+  // Umbrales de detección - MÁS TOLERANTES CON GPS REAL
+  static const double _maxSpeedKmh =
+      200.0; // Velocidad máxima permisiva (aumentado)
+  static const double _minAccuracyMeters =
+      5.0; // Precisión mínima permisiva (más tolerante)
   static const double _maxAltitudeChangeMeters =
-      500.0; // Cambio máximo de altitud permisivo
+      1000.0; // Cambio máximo de altitud permisivo (aumentado)
   static const double _suspiciousAccuracyThreshold =
-      0.2; // Precisión sospechosamente perfecta (muy estricta solo para Fake GPS)
+      0.1; // Precisión sospechosamente perfecta (más estricta solo para Fake GPS)
 
   /// Detecta si la ubicación actual es falsa o simulada
   Future<SpoofingDetectionResult> detectSpoofing({
@@ -67,7 +69,7 @@ class GpsSpoofingDetector {
       final riskScore = _calculateRiskScore(checks);
       final isSpoofed =
           riskScore >=
-          0.4; // Umbral bajo del 40% para ser más sensible a Fake GPS
+          0.7; // Umbral alto del 70% para ser menos sensible a GPS real
 
       final result = SpoofingDetectionResult(
         isSpoofed: isSpoofed,
@@ -295,7 +297,7 @@ class GpsSpoofingDetector {
     }
 
     // 2. Verificar precisión sospechosamente perfecta
-    if (position.accuracy < 0.2) {
+    if (position.accuracy < 0.1) {
       isAnomaly = true;
       severity = 0.9;
       description =
@@ -303,11 +305,10 @@ class GpsSpoofingDetector {
     }
 
     // 3. Verificar altitud sospechosa (Fake GPS suele usar altitud 0 o muy baja)
-    if (position.altitude != 0 && position.altitude.abs() < 10) {
+    if (position.altitude == 0 && position.accuracy < 0.1) {
       isAnomaly = true;
       severity = 0.7;
-      description =
-          'Altitud sospechosamente baja: ${position.altitude.toStringAsFixed(1)}m';
+      description = 'Altitud exactamente 0 con precisión perfecta (sospechoso)';
     }
 
     // 4. Verificar si las coordenadas están en valores "típicos" de Fake GPS
@@ -325,7 +326,7 @@ class GpsSpoofingDetector {
     // 5. Verificar si la precisión es exactamente la misma que la anterior (muy sospechoso)
     if (_locationHistory.isNotEmpty) {
       final lastAccuracy = _locationHistory.last.accuracy;
-      if ((position.accuracy - lastAccuracy).abs() < 0.1) {
+      if ((position.accuracy - lastAccuracy).abs() < 0.01) {
         isAnomaly = true;
         severity = 0.8;
         description = 'Precisión idéntica (sospechoso)';
@@ -342,7 +343,7 @@ class GpsSpoofingDetector {
     }
 
     // 7. Verificar si la altitud es exactamente 0 (sospechoso)
-    if (position.altitude == 0.0 && position.accuracy < 0.5) {
+    if (position.altitude == 0.0 && position.accuracy < 0.1) {
       isAnomaly = true;
       severity = 0.8;
       description =
@@ -350,7 +351,7 @@ class GpsSpoofingDetector {
     }
 
     // 8. Verificar si la velocidad es exactamente 0 (sospechoso)
-    if (position.speed == 0.0 && position.accuracy < 0.5) {
+    if (position.speed == 0.0 && position.accuracy < 0.1) {
       isAnomaly = true;
       severity = 0.7;
       description =
@@ -384,8 +385,8 @@ class GpsSpoofingDetector {
           accuracies.length;
 
       // Si la varianza es muy baja, es sospechoso (Fake GPS suele tener precisión constante)
-      if (variance < 0.1) {
-        // Más estricto
+      if (variance < 0.01) {
+        // Más estricto: solo detectar varianza extremadamente baja
         isAnomaly = true;
         severity = 0.9;
         description =
@@ -404,12 +405,12 @@ class GpsSpoofingDetector {
       );
 
       // Si hay un salto grande sin tiempo suficiente, es sospechoso
-      if (distance > 500) {
-        // Más estricto: más de 500m de salto
+      if (distance > 1000) {
+        // Más tolerante: solo detectar saltos muy grandes
         final timeDiff =
             position.timestamp.difference(lastPosition.timestamp).inSeconds;
-        if (timeDiff < 30) {
-          // Más estricto: menos de 30 segundos
+        if (timeDiff < 10) {
+          // Más tolerante: solo detectar saltos instantáneos
           isAnomaly = true;
           severity = 0.9;
           description =
@@ -440,8 +441,8 @@ class GpsSpoofingDetector {
               .reduce((a, b) => a + b) /
           altitudes.length;
 
-      if (altitudeVariance < 0.5 && avgAltitude != 0) {
-        // Más estricto
+      if (altitudeVariance < 0.1 && avgAltitude != 0) {
+        // Más estricto: solo detectar altitud extremadamente constante
         isAnomaly = true;
         severity = 0.7;
         description = 'Altitud sospechosamente constante';

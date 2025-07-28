@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
-import 'package:safy/home/presentation/widgets/danger_zone_overlay.dart';
 import 'package:safy/home/presentation/widgets/map_controls_widget.dart';
 import 'package:safy/home/presentation/widgets/mapbox_map_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_fab.dart';
 import 'package:safy/home/presentation/widgets/place_search_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_progress_widget.dart';
 import 'package:safy/home/presentation/widgets/gps_security_widget.dart';
+import 'package:safy/home/presentation/widgets/danger_zone_alert_widget.dart';
 import 'package:safy/core/router/app_router.dart';
 import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 
@@ -26,7 +26,7 @@ class MobileMapLayout extends StatelessWidget {
               // 🌍 Mapa principal con Mapbox
               const MapboxMapWidget(),
 
-              // 🎯 Controles del mapa (ACTUALIZADO con todos los parámetros)
+              // 🎯 Controles del mapa (SIMPLIFICADO - solo botones esenciales)
               Positioned(
                 top: 50,
                 right: 16,
@@ -35,7 +35,6 @@ class MobileMapLayout extends StatelessWidget {
                       () => mapViewModel.centerOnCurrentLocation(),
                   onToggleDangerZones: () => mapViewModel.toggleDangerZones(),
                   onToggleClusters: () => mapViewModel.toggleClusters(),
-                  onRefreshClusters: () => mapViewModel.refreshDangerousZones(),
                   showDangerZones: mapViewModel.showDangerZones,
                   showClusters: mapViewModel.showClusters,
                   clustersLoading: mapViewModel.clustersLoading,
@@ -60,9 +59,27 @@ class MobileMapLayout extends StatelessWidget {
                   child: _buildEnhancedRoutePanel(mapViewModel),
                 ),
 
-              // 🚨 Overlay de zona peligrosa
-              if (_shouldShowDangerWarning(mapViewModel))
-                const DangerZoneOverlay(),
+              // 🚨 Overlay de zona peligrosa (ELIMINADO - usando el nuevo sistema de alertas)
+              // if (_shouldShowDangerWarning(mapViewModel))
+              //   const DangerZoneOverlay(),
+
+              // 🚨 NUEVO: Alerta de zona peligrosa
+              if (mapViewModel.showDangerAlert &&
+                  mapViewModel.currentDangerZone != null)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.5),
+                    child: Center(
+                      child: DangerZoneAlertWidget(
+                        cluster: mapViewModel.currentDangerZone!,
+                        distance: mapViewModel.currentDangerDistance ?? 0,
+                        onSafeRoute: () => mapViewModel.navigateToSafeRoute(),
+                        onReport: () => mapViewModel.reportIncident(),
+                        onDismiss: () => mapViewModel.hideDangerAlert(),
+                      ),
+                    ),
+                  ),
+                ),
 
               // 🔒 Banner de GPS falso
               GpsSpoofingBanner(
@@ -177,11 +194,12 @@ class MobileMapLayout extends StatelessWidget {
     );
   }
 
-  bool _shouldShowDangerWarning(MapViewModel mapViewModel) {
-    return mapViewModel.showDangerZones &&
-        mapViewModel.clusters.isNotEmpty &&
-        mapViewModel.clusters.any((cluster) => cluster.severityNumber >= 3);
-  }
+  // Método eliminado - ya no se usa el DangerZoneOverlay antiguo
+  // bool _shouldShowDangerWarning(MapViewModel mapViewModel) {
+  //   return mapViewModel.showDangerZones &&
+  //       mapViewModel.clusters.isNotEmpty &&
+  //       mapViewModel.clusters.any((cluster) => cluster.severityNumber >= 3);
+  // }
 
   void _handleNavigationTap(BuildContext context, String type) {
     final mapViewModel = context.read<MapViewModel>();

@@ -5,6 +5,11 @@ import 'dart:async';
 
 import 'package:safy/core/services/firebase/notification_service.dart';
 import 'package:safy/core/services/security/gps_spoofing_detector.dart';
+import 'package:safy/core/services/cluster_detection_service.dart';
+import 'package:safy/core/services/location_tracking_service.dart';
+import 'package:safy/core/services/movement_detection_service.dart';
+import 'package:safy/report/domain/entities/cluster_entity.dart';
+import 'package:get_it/get_it.dart';
 
 /// Mixin para gestión de ubicación del usuario
 mixin LocationMixin on ChangeNotifier {
@@ -25,6 +30,16 @@ mixin LocationMixin on ChangeNotifier {
   SpoofingDetectionResult? _lastSpoofingResult;
   SpoofingDetectionResult? get lastSpoofingResult => _lastSpoofingResult;
   bool get isGpsSpoofed => _lastSpoofingResult?.isSpoofed ?? false;
+
+  // 🚨 NUEVO: Servicio de detección de clusters
+  final ClusterDetectionService _clusterDetectionService =
+      ClusterDetectionService();
+
+  // 🚀 NUEVO: Servicio de tracking de ubicación en hilo separado
+  late LocationTrackingService _locationTrackingService;
+
+  // 🚶 NUEVO: Servicio de detección de movimiento
+  late MovementDetectionService _movementDetectionService;
 
   // Determinar ubicación actual
   Future<void> determineCurrentLocation() async {
@@ -68,20 +83,36 @@ mixin LocationMixin on ChangeNotifier {
 
   // Seguimiento de ubicación
   void startLocationTracking() {
-    final locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 5, // Actualizar cada 5 metros (más frecuente)
+    print(
+      '[LocationMixin] 🚀 Iniciando tracking de ubicación en tiempo real...',
     );
 
+    // Configuración de ubicación
+    final locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5, // Actualizar cada 5 metros
+    );
+
+    // Iniciar stream de ubicación directamente (como funcionaba antes)
     _positionStream = Geolocator.getPositionStream(
       locationSettings: locationSettings,
     ).listen(
       (Position position) {
+        print('[LocationMixin] 📡 Nueva posición recibida del GPS');
         updateCurrentPosition(position);
       },
       onError: (error) {
-        // Error en tracking de ubicación
+        print('[LocationMixin] ❌ Error en tracking de ubicación: $error');
+        onLocationError('Error en tracking: $error');
       },
+    );
+
+    // Inicializar servicios adicionales
+    _movementDetectionService = GetIt.instance<MovementDetectionService>();
+    _locationTrackingService = GetIt.instance<LocationTrackingService>();
+
+    print(
+      '[LocationMixin] ✅ Tracking de ubicación iniciado - Actualizando cada 5 metros',
     );
   }
 
@@ -103,14 +134,26 @@ mixin LocationMixin on ChangeNotifier {
       previousLocation,
       newLocation,
     );
+
+    // Debug: Mostrar información de movimiento
+    print(
+      '[LocationMixin] 📍 Ubicación actualizada: (${newLocation.latitude.toStringAsFixed(6)}, ${newLocation.longitude.toStringAsFixed(6)})',
+    );
+    print(
+      '[LocationMixin] 📏 Distancia movida: ${distance.toStringAsFixed(1)}m',
+    );
+
     if (distance > 50) {
+      print(
+        '[LocationMixin] 🚶 Movimiento significativo detectado: ${distance.toStringAsFixed(1)}m',
+      );
       // Movimiento significativo detectado
       // Podrías recargar reportes cercanos aquí si es necesario
       // onLocationChanged(newLocation, distance);
     }
 
-    // Notificar si está cerca de una zona peligrosa
-    _checkProximityToDangerZones(newLocation);
+    // 🚨 NUEVO: Verificar clusters de zonas peligrosas
+    _checkClustersForDangerZones(newLocation);
 
     // Callback para el ViewModel principal
     onLocationUpdated(newLocation);
@@ -184,17 +227,23 @@ mixin LocationMixin on ChangeNotifier {
     NotificationService().showDangerZoneNotification(title: title, body: body);
   }
 
-  void _checkProximityToDangerZones(LatLng currentLocation) {
-    for (final zone in _dangerZones) {
-      final meters = Distance().call(currentLocation, zone);
-      if (meters < 200) {
-        NotificationService().showDangerZoneNotification(
-          title: 'Zona peligrosa cercana',
-          body: 'Estás a menos de 200 metros de una zona con reportes.',
-        );
-        break;
-      }
+  // 🚨 NUEVO: Verificar clusters de zonas peligrosas
+  void _checkClustersForDangerZones(LatLng currentLocation) {
+    // Obtener clusters del ViewModel principal (se implementará en el ViewModel)
+    final clusters = getCurrentClusters();
+
+    if (clusters.isNotEmpty) {
+      // Usar el servicio de detección de clusters
+      _clusterDetectionService.checkLocationInDangerZone(
+        currentLocation,
+        clusters,
+      );
     }
+  }
+
+  // Método abstracto para obtener clusters actuales (implementar en ViewModel)
+  List<ClusterEntity> getCurrentClusters() {
+    return []; // Implementar en el ViewModel principal
   }
 
   void startNavigation() {
@@ -285,6 +334,37 @@ mixin LocationMixin on ChangeNotifier {
   void onLocationUpdated(LatLng location);
   void onLocationCentered(LatLng location);
   void onLocationError(String error);
+
+  /// Obtener estadísticas del tracking
+  Map<String, dynamic> getTrackingStats() {
+    return {
+      'isActive': _positionStream != null,
+      'currentLocation':
+          '(${_currentLocation.latitude.toStringAsFixed(6)}, ${_currentLocation.longitude.toStringAsFixed(6)})',
+      'isNavigating': _isNavigating,
+    };
+  }
+
+  /// Forzar actualización de ubicación (para el botón de recargar)
+  Future<void> forceLocationUpdate() async {
+    try {
+      print('[LocationMixin] 🔄 Forzando actualización de ubicación...');
+
+      final position = await _determinePosition();
+      final newLocation = LatLng(position.latitude, position.longitude);
+
+      print(
+        '[LocationMixin] 📍 Ubicación forzada: (${newLocation.latitude.toStringAsFixed(6)}, ${newLocation.longitude.toStringAsFixed(6)})',
+      );
+
+      _currentLocation = newLocation;
+      onLocationUpdated(newLocation);
+      notifyListeners();
+    } catch (e) {
+      print('[LocationMixin] ❌ Error forzando actualización: $e');
+      onLocationError('Error actualizando ubicación: $e');
+    }
+  }
 
   // 🔒 NUEVO: Callback para GPS falso detectado
   void onGpsSpoofingDetected(SpoofingDetectionResult result);

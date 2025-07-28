@@ -11,6 +11,9 @@ import 'package:safy/core/network/domian/config/dio_config.dart';
 import 'package:safy/core/services/firebase/firebase_messaging_service.dart';
 import 'package:safy/core/services/device/device_info_service.dart';
 import 'package:safy/core/services/device/device_registration_service.dart';
+import 'package:safy/core/services/cluster_detection_service.dart';
+import 'package:safy/core/services/location_tracking_service.dart';
+import 'package:safy/core/services/movement_detection_service.dart';
 import 'package:safy/core/session/session_manager.dart';
 import 'package:safy/home/application/maps_injector.dart';
 
@@ -34,7 +37,13 @@ Future<void> setupDependencyInjection({
 
   // ===== EXTERNAL DEPENDENCIES =====
   final prefs = sharedPreferences ?? await SharedPreferences.getInstance();
-  sl.registerLazySingleton<SharedPreferences>(() => prefs);
+
+  // Verificar si SharedPreferences ya está registrado
+  if (!sl.isRegistered<SharedPreferences>()) {
+    sl.registerLazySingleton<SharedPreferences>(() => prefs);
+  } else {
+    print('[DI] ⚠️ SharedPreferences ya registrado, omitiendo...');
+  }
 
   // ===== CORE DEPENDENCIES =====
   sl.registerLazySingleton<Dio>(
@@ -61,6 +70,33 @@ Future<void> setupDependencyInjection({
   sl.registerLazySingleton<DeviceRegistrationService>(
     () => DeviceRegistrationService(),
   );
+
+  // Cluster Detection Service
+  if (!sl.isRegistered<ClusterDetectionService>()) {
+    sl.registerLazySingleton<ClusterDetectionService>(
+      () => ClusterDetectionService(),
+    );
+  }
+
+  // Location Tracking Service
+  if (!sl.isRegistered<LocationTrackingService>()) {
+    sl.registerLazySingleton<LocationTrackingService>(
+      () => LocationTrackingService(),
+    );
+  }
+
+  // Movement Detection Service
+  if (!sl.isRegistered<MovementDetectionService>()) {
+    sl.registerLazySingleton<MovementDetectionService>(
+      () => MovementDetectionService(),
+    );
+  }
+
+  // Map ViewModel (para acceso desde servicios)
+  // NO registrar como singleton aquí, se maneja en getAllProviders()
+  // if (!sl.isRegistered<MapViewModel>()) {
+  //   sl.registerLazySingleton<MapViewModel>(() => MapViewModel());
+  // }
 
   // ===== FEATURE DEPENDENCIES =====
   await setupAuthDependencies();

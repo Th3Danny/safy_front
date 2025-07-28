@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:safy/home/domain/entities/place.dart';
+import 'dart:async';
 
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
 
@@ -10,6 +11,8 @@ import 'package:safy/report/domain/entities/cluster_entity.dart';
 import 'package:safy/report/domain/entities/report.dart';
 import 'package:safy/report/domain/usecases/get_reports_for_map_use_case.dart';
 import 'package:safy/report/domain/usecases/get_clusters_use_case.dart'; // NUEVO
+import 'package:safy/core/services/cluster_detection_service.dart';
+import 'package:get_it/get_it.dart';
 
 // Importar los mixins
 import '../widgets/viewmodel/location_mixin.dart';
@@ -51,18 +54,31 @@ class MapViewModel extends ChangeNotifier
     this.getReportsForMapUseCase,
     this.getClustersUseCase, // NUEVO
   }) {
-    // Listener para cambios de zoom
+    print('[MapViewModel] 🗺️ Configurando listener del mapa...');
+
+    // Listener para cambios de zoom y movimiento del mapa
     _mapController.mapEventStream.listen((event) {
+      print('[MapViewModel] 📡 Evento del mapa recibido: ${event.runtimeType}');
+
       if (event is MapEventMove ||
           event is MapEventMoveEnd ||
           event is MapEventMoveStart) {
+        print(
+          '[MapViewModel] 🎯 Evento de movimiento detectado: ${event.runtimeType}',
+        );
+
         final newZoom = _mapController.camera.zoom;
         if (newZoom != _currentZoom) {
           _currentZoom = newZoom;
           notifyListeners();
         }
+
+        // Cargar clusters dinámicamente según la vista del mapa
+        _loadClustersForMapView();
       }
     });
+
+    print('[MapViewModel] ✅ Listener del mapa configurado correctamente');
   }
 
   // ============================================================================
@@ -87,12 +103,31 @@ class MapViewModel extends ChangeNotifier
   double _currentZoom = 15.0;
   double get currentZoom => _currentZoom;
 
+  // Propiedades para carga dinámica de clusters
+  LatLng? _lastMapCenter;
+  double _lastMapZoom = 15.0;
+  bool _isLoadingClusters = false;
+  Timer? _clusterLoadDebounceTimer;
+
   // ============================================================================
   // 🔒 PROPIEDADES DE SEGURIDAD GPS
   // ============================================================================
 
   // Getter para acceder al resultado de detección de GPS falso
   SpoofingDetectionResult? get gpsSpoofingResult => lastSpoofingResult;
+
+  // ============================================================================
+  // 🚨 PROPIEDADES DE ALERTAS DE ZONAS PELIGROSAS
+  // ============================================================================
+
+  ClusterEntity? _currentDangerZone;
+  ClusterEntity? get currentDangerZone => _currentDangerZone;
+
+  double? _currentDangerDistance;
+  double? get currentDangerDistance => _currentDangerDistance;
+
+  bool _showDangerAlert = false;
+  bool get showDangerAlert => _showDangerAlert;
 
   // ============================================================================
   // 🛣️ MÉTODOS DE RUTA
@@ -175,8 +210,11 @@ class MapViewModel extends ChangeNotifier
       // 4. Crear marcador de ubicación actual
       createCurrentLocationMarker(currentLocation, false);
 
-      // 5. Iniciar seguimiento de ubicación
+      // 5. Iniciar seguimiento de ubicación (esto también inicializa el servicio de detección de clusters)
       startLocationTracking();
+
+      // 🚨 NUEVO: Configurar callback para alertas de zonas peligrosas
+      _setupDangerZoneAlertCallback();
 
       _isLoading = false;
       notifyListeners();
@@ -213,6 +251,10 @@ class MapViewModel extends ChangeNotifier
     _mapReady = true;
     notifyListeners();
     _moveToCurrentLocation();
+
+    // Inicializar clusters cuando el mapa está listo
+    print('[MapViewModel] 🗺️ Mapa listo, inicializando clusters...');
+    initializeMapClusters();
   }
 
   void _moveToCurrentLocation() {
@@ -238,6 +280,69 @@ class MapViewModel extends ChangeNotifier
       if (_mapReady) {
         _mapController.move(location, _mapController.camera.zoom);
       }
+    } else {
+      // Si no estamos navegando, solo actualizar el marcador de ubicación
+      // pero mantener el zoom y posición del mapa para no molestar al usuario
+      if (_mapReady) {
+        // Solo actualizar el marcador sin mover la cámara
+        print(
+          '[MapViewModel] 📍 Ubicación actualizada: (${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)})',
+        );
+      }
+    }
+  }
+
+  // 🚨 NUEVO: Implementar método para obtener clusters actuales
+  @override
+  List<ClusterEntity> getCurrentClusters() {
+    return clusters;
+  }
+
+  // 🚨 NUEVO: Configurar callback para alertas de zonas peligrosas
+  void _setupDangerZoneAlertCallback() {
+    // Obtener el servicio de detección de clusters desde GetIt
+    try {
+      final clusterDetectionService = GetIt.instance<ClusterDetectionService>();
+      clusterDetectionService.setAlertCallback(_onDangerZoneDetected);
+      print('[MapViewModel] ✅ Callback de alertas configurado');
+    } catch (e) {
+      print('[MapViewModel] ❌ Error configurando callback de alertas: $e');
+    }
+  }
+
+  // 🚨 NUEVO: Callback cuando se detecta una zona peligrosa
+  void _onDangerZoneDetected(ClusterEntity cluster, double distance) {
+    _currentDangerZone = cluster;
+    _currentDangerDistance = distance;
+    _showDangerAlert = true;
+    notifyListeners();
+
+    print('[MapViewModel] 🚨 Alerta de zona peligrosa mostrada');
+  }
+
+  // 🚨 NUEVO: Ocultar alerta de zona peligrosa
+  void hideDangerAlert() {
+    _showDangerAlert = false;
+    _currentDangerZone = null;
+    _currentDangerDistance = null;
+    notifyListeners();
+  }
+
+  // 🚨 NUEVO: Navegar a ruta segura
+  void navigateToSafeRoute() {
+    if (_currentDangerZone != null) {
+      // Aquí podrías implementar la lógica para calcular una ruta que evite la zona peligrosa
+      print('[MapViewModel] 🛡️ Calculando ruta segura...');
+      hideDangerAlert();
+    }
+  }
+
+  // 🚨 NUEVO: Reportar incidente
+  void reportIncident() {
+    if (_currentDangerZone != null) {
+      // Aquí podrías navegar a la pantalla de reportes
+      print('[MapViewModel] 📝 Navegando a reportes...');
+      hideDangerAlert();
     }
   }
 
@@ -678,11 +783,121 @@ class MapViewModel extends ChangeNotifier
   }
 
   // ============================================================================
+  // 🗺️ CARGA DINÁMICA DE CLUSTERS SEGÚN VISTA DEL MAPA
+  // ============================================================================
+
+  /// Método para inicializar clusters cuando el mapa está listo
+  void initializeMapClusters() {
+    print('[MapViewModel] 🗺️ Inicializando clusters del mapa...');
+    if (_mapController.camera.center != null) {
+      _loadClustersForMapView();
+    }
+  }
+
+  /// Método público para cargar clusters desde el widget del mapa
+  void loadClustersForMapViewFromWidget(LatLng center, double zoom) {
+    print('[MapViewModel] 📞 Llamado desde widget del mapa');
+    print('[MapViewModel] 📍 Centro: ${center.latitude}, ${center.longitude}');
+    print('[MapViewModel] 🔍 Zoom: $zoom');
+
+    // Actualizar propiedades del ViewModel
+    _currentZoom = zoom;
+
+    // Llamar al método interno
+    _performClusterLoad(center, zoom);
+  }
+
+  /// Método de prueba para verificar que el listener funciona
+  void testMapListener() {
+    print('[MapViewModel] 🧪 Probando listener del mapa...');
+    print('[MapViewModel] 📍 Centro actual: ${_mapController.camera.center}');
+    print('[MapViewModel] 🔍 Zoom actual: ${_mapController.camera.zoom}');
+
+    // Forzar una carga de clusters para probar
+    _loadClustersForMapView();
+  }
+
+  /// Carga clusters dinámicamente según la vista actual del mapa
+  void _loadClustersForMapView() {
+    if (_isLoadingClusters) {
+      print('[MapViewModel] ⏳ Ya se están cargando clusters, saltando...');
+      return;
+    }
+
+    final currentCenter = _mapController.camera.center;
+    final currentZoom = _mapController.camera.zoom;
+
+    print(
+      '[MapViewModel] 🗺️ Movimiento detectado: ${currentCenter.latitude}, ${currentCenter.longitude} (zoom: $currentZoom)',
+    );
+
+    // Verificar si la vista del mapa ha cambiado significativamente
+    if (_lastMapCenter != null) {
+      final distance = Distance().as(
+        LengthUnit.Kilometer,
+        _lastMapCenter!,
+        currentCenter,
+      );
+
+      print(
+        '[MapViewModel] 📏 Distancia desde última carga: ${distance.toStringAsFixed(2)}km',
+      );
+
+      // Solo recargar si se movió más de 0.5km o cambió el zoom significativamente
+      if (distance < 0.5 && (currentZoom - _lastMapZoom).abs() < 1.0) {
+        print('[MapViewModel] ⏭️ Cambio insuficiente, saltando carga...');
+        return;
+      }
+    }
+
+    // Cancelar timer anterior si existe
+    _clusterLoadDebounceTimer?.cancel();
+
+    // Usar debounce más corto para respuesta más rápida
+    _clusterLoadDebounceTimer = Timer(const Duration(milliseconds: 200), () {
+      print('[MapViewModel] ⏰ Ejecutando carga de clusters...');
+      _performClusterLoad(currentCenter, currentZoom);
+    });
+  }
+
+  /// Realiza la carga efectiva de clusters
+  void _performClusterLoad(LatLng center, double zoom) async {
+    if (_isLoadingClusters) {
+      print('[MapViewModel] ⏳ Ya se están cargando clusters, saltando...');
+      return;
+    }
+
+    print('[MapViewModel] 🚀 Iniciando carga de clusters...');
+    _isLoadingClusters = true;
+    _lastMapCenter = center;
+    _lastMapZoom = zoom;
+
+    print(
+      '[MapViewModel] 🗺️ Cargando clusters para vista: ${center.latitude}, ${center.longitude} (zoom: $zoom)',
+    );
+
+    try {
+      // Cargar clusters para el centro de la vista del mapa
+      print('[MapViewModel] 📞 Llamando a loadClustersForMapView...');
+      await loadClustersForMapView(center, zoom: zoom, radiusKm: 5.0);
+
+      print('[MapViewModel] ✅ Clusters cargados dinámicamente');
+      notifyListeners(); // Asegurar que la UI se actualice
+    } catch (e) {
+      print('[MapViewModel] ❌ Error cargando clusters dinámicamente: $e');
+    } finally {
+      _isLoadingClusters = false;
+      print('[MapViewModel] ✅ Carga de clusters completada');
+    }
+  }
+
+  // ============================================================================
   // CLEANUP
   // ============================================================================
 
   @override
   void dispose() {
+    _clusterLoadDebounceTimer?.cancel();
     disposeLocation();
     clearClusters();
     _mapController.dispose();

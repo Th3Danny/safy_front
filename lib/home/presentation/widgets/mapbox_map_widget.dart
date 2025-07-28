@@ -67,7 +67,18 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
                   }
 
                   if (hasGesture) {
-                    // Map moved
+                    // 🗺️ CARGAR CLUSTERS DINÁMICAMENTE CUANDO SE MUEVE EL MAPA
+                    print('[MapboxMapWidget] 🗺️ Mapa movido por el usuario');
+                    print(
+                      '[MapboxMapWidget] 📍 Nueva posición: ${position.center.latitude}, ${position.center.longitude}',
+                    );
+                    print('[MapboxMapWidget] 🔍 Nuevo zoom: ${position.zoom}');
+
+                    // Llamar al método del ViewModel para cargar clusters
+                    mapViewModel.loadClustersForMapViewFromWidget(
+                      position.center,
+                      position.zoom,
+                    );
                   }
                 },
               ),
@@ -935,7 +946,6 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
         profile: 'walking',
       );
     } catch (e) {
-
       rethrow;
     }
   }
@@ -1025,7 +1035,6 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
       }
     }
 
-    
     return true;
   }
 
