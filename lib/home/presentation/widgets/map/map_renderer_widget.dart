@@ -1,0 +1,98 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:provider/provider.dart';
+import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
+import 'package:safy/home/presentation/widgets/map/map_layers/map_layers.dart';
+import 'package:safy/home/presentation/widgets/map/map_controls/map_controls.dart';
+import 'package:safy/home/presentation/widgets/map/map_handlers/map_handlers.dart';
+
+class MapRendererWidget extends StatefulWidget {
+  const MapRendererWidget({super.key});
+
+  @override
+  State<MapRendererWidget> createState() => _MapRendererWidgetState();
+}
+
+class _MapRendererWidgetState extends State<MapRendererWidget> {
+  final MapController _mapController = MapController();
+  double _currentZoom = 15.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MapViewModel>(
+      builder: (context, mapViewModel, child) {
+        print('🗺️ [MapRendererWidget] Widget reconstruido');
+        print(
+          '🗺️ [MapRendererWidget] Ruta actual: ${mapViewModel.currentRoute.length} puntos',
+        );
+        print(
+          '🗺️ [MapRendererWidget] Nombre de ruta: ${mapViewModel.currentRouteName ?? 'N/A'}',
+        );
+
+        return Stack(
+          children: [
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: mapViewModel.currentLocation,
+                initialZoom: 15,
+                minZoom: 3,
+                maxZoom: 18,
+                onMapReady: () {},
+                onTap:
+                    (tapPosition, point) =>
+                        MapHandlers.handleMapTap(context, point),
+                onPositionChanged: (position, hasGesture) {
+                  _handlePositionChanged(position, hasGesture, mapViewModel);
+                },
+              ),
+              children: [
+                // Capa base del mapa
+                MapLayers.buildTileLayer(),
+
+                // Capa de marcadores
+                MapLayers.buildMarkerLayer(mapViewModel),
+
+                // Capa de rutas
+                MapLayers.buildPolylineLayer(mapViewModel),
+
+                // Capa de clusters
+                MapLayers.buildClusterLayer(mapViewModel),
+              ],
+            ),
+
+            // Controles del mapa
+            MapControls.buildMapControls(context, mapViewModel),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handlePositionChanged(
+    dynamic position,
+    bool hasGesture,
+    MapViewModel mapViewModel,
+  ) {
+    // Actualizar zoom actual
+    if (_currentZoom != position.zoom) {
+      setState(() {
+        _currentZoom = position.zoom;
+      });
+    }
+
+    if (hasGesture) {
+      print('[MapRendererWidget] 🗺️ Mapa movido por el usuario');
+      print(
+        '[MapRendererWidget] 📍 Nueva posición: ${position.center.latitude}, ${position.center.longitude}',
+      );
+      print('[MapRendererWidget] 🔍 Nuevo zoom: ${position.zoom}');
+
+      // Cargar clusters dinámicamente
+      mapViewModel.loadClustersForMapViewFromWidget(
+        position.center,
+        position.zoom,
+      );
+    }
+  }
+}

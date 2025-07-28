@@ -78,7 +78,7 @@ class MapboxDirectionsClient {
 
       final routeCoordinates = geometry['coordinates'] as List;
 
-      // Convertir coordenadas: [lon, lat] -> [lat, lon] para compatibilidad
+      // Convertir coordenadas: Mapbox devuelve [lon, lat], pero necesitamos [lat, lon] para LatLng
       final routePoints =
           routeCoordinates.map<List<double>>((coord) {
             return [coord[1].toDouble(), coord[0].toDouble()]; // [lat, lon]
