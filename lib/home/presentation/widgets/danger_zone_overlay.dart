@@ -221,16 +221,8 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
         // Mostrar selector de destinos seguros
         _showSafeDestinationSelector(context, mapViewModel, safeDestinations);
       } else {
-        // Si no hay destinos seguros cercanos, mostrar mensaje
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              '⚠️ No se encontraron destinos seguros cercanos. Considera reportar el incidente.',
-            ),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
-          ),
-        );
+        // 🚨 NO HAY LUGARES DE EMERGENCIA CERCANOS
+        _showNoEmergencyPlacesDialog(context, mapViewModel);
       }
     } catch (e) {
       print('[DangerZoneOverlay] ❌ Error buscando destinos seguros: $e');
@@ -244,7 +236,7 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
     }
   }
 
-  // 🎯 NUEVO: Generar destinos seguros cercanos con lugares reales
+  // 🎯 NUEVO: Generar destinos seguros cercanos SOLO con lugares reales
   Future<List<Map<String, dynamic>>> _generateSafeDestinations(
     MapViewModel mapViewModel,
   ) async {
@@ -257,29 +249,18 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
       // Obtener el repositorio de lugares
       final placesRepository = GetIt.instance<PlacesRepositoryImpl>();
 
-      // Lista de categorías de lugares seguros a buscar
-      final safeCategories = [
+      // 🚨 SOLO lugares de emergencia y seguridad (sin datos ficticios)
+      final emergencyCategories = [
         'hospital',
         'police',
-        'bank',
-        'school',
-        'university',
-        'shopping_centre',
-        'supermarket',
-        'gas_station',
-        'park',
-        'library',
-        'post_office',
-        'fire_station',
         'pharmacy',
-        'restaurant',
-        'cafe',
+        'fire_station',
       ];
 
-      // Buscar lugares en cada categoría
-      for (final category in safeCategories) {
+      // Buscar lugares de emergencia
+      for (final category in emergencyCategories) {
         try {
-          print('[DangerZoneOverlay] 🔍 Buscando $category...');
+          print('[DangerZoneOverlay] 🚨 Buscando $category...');
 
           final places = await placesRepository.searchPlaces(
             category,
@@ -287,28 +268,26 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
               latitude: currentLocation.latitude,
               longitude: currentLocation.longitude,
             ),
-            limit: 10,
+            limit: 5,
           );
 
           for (final place in places) {
-            // Verificar que el lugar esté fuera de zonas peligrosas
-            if (!mapViewModel.isLocationDangerous(place.location.toLatLng())) {
-              final distance = _calculateDistance(
-                currentLocation,
-                place.location.toLatLng(),
-              );
+            final distance = _calculateDistance(
+              currentLocation,
+              place.location.toLatLng(),
+            );
 
-              // Solo incluir lugares dentro de 3km
-              if (distance <= 3000) {
-                destinations.add({
-                  'location': place.location.toLatLng(),
-                  'name': place.displayName,
-                  'description': _getPlaceDescription(place),
-                  'distance': distance,
-                  'timeToWalk': _estimateWalkingTime(distance),
-                  'category': category,
-                });
-              }
+            // Incluir TODOS los lugares de emergencia (hasta 10km)
+            if (distance <= 10000) {
+              destinations.add({
+                'location': place.location.toLatLng(),
+                'name': place.displayName,
+                'description': _getEmergencyPlaceDescription(place),
+                'distance': distance,
+                'timeToWalk': _estimateWalkingTime(distance),
+                'category': category,
+                'isEmergency': true,
+              });
             }
           }
         } catch (e) {
@@ -330,8 +309,8 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
             destination['location'] as LatLng,
             existing['location'] as LatLng,
           );
-          if (distance < 100) {
-            // Si están a menos de 100m, es duplicado
+          if (distance < 200) {
+            // Aumentar a 200m para evitar duplicados
             isDuplicate = true;
             break;
           }
@@ -342,18 +321,34 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
       }
 
       print(
-        '[DangerZoneOverlay] ✅ Encontrados ${uniqueDestinations.length} lugares seguros reales',
+        '[DangerZoneOverlay] ✅ Encontrados ${uniqueDestinations.length} lugares de emergencia reales',
       );
-      return uniqueDestinations.take(8).toList(); // Limitar a 8 opciones
+      return uniqueDestinations.take(5).toList(); // Limitar a 5 opciones
     } catch (e) {
       print('[DangerZoneOverlay] ❌ Error buscando lugares reales: $e');
-
-      // Fallback: usar lugares predefinidos si falla la búsqueda
-      return _generateFallbackDestinations(mapViewModel);
+      return []; // Retornar lista vacía en lugar de fallback ficticio
     }
   }
 
-  // 🎯 NUEVO: Generar descripción del lugar
+  // 🎯 NUEVO: Generar descripción del lugar de emergencia
+  String _getEmergencyPlaceDescription(Place place) {
+    final category = place.category?.toLowerCase() ?? '';
+
+    switch (category) {
+      case 'hospital':
+        return '🚨 HOSPITAL - Zona médica de emergencia';
+      case 'police':
+        return '🚔 POLICÍA - Estación de seguridad';
+      case 'fire_station':
+        return '🚒 BOMBEROS - Estación de emergencia';
+      case 'pharmacy':
+        return '💊 FARMACIA - Servicios médicos';
+      default:
+        return '📍 Lugar de emergencia';
+    }
+  }
+
+  // 🎯 NUEVO: Generar descripción del lugar (mantener para compatibilidad)
   String _getPlaceDescription(Place place) {
     final category = place.category?.toLowerCase() ?? '';
 
@@ -390,58 +385,99 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
     }
   }
 
-  // 🎯 NUEVO: Fallback con lugares predefinidos
+  // 🎯 NUEVO: Mostrar diálogo cuando no hay lugares de emergencia
+  void _showNoEmergencyPlacesDialog(
+    BuildContext context,
+    MapViewModel mapViewModel,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.red,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    '🚨 SIN LUGARES DE EMERGENCIA',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No se encontraron hospitales, farmacias, estaciones de policía o bomberos en un radio de 10km.',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Recomendaciones:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text('• Mantén la calma y busca ayuda'),
+                Text('• Llama al 911 o servicios de emergencia'),
+                Text('• Busca un lugar público con gente'),
+                Text('• Reporta el incidente para alertar a otros'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _reportIncident(context);
+                },
+                child: const Text(
+                  'REPORTAR INCIDENTE',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[200],
+                  foregroundColor: Colors.black87,
+                ),
+                child: const Text('ENTENDIDO'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // 🎯 NUEVO: Fallback con lugares predefinidos (ya no se usa)
   List<Map<String, dynamic>> _generateFallbackDestinations(
     MapViewModel mapViewModel,
   ) {
-    final currentLocation = mapViewModel.currentLocation;
-    final destinations = <Map<String, dynamic>>[];
-
-    // Lugares predefinidos como fallback
-    final fallbackPlaces = [
-      {
-        'lat': 0.005,
-        'lng': 0.005,
-        'name': 'Zona Residencial',
-        'description': 'Área tranquila con casas',
-        'category': 'residential',
-      },
-      {
-        'lat': 0.005,
-        'lng': -0.005,
-        'name': 'Centro Comercial',
-        'description': 'Zona con tiendas y gente',
-        'category': 'commercial',
-      },
-      {
-        'lat': -0.005,
-        'lng': 0.005,
-        'name': 'Parque Público',
-        'description': 'Área verde y segura',
-        'category': 'park',
-      },
-    ];
-
-    for (final place in fallbackPlaces) {
-      final safePoint = LatLng(
-        currentLocation.latitude + (place['lat'] as double),
-        currentLocation.longitude + (place['lng'] as double),
-      );
-
-      if (!mapViewModel.isLocationDangerous(safePoint)) {
-        final distance = _calculateDistance(currentLocation, safePoint);
-        destinations.add({
-          'location': safePoint,
-          'name': place['name'] as String,
-          'description': place['description'] as String,
-          'distance': distance,
-          'timeToWalk': _estimateWalkingTime(distance),
-          'category': place['category'] as String,
-        });
-      }
-    }
-
-    return destinations;
+    // Este método ya no se usa, pero lo mantengo por compatibilidad
+    return [];
   }
 
   // 🎯 NUEVO: Estimar tiempo de caminata
