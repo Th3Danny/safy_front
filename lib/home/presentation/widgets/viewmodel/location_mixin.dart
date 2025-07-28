@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'dart:async';
 
 import 'package:safy/core/services/firebase/notification_service.dart';
+import 'package:safy/core/services/security/gps_spoofing_detector.dart';
 
 /// Mixin para gestión de ubicación del usuario
 mixin LocationMixin on ChangeNotifier {
@@ -19,11 +20,20 @@ mixin LocationMixin on ChangeNotifier {
   bool _isNavigating = false;
   bool get isNavigating => _isNavigating;
 
+  // 🔒 NUEVO: Propiedades para detección de GPS falso
+  final GpsSpoofingDetector _gpsDetector = GpsSpoofingDetector();
+  SpoofingDetectionResult? _lastSpoofingResult;
+  SpoofingDetectionResult? get lastSpoofingResult => _lastSpoofingResult;
+  bool get isGpsSpoofed => _lastSpoofingResult?.isSpoofed ?? false;
+
   // Determinar ubicación actual
   Future<void> determineCurrentLocation() async {
     try {
       final position = await _determinePosition();
       _currentLocation = LatLng(position.latitude, position.longitude);
+
+      // 🔒 NUEVO: Detectar GPS falso inmediatamente
+      await _detectGpsSpoofing(position);
     } catch (e) {
       // Ubicación por defecto (Tuxtla Gutiérrez, Centro)
       _currentLocation = LatLng(16.7569, -93.1292);
@@ -84,6 +94,9 @@ mixin LocationMixin on ChangeNotifier {
     final previousLocation = _currentLocation;
     _currentLocation = newLocation;
 
+    // 🔒 NUEVO: Detectar GPS falso en cada actualización
+    _detectGpsSpoofing(position);
+
     // Verificar si se movió significativamente (más de 50 metros)
     final distance = Distance().as(
       LengthUnit.Meter,
@@ -102,6 +115,73 @@ mixin LocationMixin on ChangeNotifier {
     // Callback para el ViewModel principal
     onLocationUpdated(newLocation);
     notifyListeners();
+  }
+
+  // 🔒 NUEVO: Método para detectar GPS falso
+  Future<void> _detectGpsSpoofing(Position position) async {
+    try {
+      print('[LocationMixin] 🔍 Verificando GPS falso...');
+
+      // Debug de la posición para entender qué está causando la detección
+      _gpsDetector.debugPosition(position);
+
+      // Usar detección nativa - más precisa y confiable
+      final result = await _gpsDetector.detectWithNativeLibrary(position);
+
+      // Actualizar resultado
+      _lastSpoofingResult = result;
+
+      if (result.isSpoofed) {
+        print('[LocationMixin] 🚨 GPS FALSO DETECTADO!');
+        print(
+          '[LocationMixin] 🎯 Riesgo: ${(result.riskScore * 100).toStringAsFixed(1)}%',
+        );
+        print('[LocationMixin] 📋 Problemas: ${result.detectedIssues.length}');
+
+        // Mostrar detalles de los problemas detectados
+        for (final issue in result.detectedIssues) {
+          print(
+            '[LocationMixin]   - ${issue.description} (${(issue.severity * 100).toStringAsFixed(1)}%)',
+          );
+        }
+
+        // Mostrar notificación al usuario
+        _showGpsSpoofingWarning(result);
+
+        // Callback para el ViewModel principal
+        onGpsSpoofingDetected(result);
+      } else {
+        print('[LocationMixin] ✅ GPS parece ser real');
+
+        // Si antes estaba detectado como falso y ahora es real, limpiar
+        if (_lastSpoofingResult?.isSpoofed == true) {
+          print(
+            '[LocationMixin] 🔄 GPS ahora parece ser real - limpiando alertas',
+          );
+          _gpsDetector.clearHistoryForRealGps();
+        }
+      }
+    } catch (e) {
+      print('[LocationMixin] ❌ Error en detección de GPS falso: $e');
+    }
+  }
+
+  // 🔒 NUEVO: Mostrar advertencia de GPS falso
+  void _showGpsSpoofingWarning(SpoofingDetectionResult result) {
+    final riskLevel = result.riskLevel;
+    final riskPercentage = (result.riskScore * 100).toStringAsFixed(1);
+
+    String title = '⚠️ GPS Sospechoso';
+    String body =
+        'Se detectó posible GPS falso (${riskPercentage}% de riesgo).';
+
+    if (result.riskScore >= 0.8) {
+      title = '🚨 GPS Falso Detectado';
+      body =
+          'Se detectó GPS falso con alta confianza (${riskPercentage}% de riesgo).';
+    }
+
+    NotificationService().showDangerZoneNotification(title: title, body: body);
   }
 
   void _checkProximityToDangerZones(LatLng currentLocation) {
@@ -151,6 +231,9 @@ mixin LocationMixin on ChangeNotifier {
       final newLocation = LatLng(position.latitude, position.longitude);
       _currentLocation = newLocation;
 
+      // 🔒 NUEVO: Detectar GPS falso al centrar
+      await _detectGpsSpoofing(position);
+
       // Callback para el ViewModel principal
       onLocationCentered(newLocation);
       notifyListeners();
@@ -165,6 +248,9 @@ mixin LocationMixin on ChangeNotifier {
     try {
       final position = await _determinePosition();
       final freshLocation = LatLng(position.latitude, position.longitude);
+
+      // 🔒 NUEVO: Detectar GPS falso antes de reportar
+      await _detectGpsSpoofing(position);
 
       // Actualizar ubicación actual si es diferente
       final distance = Distance().as(
@@ -188,10 +274,20 @@ mixin LocationMixin on ChangeNotifier {
     _positionStream = null;
   }
 
+  // 🔒 NUEVO: Método para resetear el detector de GPS falso
+  void resetGpsSpoofingDetector() {
+    _gpsDetector.resetDetector();
+    _lastSpoofingResult = null;
+    notifyListeners();
+  }
+
   // Callbacks abstractos para implementar en el ViewModel principal
   void onLocationUpdated(LatLng location);
   void onLocationCentered(LatLng location);
   void onLocationError(String error);
+
+  // 🔒 NUEVO: Callback para GPS falso detectado
+  void onGpsSpoofingDetected(SpoofingDetectionResult result);
 
   // Callback opcional para cambios significativos de ubicación
   void onLocationChanged(LatLng newLocation, double distanceMoved) {
