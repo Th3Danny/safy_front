@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
+import 'dart:async'; // Added for Timer
 
 class PlaceSearchWidget extends StatefulWidget {
   const PlaceSearchWidget({super.key});
@@ -12,10 +13,12 @@ class PlaceSearchWidget extends StatefulWidget {
 class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
   final TextEditingController _searchController = TextEditingController();
   bool _showResults = false;
+  Timer? _debounceTimer; // Added for debounce
 
   @override
   void dispose() {
     _searchController.dispose();
+    _debounceTimer?.cancel(); // Cancel debounce timer on dispose
     super.dispose();
   }
 
@@ -25,14 +28,14 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
       builder: (context, mapViewModel, child) {
         return Column(
           children: [
-            // Campo de búsqueda
+            // Campo de búsqueda mejorado
             Container(
               padding: const EdgeInsets.all(16),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Buscar lugar...',
-                  prefixIcon: const Icon(Icons.search),
+                  hintText: 'Buscar lugar, dirección...',
+                  prefixIcon: const Icon(Icons.search, color: Colors.blue),
                   suffixIcon:
                       _searchController.text.isNotEmpty
                           ? IconButton(
@@ -43,35 +46,64 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                                 _showResults = false;
                               });
                             },
-                            icon: const Icon(Icons.clear),
+                            icon: const Icon(Icons.clear, color: Colors.grey),
                           )
                           : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.blue, width: 2),
                   ),
                   filled: true,
                   fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
                 onChanged: (value) {
                   setState(() {
                     _showResults = value.isNotEmpty;
                   });
-                  if (value.length > 2) {
+
+                  // 🆕 DEBOUNCE PARA EVITAR MUCHAS PETICIONES
+                  _debounceTimer?.cancel();
+                  _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+                    if (value.length >= 3) {
+                      print('🔍 [PlaceSearchWidget] Buscando: $value');
+                      mapViewModel.searchPlaces(
+                        value.trim(),
+                        mapViewModel.currentLocation,
+                      );
+                    } else if (value.isEmpty) {
+                      mapViewModel.clearSearch();
+                    }
+                  });
+                },
+                onSubmitted: (value) {
+                  if (value.isNotEmpty) {
+                    print('🔍 [PlaceSearchWidget] Búsqueda enviada: $value');
                     mapViewModel.searchPlaces(
                       value.trim(),
                       mapViewModel.currentLocation,
                     );
-                  } else {
-                    mapViewModel.clearSearch();
                   }
                 },
               ),
             ),
 
-            // Resultados de búsqueda
+            // Resultados de búsqueda mejorados
             if (_showResults && mapViewModel.searchResults.isNotEmpty)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
+                constraints: const BoxConstraints(maxHeight: 300),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -85,30 +117,63 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                 ),
                 child: ListView.separated(
                   shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
+                  physics: const BouncingScrollPhysics(),
                   itemCount: mapViewModel.searchResults.length,
                   separatorBuilder:
-                      (context, index) => const Divider(height: 1),
+                      (context, index) =>
+                          Divider(height: 1, color: Colors.grey[200]),
                   itemBuilder: (context, index) {
                     final place = mapViewModel.searchResults[index];
                     return ListTile(
-                      leading: const Icon(Icons.place),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _getPlaceIcon(place.type),
+                          color: Colors.blue,
+                          size: 20,
+                        ),
+                      ),
                       title: Text(
                         place.displayName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
                       ),
                       subtitle:
                           place.address != null
                               ? Text(
                                 place.address!,
-                                style: TextStyle(color: Colors.grey[600]),
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               )
                               : Text(
                                 '${place.latitude.toStringAsFixed(4)}, ${place.longitude.toStringAsFixed(4)}',
-                                style: TextStyle(color: Colors.grey[600]),
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
                               ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.grey[400],
+                        size: 16,
+                      ),
                       onTap: () {
+                        print(
+                          '🎯 [PlaceSearchWidget] Lugar seleccionado: ${place.displayName}',
+                        );
+
                         // 🎯 NUEVO: Establecer automáticamente la posición actual como punto de inicio
                         mapViewModel.setCurrentLocationAsStart();
 
@@ -117,30 +182,58 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                           place,
                           mapViewModel.currentLocation,
                         );
+
                         _searchController.text = place.displayName;
                         setState(() {
                           _showResults = false;
                         });
 
-                        // Mostrar SnackBar de confirmación
+                        // Mostrar SnackBar de confirmación mejorado
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Row(
                               children: [
-                                const Icon(
-                                  Icons.navigation,
-                                  color: Colors.white,
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Icon(
+                                    Icons.navigation,
+                                    color: Colors.green,
+                                    size: 16,
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 12),
                                 Expanded(
-                                  child: Text(
-                                    'Calculando ruta desde tu ubicación a: ${place.displayName}',
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        'Ruta calculada',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Desde tu ubicación a: ${place.displayName}',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                             backgroundColor: Colors.green,
-                            duration: const Duration(seconds: 2),
+                            duration: const Duration(seconds: 3),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         );
                       },
@@ -149,36 +242,61 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                 ),
               ),
 
-            // Indicador de carga
+            // Indicador de carga mejorado
             if (mapViewModel.isSearching)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(),
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.blue[400]!,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Buscando lugares...',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
               ),
 
-            // Mostrar error si existe
-            if (mapViewModel.errorMessage != null)
+            // Mensaje cuando no hay resultados
+            if (_showResults &&
+                !mapViewModel.isSearching &&
+                mapViewModel.searchResults.isEmpty &&
+                _searchController.text.isNotEmpty)
               Container(
+                padding: const EdgeInsets.all(16),
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red[50],
+                  color: Colors.orange[50],
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red[200]!),
+                  border: Border.all(color: Colors.orange[200]!),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red[600]),
-                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange[600],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        mapViewModel.errorMessage!,
-                        style: TextStyle(color: Colors.red[600]),
+                        'No se encontraron lugares para "${_searchController.text}"',
+                        style: TextStyle(
+                          color: Colors.orange[700],
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () => mapViewModel.clearError(),
-                      icon: Icon(Icons.close, color: Colors.red[600]),
                     ),
                   ],
                 ),
@@ -187,5 +305,21 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
         );
       },
     );
+  }
+
+  // 🆕 MÉTODO PARA OBTENER ICONO SEGÚN TIPO DE LUGAR
+  IconData _getPlaceIcon(String? placeType) {
+    switch (placeType) {
+      case 'poi':
+        return Icons.place;
+      case 'address':
+        return Icons.home;
+      case 'neighborhood':
+        return Icons.location_city;
+      case 'place':
+        return Icons.location_on;
+      default:
+        return Icons.place;
+    }
   }
 }

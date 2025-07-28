@@ -40,6 +40,15 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
   Widget build(BuildContext context) {
     return Consumer<MapViewModel>(
       builder: (context, mapViewModel, child) {
+        // 🆕 LOG PARA VERIFICAR RECONSTRUCCIÓN
+        print('🗺️ [MapboxMapWidget] Widget reconstruido');
+        print(
+          '🗺️ [MapboxMapWidget] Ruta actual: ${mapViewModel.currentRoute.length} puntos',
+        );
+        print(
+          '🗺️ [MapboxMapWidget] Nombre de ruta: ${mapViewModel.currentRouteName ?? 'N/A'}',
+        );
+
         // 🆕 MANEJAR NOTIFICACIONES DINÁMICAS
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
@@ -580,19 +589,113 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
       // Ruta segura (la que ya tenemos)
       final safeRoute = route;
 
-      // Ruta rápida (sin evasión para ser más rápida)
-      final fastRouteCoords = await _directionsClient.getRoute(
-        start: startPoint,
-        end: endPoint,
-        profile: 'walking',
-      );
+      // 🆕 RUTA RÁPIDA: Sin evasión de zonas peligrosas para ser más rápida
+      List<List<double>> fastRouteCoords;
+      try {
+        fastRouteCoords = await _directionsClient.getRoute(
+          start: startPoint,
+          end: endPoint,
+          profile:
+              'driving', // Usar perfil de conducción para rutas más directas
+        );
+      } catch (e) {
+        // Fallback a ruta directa
+        fastRouteCoords = await _directionsClient.getRoute(
+          start: startPoint,
+          end: endPoint,
+          profile: 'walking',
+        );
+      }
 
-      // Ruta extra segura (con más evasión)
-      final extraSafeRouteCoords = await _directionsClient.getRoute(
-        start: startPoint,
-        end: endPoint,
-        profile: 'walking',
-      );
+      // 🆕 RUTA EXTRA SEGURA: Con evasión más agresiva de zonas peligrosas
+      List<List<double>> extraSafeRouteCoords = [];
+      try {
+        // Calcular zonas de evasión extra seguras
+        final extraSafeAvoidAreas = _calculateExtraSafeAvoidanceAreas(
+          mapViewModel,
+        );
+
+        if (extraSafeAvoidAreas.isNotEmpty) {
+          print(
+            '🛡️ [MapboxMapWidget] Calculando ruta extra segura con ${extraSafeAvoidAreas.length} zonas de evasión',
+          );
+
+          // 🆕 ESTRATEGIA 1: Intentar ruta con waypoints de evasión extra segura
+          try {
+            extraSafeRouteCoords = await _calculateExtraSafeRoute(
+              startPoint,
+              endPoint,
+              extraSafeAvoidAreas,
+            );
+
+            if (extraSafeRouteCoords.isNotEmpty) {
+              print(
+                '🛡️ [MapboxMapWidget] Ruta extra segura calculada con waypoints',
+              );
+            }
+          } catch (e) {
+            print('❌ [MapboxMapWidget] Error en estrategia 1: $e');
+          }
+
+          // 🆕 ESTRATEGIA 2: Si falla, usar perfil de conducción con evasión manual
+          if (extraSafeRouteCoords.isEmpty) {
+            try {
+              extraSafeRouteCoords = await _calculateExtraSafeRouteWithDriving(
+                startPoint,
+                endPoint,
+                extraSafeAvoidAreas,
+              );
+
+              if (extraSafeRouteCoords.isNotEmpty) {
+                print(
+                  '🛡️ [MapboxMapWidget] Ruta extra segura calculada con perfil driving',
+                );
+              }
+            } catch (e) {
+              print('❌ [MapboxMapWidget] Error en estrategia 2: $e');
+            }
+          }
+
+          // 🆕 ESTRATEGIA 3: Si aún falla, crear ruta manual evitando zonas
+          if (extraSafeRouteCoords.isEmpty) {
+            try {
+              extraSafeRouteCoords = await _createManualExtraSafeRoute(
+                startPoint,
+                endPoint,
+                extraSafeAvoidAreas,
+              );
+
+              if (extraSafeRouteCoords.isNotEmpty) {
+                print(
+                  '🛡️ [MapboxMapWidget] Ruta extra segura creada manualmente',
+                );
+              }
+            } catch (e) {
+              print('❌ [MapboxMapWidget] Error en estrategia 3: $e');
+            }
+          }
+        } else {
+          // Si no hay zonas peligrosas, usar ruta normal
+          print(
+            '🛡️ [MapboxMapWidget] No hay zonas peligrosas, usando ruta normal',
+          );
+          extraSafeRouteCoords = await _directionsClient.getRoute(
+            start: startPoint,
+            end: endPoint,
+            profile: 'walking',
+          );
+        }
+      } catch (e) {
+        print(
+          '❌ [MapboxMapWidget] Error general calculando ruta extra segura: $e',
+        );
+        // Fallback a ruta normal
+        extraSafeRouteCoords = await _directionsClient.getRoute(
+          start: startPoint,
+          end: endPoint,
+          profile: 'walking',
+        );
+      }
 
       // Convertir coordenadas a LatLng
       final fastRoute =
@@ -608,6 +711,40 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
                   .map((coord) => LatLng(coord[0], coord[1]))
                   .toList()
               : safeRoute;
+
+      // 🆕 VERIFICAR QUE LAS RUTAS SEAN DIFERENTES
+      print('🛣️ [MapboxMapWidget] Rutas calculadas:');
+      print('🛣️ [MapboxMapWidget] Ruta Segura: ${safeRoute.length} puntos');
+      print('🛣️ [MapboxMapWidget] Ruta Rápida: ${fastRoute.length} puntos');
+      print(
+        '🛣️ [MapboxMapWidget] Ruta Extra Segura: ${extraSafeRoute.length} puntos',
+      );
+
+      // Verificar si las rutas son diferentes
+      bool routesAreDifferent = false;
+      if (safeRoute.length != fastRoute.length ||
+          safeRoute.length != extraSafeRoute.length ||
+          fastRoute.length != extraSafeRoute.length) {
+        routesAreDifferent = true;
+      } else {
+        // Comparar algunos puntos clave
+        if (safeRoute.isNotEmpty &&
+            fastRoute.isNotEmpty &&
+            extraSafeRoute.isNotEmpty) {
+          final safeMid = safeRoute[safeRoute.length ~/ 2];
+          final fastMid = fastRoute[fastRoute.length ~/ 2];
+          final extraMid = extraSafeRoute[extraSafeRoute.length ~/ 2];
+
+          final dist1 = _calculateDistance(safeMid, fastMid);
+          final dist2 = _calculateDistance(safeMid, extraMid);
+          final dist3 = _calculateDistance(fastMid, extraMid);
+
+          routesAreDifferent =
+              dist1 > 50 || dist2 > 50 || dist3 > 50; // 50 metros de diferencia
+        }
+      }
+
+      print('🛣️ [MapboxMapWidget] Rutas son diferentes: $routesAreDifferent');
 
       showModalBottomSheet(
         context: context,
@@ -633,6 +770,7 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
             ),
       );
     } catch (e) {
+      print('❌ [MapboxMapWidget] Error calculando rutas alternativas: $e');
       // Mostrar con la ruta original si hay error
       showModalBottomSheet(
         context: context,
@@ -664,17 +802,48 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
     final avoidAreas = <Map<String, dynamic>>[];
     if (mapViewModel.showClusters && mapViewModel.clusters.isNotEmpty) {
       for (final cluster in mapViewModel.clusters) {
-        if (cluster.severityNumber >= 2) {
-          // Incluir zonas de severidad media también
-          final radius = 0.003; // Radio más grande (300 metros)
+        // 🆕 INCLUIR TODAS LAS ZONAS DE RIESGO, NO SOLO LAS ALTAS
+        if (cluster.severityNumber >= 1) {
+          // Incluir desde severidad 1
+          // Radio más grande para evasión extra segura
+          double radius = 0.005; // 500 metros base
+
+          // Ajustar radio según severidad
+          if (cluster.severityNumber >= 4) {
+            radius = 0.008; // 800 metros para severidad alta
+          } else if (cluster.severityNumber >= 3) {
+            radius = 0.006; // 600 metros para severidad media-alta
+          } else if (cluster.severityNumber >= 2) {
+            radius = 0.004; // 400 metros para severidad media
+          }
+
+          // Ajustar según cantidad de reportes
+          final reportCount = cluster.reportCount ?? 1;
+          if (reportCount >= 10) {
+            radius += 0.002; // +200m por 10+ reportes
+          }
+          if (reportCount >= 20) {
+            radius += 0.001; // +100m adicional por 20+ reportes
+          }
+
           avoidAreas.add({
             'center': LatLng(cluster.centerLatitude, cluster.centerLongitude),
             'radius': radius,
             'severity': cluster.severityNumber,
+            'reportCount': reportCount,
           });
+
+          print('🚨 [MapboxMapWidget] Zona de evasión extra segura:');
+          print('🚨 [MapboxMapWidget] Severidad: ${cluster.severityNumber}');
+          print('🚨 [MapboxMapWidget] Reportes: $reportCount');
+          print('🚨 [MapboxMapWidget] Radio: ${radius.toStringAsFixed(4)}');
         }
       }
     }
+
+    print(
+      '🚨 [MapboxMapWidget] Total zonas de evasión extra segura: ${avoidAreas.length}',
+    );
     return avoidAreas;
   }
 
@@ -1080,11 +1249,274 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
     return atan2(deltaLng, deltaLat) * (180 / 3.14159);
   }
 
-  // 🆕 CALCULAR DISTANCIA ENTRE DOS PUNTOS (versión simple)
-  double _calculateDistanceSimple(LatLng point1, LatLng point2) {
-    final deltaLat = point2.latitude - point1.latitude;
-    final deltaLng = point2.longitude - point1.longitude;
-    return sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
+  // 🆕 MÉTODO PARA CALCULAR RUTA EXTRA SEGURA CON WAYPOINTS
+  Future<List<List<double>>> _calculateExtraSafeRoute(
+    LatLng start,
+    LatLng end,
+    List<Map<String, dynamic>> avoidAreas,
+  ) async {
+    try {
+      print(
+        '🛡️ [MapboxMapWidget] Calculando ruta extra segura con waypoints...',
+      );
+
+      // Crear waypoints de evasión más agresivos
+      final extraSafeWaypoints = _calculateExtraSafeWaypoints(
+        start,
+        end,
+        avoidAreas,
+      );
+
+      if (extraSafeWaypoints.isNotEmpty) {
+        final route = await _directionsClient.getRoute(
+          start: start,
+          end: end,
+          profile: 'walking',
+          waypoints: extraSafeWaypoints,
+        );
+
+        if (route.isNotEmpty && _verifyExtraSafeRoute(route, avoidAreas)) {
+          print('🛡️ [MapboxMapWidget] Ruta extra segura verificada');
+          return route;
+        }
+      }
+
+      return [];
+    } catch (e) {
+      print('❌ [MapboxMapWidget] Error en _calculateExtraSafeRoute: $e');
+      return [];
+    }
+  }
+
+  // 🆕 MÉTODO PARA CALCULAR RUTA EXTRA SEGURA CON PERFIL DRIVING
+  Future<List<List<double>>> _calculateExtraSafeRouteWithDriving(
+    LatLng start,
+    LatLng end,
+    List<Map<String, dynamic>> avoidAreas,
+  ) async {
+    try {
+      print(
+        '🛡️ [MapboxMapWidget] Calculando ruta extra segura con perfil driving...',
+      );
+
+      // Usar perfil de conducción para rutas más amplias
+      final route = await _directionsClient.getRoute(
+        start: start,
+        end: end,
+        profile: 'driving',
+      );
+
+      if (route.isNotEmpty && _verifyExtraSafeRoute(route, avoidAreas)) {
+        print('🛡️ [MapboxMapWidget] Ruta extra segura con driving verificada');
+        return route;
+      }
+
+      return [];
+    } catch (e) {
+      print(
+        '❌ [MapboxMapWidget] Error en _calculateExtraSafeRouteWithDriving: $e',
+      );
+      return [];
+    }
+  }
+
+  // 🆕 MÉTODO PARA CREAR RUTA EXTRA SEGURA MANUALMENTE
+  Future<List<List<double>>> _createManualExtraSafeRoute(
+    LatLng start,
+    LatLng end,
+    List<Map<String, dynamic>> avoidAreas,
+  ) async {
+    try {
+      print('🛡️ [MapboxMapWidget] Creando ruta extra segura manualmente...');
+
+      // Crear una ruta que evite completamente las zonas peligrosas
+      final safePoints = _createSafeRoutePoints(start, end, avoidAreas);
+
+      if (safePoints.length >= 2) {
+        // Convertir puntos a formato de coordenadas
+        final route =
+            safePoints
+                .map((point) => [point.latitude, point.longitude])
+                .toList();
+        print(
+          '🛡️ [MapboxMapWidget] Ruta manual creada con ${route.length} puntos',
+        );
+        return route;
+      }
+
+      return [];
+    } catch (e) {
+      print('❌ [MapboxMapWidget] Error en _createManualExtraSafeRoute: $e');
+      return [];
+    }
+  }
+
+  // 🆕 CALCULAR WAYPOINTS EXTRA SEGUROS
+  List<LatLng> _calculateExtraSafeWaypoints(
+    LatLng start,
+    LatLng end,
+    List<Map<String, dynamic>> avoidAreas,
+  ) {
+    final waypoints = <LatLng>[];
+
+    for (final area in avoidAreas) {
+      final center = area['center'] as LatLng;
+      final radius = area['radius'] as double;
+
+      // Crear múltiples puntos de evasión en diferentes direcciones
+      final avoidanceDistance = radius * 2.5; // Más agresivo que el normal
+
+      // Calcular dirección desde el cluster hacia el destino
+      final direction = _calculateDirection(center, end);
+
+      // Punto de evasión principal (opuesto al destino)
+      final mainAvoidancePoint = LatLng(
+        center.latitude - cos(direction) * avoidanceDistance,
+        center.longitude - sin(direction) * avoidanceDistance,
+      );
+
+      // Punto de evasión secundario (perpendicular)
+      final secondaryAvoidancePoint = LatLng(
+        center.latitude + sin(direction) * avoidanceDistance,
+        center.longitude - cos(direction) * avoidanceDistance,
+      );
+
+      // Verificar que los puntos no estén muy lejos de la ruta original
+      final directDistance = _calculateDistance(start, end);
+      final totalDistanceWithMain =
+          _calculateDistance(start, mainAvoidancePoint) +
+          _calculateDistance(mainAvoidancePoint, end);
+      final totalDistanceWithSecondary =
+          _calculateDistance(start, secondaryAvoidancePoint) +
+          _calculateDistance(secondaryAvoidancePoint, end);
+
+      if (totalDistanceWithMain < directDistance * 2.0) {
+        waypoints.add(mainAvoidancePoint);
+      }
+
+      if (totalDistanceWithSecondary < directDistance * 2.0) {
+        waypoints.add(secondaryAvoidancePoint);
+      }
+    }
+
+    return waypoints;
+  }
+
+  // 🆕 VERIFICAR RUTA EXTRA SEGURA
+  bool _verifyExtraSafeRoute(
+    List<List<double>> route,
+    List<Map<String, dynamic>> avoidAreas,
+  ) {
+    if (avoidAreas.isEmpty) return true;
+
+    final routePoints =
+        route.map((coord) => LatLng(coord[0], coord[1])).toList();
+
+    for (final area in avoidAreas) {
+      final center = area['center'] as LatLng;
+      final radius = area['radius'] as double;
+
+      // Verificar cada punto de la ruta
+      for (final point in routePoints) {
+        final distance = _calculateDistance(center, point);
+        if (distance < radius) {
+          print(
+            '❌ [MapboxMapWidget] Ruta extra segura pasa por zona peligrosa',
+          );
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // 🆕 CREAR PUNTOS DE RUTA SEGURA MANUALMENTE
+  List<LatLng> _createSafeRoutePoints(
+    LatLng start,
+    LatLng end,
+    List<Map<String, dynamic>> avoidAreas,
+  ) {
+    final safePoints = <LatLng>[start];
+
+    // Crear puntos intermedios que eviten las zonas peligrosas
+    final midPoint = LatLng(
+      (start.latitude + end.latitude) / 2,
+      (start.longitude + end.longitude) / 2,
+    );
+
+    // Verificar si el punto medio está en zona peligrosa
+    bool midPointIsSafe = true;
+    for (final area in avoidAreas) {
+      final center = area['center'] as LatLng;
+      final radius = area['radius'] as double;
+      final distance = _calculateDistance(midPoint, center);
+
+      if (distance < radius) {
+        midPointIsSafe = false;
+        break;
+      }
+    }
+
+    if (midPointIsSafe) {
+      safePoints.add(midPoint);
+    } else {
+      // Crear punto alternativo que evite las zonas peligrosas
+      final alternativePoint = _findSafeAlternativePoint(
+        start,
+        end,
+        avoidAreas,
+      );
+      if (alternativePoint != null) {
+        safePoints.add(alternativePoint);
+      }
+    }
+
+    safePoints.add(end);
+    return safePoints;
+  }
+
+  // 🆕 ENCONTRAR PUNTO ALTERNATIVO SEGURO
+  LatLng? _findSafeAlternativePoint(
+    LatLng start,
+    LatLng end,
+    List<Map<String, dynamic>> avoidAreas,
+  ) {
+    // Intentar diferentes ángulos para encontrar un punto seguro
+    final angles = [45, 90, 135, 180, 225, 270, 315];
+    final midPoint = LatLng(
+      (start.latitude + end.latitude) / 2,
+      (start.longitude + end.longitude) / 2,
+    );
+
+    for (final angle in angles) {
+      final radians = angle * (pi / 180);
+      final offset = 0.001; // Aproximadamente 100 metros
+
+      final alternativePoint = LatLng(
+        midPoint.latitude + cos(radians) * offset,
+        midPoint.longitude + sin(radians) * offset,
+      );
+
+      // Verificar si el punto es seguro
+      bool isSafe = true;
+      for (final area in avoidAreas) {
+        final center = area['center'] as LatLng;
+        final radius = area['radius'] as double;
+        final distance = _calculateDistance(alternativePoint, center);
+
+        if (distance < radius) {
+          isSafe = false;
+          break;
+        }
+      }
+
+      if (isSafe) {
+        return alternativePoint;
+      }
+    }
+
+    return null;
   }
 
   // Método para centrar en ubicación

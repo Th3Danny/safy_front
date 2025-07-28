@@ -97,7 +97,7 @@ class _RouteSuggestionsWidgetState extends State<RouteSuggestionsWidget> {
             widget.safeDuration,
             widget.safeSafetyLevel,
             isSelected: _selectedRouteIndex == 0,
-            onTap: () => setState(() => _selectedRouteIndex = 0),
+            onTap: () => _selectRoute(0),
           ),
 
           const SizedBox(height: 12),
@@ -113,7 +113,7 @@ class _RouteSuggestionsWidgetState extends State<RouteSuggestionsWidget> {
             (widget.safeDuration * 0.7).round(),
             widget.safeSafetyLevel * 0.8,
             isSelected: _selectedRouteIndex == 1,
-            onTap: () => setState(() => _selectedRouteIndex = 1),
+            onTap: () => _selectRoute(1),
           ),
 
           const SizedBox(height: 12),
@@ -129,7 +129,7 @@ class _RouteSuggestionsWidgetState extends State<RouteSuggestionsWidget> {
             (widget.safeDuration * 1.4).round(),
             (widget.safeSafetyLevel * 1.2).clamp(0.0, 1.0),
             isSelected: _selectedRouteIndex == 2,
-            onTap: () => setState(() => _selectedRouteIndex = 2),
+            onTap: () => _selectRoute(2),
           ),
 
           const SizedBox(height: 16),
@@ -142,9 +142,7 @@ class _RouteSuggestionsWidgetState extends State<RouteSuggestionsWidget> {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     // Cambiar a la siguiente ruta
-                    setState(() {
-                      _selectedRouteIndex = (_selectedRouteIndex + 1) % 3;
-                    });
+                    _selectRoute((_selectedRouteIndex + 1) % 3);
                   },
                   icon: Icon(Icons.swap_horiz),
                   label: Text('Cambiar Ruta'),
@@ -159,52 +157,6 @@ class _RouteSuggestionsWidgetState extends State<RouteSuggestionsWidget> {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     final mapViewModel = context.read<MapViewModel>();
-
-                    // Pasar la ruta seleccionada al MapViewModel
-                    List<LatLng> selectedRoute;
-                    String routeName;
-                    double distance;
-                    int duration;
-                    double safetyLevel;
-
-                    switch (_selectedRouteIndex) {
-                      case 0:
-                        selectedRoute = widget.safeRoutePoints;
-                        routeName = 'Ruta Segura';
-                        distance = widget.safeDistance;
-                        duration = widget.safeDuration;
-                        safetyLevel = widget.safeSafetyLevel;
-                        break;
-                      case 1:
-                        selectedRoute = widget.fastRoutePoints;
-                        routeName = 'Ruta Rápida';
-                        distance = widget.safeDistance * 0.8;
-                        duration = (widget.safeDuration * 0.7).round();
-                        safetyLevel = widget.safeSafetyLevel * 0.8;
-                        break;
-                      case 2:
-                        selectedRoute = widget.extraSafeRoutePoints;
-                        routeName = 'Ruta Extra Segura';
-                        distance = widget.safeDistance * 1.3;
-                        duration = (widget.safeDuration * 1.4).round();
-                        safetyLevel = (widget.safeSafetyLevel * 1.2).clamp(
-                          0.0,
-                          1.0,
-                        );
-                        break;
-                      default:
-                        selectedRoute = widget.safeRoutePoints;
-                        routeName = 'Ruta Segura';
-                        distance = widget.safeDistance;
-                        duration = widget.safeDuration;
-                        safetyLevel = widget.safeSafetyLevel;
-                    }
-
-                    // Actualizar la ruta en el ViewModel con el nombre correcto
-                    mapViewModel.setCurrentRouteWithName(
-                      selectedRoute,
-                      routeName,
-                    );
                     mapViewModel.startNavigationWithTracking();
                     Navigator.pop(context);
                   },
@@ -222,6 +174,91 @@ class _RouteSuggestionsWidgetState extends State<RouteSuggestionsWidget> {
         ],
       ),
     );
+  }
+
+  // 🆕 MÉTODO PARA SELECCIONAR RUTA Y ACTUALIZAR INMEDIATAMENTE
+  void _selectRoute(int routeIndex) {
+    print('🛣️ [RouteSuggestionsWidget] Seleccionando ruta: $routeIndex');
+
+    setState(() {
+      _selectedRouteIndex = routeIndex;
+    });
+
+    final mapViewModel = context.read<MapViewModel>();
+
+    // Obtener la ruta seleccionada
+    List<LatLng> selectedRoute;
+    String routeName;
+    double distance;
+    int duration;
+    double safetyLevel;
+
+    switch (routeIndex) {
+      case 0:
+        selectedRoute = widget.safeRoutePoints;
+        routeName = 'Ruta Segura';
+        distance = widget.safeDistance;
+        duration = widget.safeDuration;
+        safetyLevel = widget.safeSafetyLevel;
+        break;
+      case 1:
+        selectedRoute = widget.fastRoutePoints;
+        routeName = 'Ruta Rápida';
+        distance = widget.safeDistance * 0.8;
+        duration = (widget.safeDuration * 0.7).round();
+        safetyLevel = widget.safeSafetyLevel * 0.8;
+        break;
+      case 2:
+        selectedRoute = widget.extraSafeRoutePoints;
+        routeName = 'Ruta Extra Segura';
+        distance = widget.safeDistance * 1.3;
+        duration = (widget.safeDuration * 1.4).round();
+        safetyLevel = (widget.safeSafetyLevel * 1.2).clamp(0.0, 1.0);
+        break;
+      default:
+        selectedRoute = widget.safeRoutePoints;
+        routeName = 'Ruta Segura';
+        distance = widget.safeDistance;
+        duration = widget.safeDuration;
+        safetyLevel = widget.safeSafetyLevel;
+    }
+
+    print('🛣️ [RouteSuggestionsWidget] Ruta seleccionada: $routeName');
+    print(
+      '🛣️ [RouteSuggestionsWidget] Puntos de ruta: ${selectedRoute.length}',
+    );
+    print(
+      '🛣️ [RouteSuggestionsWidget] Primer punto: ${selectedRoute.isNotEmpty ? selectedRoute.first : 'N/A'}',
+    );
+    print(
+      '🛣️ [RouteSuggestionsWidget] Último punto: ${selectedRoute.isNotEmpty ? selectedRoute.last : 'N/A'}',
+    );
+
+    // 🆕 ACTUALIZAR LA RUTA INMEDIATAMENTE EN EL MAPA
+    mapViewModel.setCurrentRouteWithName(selectedRoute, routeName);
+
+    print('🛣️ [RouteSuggestionsWidget] Ruta actualizada en ViewModel');
+    print(
+      '🛣️ [RouteSuggestionsWidget] Ruta actual en ViewModel: ${mapViewModel.currentRoute.length} puntos',
+    );
+
+    // 🆕 MOSTRAR CONFIRMACIÓN VISUAL
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.route, color: Colors.white),
+            const SizedBox(width: 8),
+            Text('Ruta cambiada a: $routeName'),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    print('🛣️ Ruta cambiada a: $routeName (${selectedRoute.length} puntos)');
   }
 
   Widget _buildRouteOption(

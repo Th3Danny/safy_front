@@ -59,9 +59,7 @@ class MobileMapLayout extends StatelessWidget {
                   child: _buildEnhancedRoutePanel(mapViewModel),
                 ),
 
-              // 🚨 Overlay de zona peligrosa (ELIMINADO - usando el nuevo sistema de alertas)
-              // if (_shouldShowDangerWarning(mapViewModel))
-              //   const DangerZoneOverlay(),
+         
 
               // 🚨 NUEVO: Alerta de zona peligrosa
               if (mapViewModel.showDangerAlert &&

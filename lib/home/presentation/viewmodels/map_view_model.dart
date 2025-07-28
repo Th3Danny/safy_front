@@ -54,19 +54,11 @@ class MapViewModel extends ChangeNotifier
     this.getReportsForMapUseCase,
     this.getClustersUseCase, // NUEVO
   }) {
-    print('[MapViewModel] 🗺️ Configurando listener del mapa...');
-
     // Listener para cambios de zoom y movimiento del mapa
     _mapController.mapEventStream.listen((event) {
-      print('[MapViewModel] 📡 Evento del mapa recibido: ${event.runtimeType}');
-
       if (event is MapEventMove ||
           event is MapEventMoveEnd ||
           event is MapEventMoveStart) {
-        print(
-          '[MapViewModel] 🎯 Evento de movimiento detectado: ${event.runtimeType}',
-        );
-
         final newZoom = _mapController.camera.zoom;
         if (newZoom != _currentZoom) {
           _currentZoom = newZoom;
@@ -77,8 +69,6 @@ class MapViewModel extends ChangeNotifier
         _loadClustersForMapView();
       }
     });
-
-    print('[MapViewModel] ✅ Listener del mapa configurado correctamente');
   }
 
   // ============================================================================
@@ -153,6 +143,16 @@ class MapViewModel extends ChangeNotifier
 
   // Método para establecer la ruta con nombre
   void setCurrentRouteWithName(List<LatLng> route, String name) {
+    print('🛣️ [MapViewModel] setCurrentRouteWithName llamado');
+    print('🛣️ [MapViewModel] Nombre de ruta: $name');
+    print('🛣️ [MapViewModel] Puntos de ruta: ${route.length}');
+    print(
+      '🛣️ [MapViewModel] Primer punto: ${route.isNotEmpty ? route.first : 'N/A'}',
+    );
+    print(
+      '🛣️ [MapViewModel] Último punto: ${route.isNotEmpty ? route.last : 'N/A'}',
+    );
+
     _currentRouteName = name;
     final routeOption = RouteOption(
       name: name,
@@ -162,7 +162,16 @@ class MapViewModel extends ChangeNotifier
       safetyLevel: 1.0,
       isRecommended: name.contains('Segura'),
     );
+
+    print('🛣️ [MapViewModel] Llamando a selectRoute...');
     selectRoute(routeOption);
+
+    print(
+      '🛣️ [MapViewModel] Ruta actual después de selectRoute: ${currentRoute.length} puntos',
+    );
+    print('🛣️ [MapViewModel] Notificando listeners...');
+    notifyListeners();
+    print('🛣️ [MapViewModel] setCurrentRouteWithName completado');
   }
 
   // Getter para verificar si el GPS está siendo falsificado
@@ -769,9 +778,6 @@ class MapViewModel extends ChangeNotifier
 
   @override
   void onGpsSpoofingDetected(SpoofingDetectionResult result) {
-    // NO mostrar mensaje de error en el mapa, solo notificar
-    // El GPS falso se maneja solo con notificaciones, no como error del mapa
-
     // Notificar cambios
     notifyListeners();
   }

@@ -1,7 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:safy/home/data/datasources/danger_zone_api_client.dart';
-import 'package:safy/home/data/datasources/nominatim_api_client.dart';
+import 'package:safy/home/data/datasources/mapbox_places_client.dart';
 import 'package:safy/home/data/repositories/danger_zone_repository_impl.dart';
 import 'package:safy/home/data/repositories/places_repository_impl.dart';
 import 'package:safy/home/domain/repositories/danger_zone_repository.dart';
@@ -24,9 +24,9 @@ Future<void> setupMapsDependencies() async {
         DangerZoneApiClient(GetIt.instance<Dio>(instanceName: 'authenticated')),
   );
 
-  // Nuevos API Clients
-  GetIt.instance.registerLazySingleton<NominatimApiClient>(
-    () => NominatimApiClient(GetIt.instance<Dio>(instanceName: 'public')),
+  // 🆕 NUEVO: Mapbox Places Client (reemplaza Nominatim)
+  GetIt.instance.registerLazySingleton<MapboxPlacesClient>(
+    () => MapboxPlacesClient(),
   );
 
   // ===== REPOSITORIES =====
@@ -35,9 +35,9 @@ Future<void> setupMapsDependencies() async {
     () => DangerZoneRepositoryImpl(GetIt.instance<DangerZoneApiClient>()),
   );
 
-  // Repositorios nuevos
+  // 🆕 NUEVO: Places Repository con Mapbox
   GetIt.instance.registerLazySingleton<PlacesRepository>(
-    () => PlacesRepositoryImpl(GetIt.instance<NominatimApiClient>()),
+    () => PlacesRepositoryImpl(GetIt.instance<MapboxPlacesClient>()),
   );
 
   // ===== DOMAIN LAYER (USE CASES) =====
