@@ -10,6 +10,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:safy/core/services/firebase/firebase_message_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:safy/core/services/cluster_detection_service.dart';
+import 'package:safy/core/services/background_danger_detection_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,18 +22,15 @@ void main() async {
   // 👂 Escuchar mensajes en segundo plano
   FirebaseMessaging.onBackgroundMessage(firebaseBackgroundMessageHandler);
 
-  print('[Main] 🚀 ========== INICIANDO SAFY ==========');
   try {
     // 1. Inicializar SharedPreferences
 
     final prefs = await SharedPreferences.getInstance();
 
-    print('[Main] ✅ SharedPreferences OK');
     // DEBUG: Verificar si hay datos almacenados
     final storedToken = prefs.getString('access_token');
     final storedUser = prefs.getString('user_data');
-    print('[Main] 🔍 Token almacenado encontrado: ${storedToken != null}');
-    print('[Main] 🔍 Usuario almacenado encontrado: ${storedUser != null}');
+
     if (storedToken != null) {
       print('[Main] 🔍 Token preview: ${storedToken.substring(0, 20)}...');
     }
@@ -54,10 +52,8 @@ void main() async {
     // 🚨 NUEVO: Inicializar servicio de detección de clusters
     await sl<ClusterDetectionService>().init();
 
-    print('[Main] 🎉 ========== INICIALIZACIÓN COMPLETA ==========');
-    print(
-      '[Main] 🎉 Estado final - Usuario logueado: ${SessionManager.instance.isLoggedIn}',
-    );
+    // 🚨 NUEVO: Inicializar servicio de detección de peligro en segundo plano
+    await BackgroundDangerDetectionService.initialize();
 
     runApp(const MyApp());
   } catch (e, stackTrace) {
@@ -71,7 +67,6 @@ void main() async {
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print('[📡 Background] Mensaje recibido: ${message.messageId}');
 }
 
 class MyApp extends StatelessWidget {
@@ -79,7 +74,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('[MyApp] 🏗️ Construyendo MyApp...');
     return MultiProvider(
       providers: getAllProviders(),
       child: MaterialApp.router(

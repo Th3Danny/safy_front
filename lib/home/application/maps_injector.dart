@@ -1,14 +1,18 @@
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:safy/home/data/datasources/danger_zone_api_client.dart';
-import 'package:safy/home/data/datasources/nominatim_api_client.dart';
+import 'package:safy/home/data/datasources/mapbox_places_client.dart';
+import 'package:safy/home/data/datasources/prediction_api_client.dart';
 import 'package:safy/home/data/repositories/danger_zone_repository_impl.dart';
 import 'package:safy/home/data/repositories/places_repository_impl.dart';
+import 'package:safy/home/data/repositories/prediction_repository_impl.dart';
 import 'package:safy/home/domain/repositories/danger_zone_repository.dart';
 import 'package:safy/home/domain/repositories/places_repository.dart';
+import 'package:safy/home/domain/repositories/prediction_repository.dart';
 import 'package:safy/home/domain/usecases/check_danger_zones_use_case.dart';
 import 'package:safy/home/domain/usecases/get_current_location_use_case.dart';
 import 'package:safy/home/domain/usecases/get_danger_zones_use_case.dart';
+import 'package:safy/home/domain/usecases/get_predictions_use_case.dart';
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:safy/report/domain/repositories/report_repository.dart';
@@ -24,9 +28,15 @@ Future<void> setupMapsDependencies() async {
         DangerZoneApiClient(GetIt.instance<Dio>(instanceName: 'authenticated')),
   );
 
-  // Nuevos API Clients
-  GetIt.instance.registerLazySingleton<NominatimApiClient>(
-    () => NominatimApiClient(GetIt.instance<Dio>(instanceName: 'public')),
+  // 🆕 NUEVO: Mapbox Places Client (reemplaza Nominatim)
+  GetIt.instance.registerLazySingleton<MapboxPlacesClient>(
+    () => MapboxPlacesClient(),
+  );
+
+  // 🆕 NUEVO: Prediction API Client
+  GetIt.instance.registerLazySingleton<PredictionApiClient>(
+    () =>
+        PredictionApiClient(GetIt.instance<Dio>(instanceName: 'authenticated')),
   );
 
   // ===== REPOSITORIES =====
@@ -35,9 +45,14 @@ Future<void> setupMapsDependencies() async {
     () => DangerZoneRepositoryImpl(GetIt.instance<DangerZoneApiClient>()),
   );
 
-  // Repositorios nuevos
+  // 🆕 NUEVO: Places Repository con Mapbox
   GetIt.instance.registerLazySingleton<PlacesRepository>(
-    () => PlacesRepositoryImpl(GetIt.instance<NominatimApiClient>()),
+    () => PlacesRepositoryImpl(GetIt.instance<MapboxPlacesClient>()),
+  );
+
+  // 🆕 NUEVO: Prediction Repository
+  GetIt.instance.registerLazySingleton<PredictionRepository>(
+    () => PredictionRepositoryImpl(GetIt.instance<PredictionApiClient>()),
   );
 
   // ===== DOMAIN LAYER (USE CASES) =====
@@ -53,6 +68,11 @@ Future<void> setupMapsDependencies() async {
   // ❌ ELIMINADA DUPLICACIÓN - Solo UNA vez registrado
   GetIt.instance.registerLazySingleton<GetDangerZonesUseCase>(
     () => GetDangerZonesUseCase(GetIt.instance<DangerZoneRepository>()),
+  );
+
+  // 🆕 NUEVO: Prediction Use Case
+  GetIt.instance.registerLazySingleton<GetPredictionsUseCase>(
+    () => GetPredictionsUseCase(GetIt.instance<PredictionRepository>()),
   );
 
   // Casos de uso nuevos

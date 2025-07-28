@@ -54,15 +54,7 @@ class DesktopControlPanel extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Sección de modo de transporte deshabilitada para esta versión. Reactivar en el futuro si es necesario.
-          // _buildSection(
-          //   title: 'Modo de Transporte',
-          //   children: [
-          //     _buildTransportOption('walk', 'Caminar', Icons.directions_walk),
-          //     _buildTransportOption('car', 'Auto', Icons.directions_car),
-          //     _buildTransportOption('bus', 'Transporte público', Icons.directions_bus),
-          //   ],
-          // ),
+          
           const SizedBox(height: 20),
 
           // Información de ruta actual
@@ -133,21 +125,7 @@ class DesktopControlPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildTransportOption(String mode, String label, IconData icon) {
-    final isSelected = mapViewModel.selectedTransportMode == mode;
 
-    return RadioListTile<String>(
-      value: mode,
-      groupValue: mapViewModel.selectedTransportMode,
-      onChanged: (value) {
-        if (value != null) {
-          mapViewModel.setTransportMode(value);
-        }
-      },
-      title: Text(label),
-      secondary: Icon(icon, color: isSelected ? Colors.blue : Colors.grey),
-    );
-  }
 
   Widget _buildRouteInfo() {
     final recommendedRoute =

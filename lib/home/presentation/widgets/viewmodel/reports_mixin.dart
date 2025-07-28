@@ -392,30 +392,6 @@ mixin ReportsMixin on ChangeNotifier {
     return baseRadius;
   }
 
-  List<LatLng> _getPointsAlongPath(
-    LatLng start,
-    LatLng end, {
-    double intervalMeters = 50,
-  }) {
-    final points = <LatLng>[];
-    final totalDistance = Distance().as(LengthUnit.Meter, start, end);
-
-    if (totalDistance < intervalMeters) {
-      return [];
-    }
-
-    final numPoints = (totalDistance / intervalMeters).ceil();
-
-    for (int i = 1; i < numPoints; i++) {
-      final fraction = i / numPoints;
-      final lat = start.latitude + (end.latitude - start.latitude) * fraction;
-      final lng =
-          start.longitude + (end.longitude - start.longitude) * fraction;
-      points.add(LatLng(lat, lng));
-    }
-
-    return points;
-  }
 
   // Callbacks abstractos
   void onReportSelected(ReportInfoEntity report);

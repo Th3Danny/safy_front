@@ -74,44 +74,7 @@ class NavigationFab extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // // Botones de navegación
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment.spaceAround,
-                //   children: [
-                //     _buildNavButton(context, Icons.add, 'add', 'Nueva\nRuta'),
-                //     // Los siguientes modos de transporte se reactivarán en una versión futura:
-                //     // _buildNavButton(
-                //     //   context,
-                //     //   Icons.directions_walk,
-                //     //   'walk',
-                //     //   'Caminar',
-                //     // ),
-                //     // _buildNavButton(
-                //     //   context,
-                //     //   Icons.directions_car,
-                //     //   'car',
-                //     //   'Auto',
-                //     // ),
-                //     // _buildNavButton(
-                //     //   context,
-                //     //   Icons.directions_bus,
-                //     //   'bus',
-                //     //   'Transporte',
-                //     // ),
-                //   ],
-                // ),
-
-                // const SizedBox(height: 16),
-                // const Text(
-                //   'Nueva Ruta',
-                //   style: TextStyle(
-                //     fontSize: 16,
-                //     color: Colors.black54,
-                //     fontWeight: FontWeight.w500,
-                //   ),
-                // ),
-
-                // const SizedBox(height: 24),
+               
 
                 // Contenido adicional
                 Container(
@@ -277,71 +240,4 @@ class NavigationFab extends StatelessWidget {
     );
   }
 
-  // BOTÓN INDIVIDUAL DE NAVEGACIÓN
-  Widget _buildNavButton(
-    BuildContext context,
-    IconData icon,
-    String type,
-    String label,
-  ) {
-    return InkWell(
-      onTap: () {
-        // redirección según tipo
-        switch (type) {
-          case 'add':
-            onNavigationTap(type); // ✅ Usar el callback
-            break;
-          case 'walk':
-            onNavigationTap(type); // ✅ Usar el callback
-            break;
-          case 'car':
-            onNavigationTap(type); // ✅ Usar el callback
-            break;
-          case 'bus':
-            onNavigationTap(type); // ✅ Usar el callback
-            break;
-        }
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color:
-                    type == 'add'
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color:
-                      type == 'add'
-                          ? Colors.green.withOpacity(0.3)
-                          : Colors.blue.withOpacity(0.3),
-                ),
-              ),
-              child: Icon(
-                icon,
-                color: type == 'add' ? Colors.green : Colors.blue,
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

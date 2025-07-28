@@ -18,6 +18,7 @@ import 'package:safy/core/session/session_manager.dart';
 import 'package:safy/home/application/maps_injector.dart';
 
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
+import 'package:safy/home/domain/usecases/get_predictions_use_case.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:safy/report/application/report_di.dart';
 import 'package:safy/report/domain/repositories/report_repository.dart';
@@ -173,6 +174,7 @@ List<SingleChildWidget> getAllProviders() {
 
           final getReportsForMapUseCase = sl<GetReportsForMapUseCase>();
           final getClustersUseCase = sl<GetClustersUseCase>();
+          final getPredictionsUseCase = sl<GetPredictionsUseCase>();
 
           print('[DI] ✅ Todas las dependencias disponibles para MapViewModel');
 
@@ -180,6 +182,7 @@ List<SingleChildWidget> getAllProviders() {
             searchPlacesUseCase: searchPlacesUseCase,
             getReportsForMapUseCase: getReportsForMapUseCase,
             getClustersUseCase: getClustersUseCase,
+            getPredictionsUseCase: getPredictionsUseCase,
           );
         } catch (e) {
           print('[DI] ❌ Error creando MapViewModel: $e');

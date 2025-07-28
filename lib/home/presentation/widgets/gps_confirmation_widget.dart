@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Widget para que el usuario confirme que su GPS es real
 class GpsConfirmationWidget extends StatelessWidget {
   final VoidCallback onConfirmGpsIsReal;
   final VoidCallback? onDismiss;

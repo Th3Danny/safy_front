@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:safy/report/domain/entities/cluster_entity.dart';
 
-/// Widget de alerta que se muestra cuando el usuario entra en una zona peligrosa
+
 class DangerZoneAlertWidget extends StatelessWidget {
   final ClusterEntity cluster;
   final double distance;

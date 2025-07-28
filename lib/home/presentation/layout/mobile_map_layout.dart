@@ -10,6 +10,7 @@ import 'package:safy/home/presentation/widgets/place_search_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_progress_widget.dart';
 import 'package:safy/home/presentation/widgets/gps_security_widget.dart';
 import 'package:safy/home/presentation/widgets/danger_zone_alert_widget.dart';
+
 import 'package:safy/core/router/app_router.dart';
 import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 
@@ -58,10 +59,6 @@ class MobileMapLayout extends StatelessWidget {
                   right: 0,
                   child: _buildEnhancedRoutePanel(mapViewModel),
                 ),
-
-              // 🚨 Overlay de zona peligrosa (ELIMINADO - usando el nuevo sistema de alertas)
-              // if (_shouldShowDangerWarning(mapViewModel))
-              //   const DangerZoneOverlay(),
 
               // 🚨 NUEVO: Alerta de zona peligrosa
               if (mapViewModel.showDangerAlert &&
