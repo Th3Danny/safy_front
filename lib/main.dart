@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:safy/core/services/firebase/firebase_message_handler.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:safy/core/services/cluster_detection_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +50,9 @@ void main() async {
 
     // 👇 Iniciar el servicio de notificaciones
     await sl<FirebaseMessagingService>().init();
+
+    // 🚨 NUEVO: Inicializar servicio de detección de clusters
+    await sl<ClusterDetectionService>().init();
 
     print('[Main] 🎉 ========== INICIALIZACIÓN COMPLETA ==========');
     print(

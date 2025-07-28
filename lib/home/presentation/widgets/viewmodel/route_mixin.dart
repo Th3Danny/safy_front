@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
+
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:get_it/get_it.dart';
+import 'package:safy/home/data/datasources/mapbox_directions_client.dart';
 import 'dart:math' as math;
 
 /// Mixin para gestión de rutas y navegación
@@ -23,8 +24,7 @@ mixin RouteMixin on ChangeNotifier {
   final List<RouteOption> _routeOptions = [];
   List<RouteOption> get routeOptions => _routeOptions;
 
-  // Dependencias abstractas
-  GetOpenRouteUseCase? get getOpenRouteUseCase;
+  // Dependencias abstractas (ahora usando Mapbox directamente)
 
   // Sistema de rutas
   void setStartPoint(LatLng point) {
@@ -47,7 +47,6 @@ mixin RouteMixin on ChangeNotifier {
         _calculateRoutesAsync();
       }
       notifyListeners();
-      print('[RouteMixin] 🎯 Punto de inicio establecido en ubicación actual');
     }
   }
 
@@ -88,7 +87,6 @@ mixin RouteMixin on ChangeNotifier {
       try {
         await calculateRoutes();
       } catch (e) {
-        print('[RouteMixin] ❌ Error calculando rutas: $e');
         // Crear una ruta simple como fallback
         _createSimpleRoute();
         onRouteError('Error calculando rutas: $e');
@@ -126,13 +124,7 @@ mixin RouteMixin on ChangeNotifier {
       return;
     }
 
-    print('[RouteMixin] 🧭 Iniciando cálculo de rutas...');
-    print(
-      '[RouteMixin] 📍 Inicio: ${_startPoint!.latitude}, ${_startPoint!.longitude}',
-    );
-    print(
-      '[RouteMixin] 🎯 Fin: ${_endPoint!.latitude}, ${_endPoint!.longitude}',
-    );
+    print('🧭 Iniciando cálculo de rutas...');
 
     try {
       _routeOptions.clear();
@@ -140,13 +132,10 @@ mixin RouteMixin on ChangeNotifier {
       // 🛡️ NUEVO: Calcular múltiples rutas con diferentes niveles de seguridad
       final routes = await _calculateMultipleRoutes(_startPoint!, _endPoint!);
 
-      print('[RouteMixin] ✅ Calculadas ${routes.length} rutas');
+      print('✅ Calculadas ${routes.length} rutas');
 
       // Agregar rutas calculadas
       for (final route in routes) {
-        print(
-          '[RouteMixin] 📊 Ruta: ${route.name} - Seguridad: ${route.safetyLevel.toInt()}%',
-        );
         _routeOptions.add(route);
       }
 
@@ -156,14 +145,10 @@ mixin RouteMixin on ChangeNotifier {
           (a, b) => a.safetyLevel > b.safetyLevel ? a : b,
         );
         selectRoute(recommendedRoute);
-        print(
-          '[RouteMixin] 🎯 Ruta recomendada: ${recommendedRoute.name} - ${recommendedRoute.safetyLevel.toInt()}%',
-        );
       }
 
       onRoutesPanelShow();
     } catch (e) {
-      print('[RouteMixin] ❌ Error calculando rutas: $e');
       onRouteError('Error calculando rutas: $e');
     }
 
@@ -279,21 +264,16 @@ mixin RouteMixin on ChangeNotifier {
 
   Future<List<LatLng>> _calculateRealRoute(LatLng start, LatLng end) async {
     try {
-      if (getOpenRouteUseCase != null) {
-        final coordinates = await getOpenRouteUseCase!
-            .call(
-              start: [start.longitude, start.latitude],
-              end: [end.longitude, end.latitude],
-            )
-            .timeout(
-              const Duration(seconds: 8),
-              onTimeout: () {
-                throw Exception('Timeout: La API no respondió en tiempo');
-              },
-            );
+      final directionsClient = MapboxDirectionsClient();
+      final coordinates = await directionsClient.getRoute(
+        start: start,
+        end: end,
+        profile: 'walking',
+      );
 
+      if (coordinates.isNotEmpty) {
         final route =
-            coordinates.map((coord) => LatLng(coord[1], coord[0])).toList();
+            coordinates.map((coord) => LatLng(coord[0], coord[1])).toList();
         return route;
       }
     } catch (e) {
@@ -446,42 +426,32 @@ mixin RouteMixin on ChangeNotifier {
         final route = <LatLng>[];
 
         try {
+          final directionsClient = MapboxDirectionsClient();
+
           // Segmento 1: start -> detourPoint
-          final segment1Coordinates = await getOpenRouteUseCase!
-              .call(
-                start: [start.longitude, start.latitude],
-                end: [safeDetourPoint.longitude, safeDetourPoint.latitude],
-              )
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () {
-                  throw Exception('Timeout: La API no respondió en tiempo');
-                },
-              );
+          final segment1Coordinates = await directionsClient.getRoute(
+            start: start,
+            end: safeDetourPoint,
+            profile: 'walking',
+          );
 
           final segment1Route =
               segment1Coordinates
-                  .map((coord) => LatLng(coord[1], coord[0]))
+                  .map((coord) => LatLng(coord[0], coord[1]))
                   .toList();
 
           route.addAll(segment1Route);
 
           // Segmento 2: detourPoint -> end
-          final segment2Coordinates = await getOpenRouteUseCase!
-              .call(
-                start: [safeDetourPoint.longitude, safeDetourPoint.latitude],
-                end: [end.longitude, end.latitude],
-              )
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () {
-                  throw Exception('Timeout: La API no respondió en tiempo');
-                },
-              );
+          final segment2Coordinates = await directionsClient.getRoute(
+            start: safeDetourPoint,
+            end: end,
+            profile: 'walking',
+          );
 
           final segment2Route =
               segment2Coordinates
-                  .map((coord) => LatLng(coord[1], coord[0]))
+                  .map((coord) => LatLng(coord[0], coord[1]))
                   .toList();
 
           // Agregar segmento 2 (excluyendo el primer punto para evitar duplicados)
@@ -728,159 +698,98 @@ mixin RouteMixin on ChangeNotifier {
         return null;
       }
 
-      // Usar la API de rutas con waypoints
-      if (getOpenRouteUseCase != null) {
+      // Usar la API de Mapbox con waypoints
+      final directionsClient = MapboxDirectionsClient();
+
+      // Calcular ruta por segmentos usando la API
+      final route = <LatLng>[];
+
+      // Agregar punto de inicio
+      route.add(start);
+
+      // Calcular rutas entre waypoints
+      for (int i = 0; i < safeWaypoints.length; i++) {
+        final segmentStart = i == 0 ? start : safeWaypoints[i - 1];
+        final segmentEnd = safeWaypoints[i];
+
         try {
-          // Crear lista de coordenadas: start -> waypoints -> end
-          final coordinates = <List<double>>[];
-
-          // Agregar punto de inicio
-          coordinates.add([start.longitude, start.latitude]);
-
-          // Agregar waypoints seguros
-          for (final waypoint in safeWaypoints) {
-            coordinates.add([waypoint.longitude, waypoint.latitude]);
-          }
-
-          // Agregar punto final
-          coordinates.add([end.longitude, end.latitude]);
-
-          print(
-            '[RouteMixin] 🗺️ Calculando ruta con ${coordinates.length} puntos usando API...',
+          final segmentCoordinates = await directionsClient.getRoute(
+            start: segmentStart,
+            end: segmentEnd,
+            profile: 'walking',
           );
 
-          // Calcular ruta por segmentos usando la API
-          final route = <LatLng>[];
+          final segmentRoute =
+              segmentCoordinates
+                  .map((coord) => LatLng(coord[0], coord[1]))
+                  .toList();
 
-          // Agregar punto de inicio
-          route.add(start);
-
-          // Calcular rutas entre waypoints
-          for (int i = 0; i < safeWaypoints.length; i++) {
-            final segmentStart = i == 0 ? start : safeWaypoints[i - 1];
-            final segmentEnd = safeWaypoints[i];
-
-            try {
-              final segmentCoordinates = await getOpenRouteUseCase!
-                  .call(
-                    start: [segmentStart.longitude, segmentStart.latitude],
-                    end: [segmentEnd.longitude, segmentEnd.latitude],
-                  )
-                  .timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () {
-                      throw Exception('Timeout: La API no respondió en tiempo');
-                    },
-                  );
-
-              final segmentRoute =
-                  segmentCoordinates
-                      .map((coord) => LatLng(coord[1], coord[0]))
-                      .toList();
-
-              // Agregar puntos del segmento (excluyendo el primer punto para evitar duplicados)
-              route.addAll(segmentRoute.skip(1));
-            } catch (e) {
-              print(
-                '[RouteMixin] ⚠️ Error en segmento $i, usando línea recta: $e',
-              );
-              // Fallback: línea recta entre puntos
-              route.add(segmentEnd);
-            }
-          }
-
-          // Calcular último segmento hasta el final
-          if (safeWaypoints.isNotEmpty) {
-            final lastWaypoint = safeWaypoints.last;
-            try {
-              final finalSegmentCoordinates = await getOpenRouteUseCase!
-                  .call(
-                    start: [lastWaypoint.longitude, lastWaypoint.latitude],
-                    end: [end.longitude, end.latitude],
-                  )
-                  .timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () {
-                      throw Exception('Timeout: La API no respondió en tiempo');
-                    },
-                  );
-
-              final finalSegmentRoute =
-                  finalSegmentCoordinates
-                      .map((coord) => LatLng(coord[1], coord[0]))
-                      .toList();
-
-              // Agregar puntos del segmento final (excluyendo el primer punto)
-              route.addAll(finalSegmentRoute.skip(1));
-            } catch (e) {
-              print(
-                '[RouteMixin] ⚠️ Error en segmento final, usando línea recta: $e',
-              );
-              route.add(end);
-            }
-          } else {
-            // Si no hay waypoints, calcular ruta directa
-            try {
-              final directCoordinates = await getOpenRouteUseCase!
-                  .call(
-                    start: [start.longitude, start.latitude],
-                    end: [end.longitude, end.latitude],
-                  )
-                  .timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () {
-                      throw Exception('Timeout: La API no respondió en tiempo');
-                    },
-                  );
-
-              final directRoute =
-                  directCoordinates
-                      .map((coord) => LatLng(coord[1], coord[0]))
-                      .toList();
-
-              route.clear();
-              route.addAll(directRoute);
-            } catch (e) {
-              print('[RouteMixin] ⚠️ Error en ruta directa: $e');
-              route.clear();
-              route.addAll([start, end]);
-            }
-          }
-
-          print(
-            '[RouteMixin] ✅ Ruta con waypoints calculada: ${route.length} puntos',
-          );
-
-          // Verificar que la ruta sea segura
-          int dangerousPoints = 0;
-          for (final point in route) {
-            if (isPointInDangerZone(point)) {
-              dangerousPoints++;
-            }
-          }
-
-          print(
-            '[RouteMixin] 📊 Puntos peligrosos en ruta con waypoints: $dangerousPoints',
-          );
-
-          if (dangerousPoints == 0) {
-            print('[RouteMixin] ✅ Ruta con waypoints es segura');
-            return route;
-          } else {
-            print(
-              '[RouteMixin] ⚠️ Ruta con waypoints aún tiene puntos peligrosos',
-            );
-            return null;
-          }
+          // Agregar puntos del segmento (excluyendo el primer punto para evitar duplicados)
+          route.addAll(segmentRoute.skip(1));
         } catch (e) {
-          print('[RouteMixin] ❌ Error calculando ruta con waypoints: $e');
-          return null;
+          // Fallback: línea recta entre puntos
+          route.add(segmentEnd);
         }
       }
 
-      return null;
+      // Calcular último segmento hasta el final
+      if (safeWaypoints.isNotEmpty) {
+        final lastWaypoint = safeWaypoints.last;
+        try {
+          final finalSegmentCoordinates = await directionsClient.getRoute(
+            start: lastWaypoint,
+            end: end,
+            profile: 'walking',
+          );
+
+          final finalSegmentRoute =
+              finalSegmentCoordinates
+                  .map((coord) => LatLng(coord[0], coord[1]))
+                  .toList();
+
+          // Agregar puntos del segmento final (excluyendo el primer punto)
+          route.addAll(finalSegmentRoute.skip(1));
+        } catch (e) {
+          route.add(end);
+        }
+      } else {
+        // Si no hay waypoints, calcular ruta directa
+        try {
+          final directCoordinates = await directionsClient.getRoute(
+            start: start,
+            end: end,
+            profile: 'walking',
+          );
+
+          final directRoute =
+              directCoordinates
+                  .map((coord) => LatLng(coord[0], coord[1]))
+                  .toList();
+
+          route.clear();
+          route.addAll(directRoute);
+        } catch (e) {
+          route.clear();
+          route.addAll([start, end]);
+        }
+      }
+
+      print('✅ Ruta con waypoints calculada: ${route.length} puntos');
+
+      // Verificar que la ruta sea segura
+      int dangerousPoints = 0;
+      for (final point in route) {
+        if (isPointInDangerZone(point)) {
+          dangerousPoints++;
+        }
+      }
+
+      if (dangerousPoints == 0) {
+        return route;
+      } else {
+        return null;
+      }
     } catch (e) {
-      print('[RouteMixin] ❌ Error en cálculo de ruta con waypoints: $e');
       return null;
     }
   }
@@ -1254,7 +1163,6 @@ mixin RouteMixin on ChangeNotifier {
   }
 
   void clearRoute() {
-    print('[RouteMixin] 🧹 Limpiando ruta actual...');
     _startPoint = null;
     _endPoint = null;
     _currentRoute.clear();
@@ -1265,7 +1173,6 @@ mixin RouteMixin on ChangeNotifier {
 
   // 🧹 NUEVO: Método para limpiar rutas sin recursión
   void clearRouteSilently() {
-    print('[RouteMixin] 🧹 Limpiando ruta silenciosamente...');
     _startPoint = null;
     _endPoint = null;
     _currentRoute.clear();

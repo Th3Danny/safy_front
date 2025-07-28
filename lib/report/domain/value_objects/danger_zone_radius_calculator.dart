@@ -4,19 +4,19 @@ import 'dart:math';
 /// basándose en la severidad promedio y máxima de los incidentes
 class DangerZoneRadiusCalculator {
   /// Radio base en metros para zonas de peligro
-  static const double _baseRadius = 100.0; // 100 metros
+  static const double _baseRadius = 75.0; // 75 metros - Reducido para ser más preciso
 
   /// Radio máximo en metros
-  static const double _maxRadius = 500.0; // 500 metros
+  static const double _maxRadius = 250.0; // 250 metros - Reducido para ser más realista
 
   /// Radio mínimo en metros
-  static const double _minRadius = 50.0; // 50 metros
+  static const double _minRadius = 30.0; // 30 metros - Reducido para ser más preciso
 
   /// Factor de multiplicación por severidad
-  static const double _severityMultiplier = 1.5;
+  static const double _severityMultiplier = 1.2; // Reducido para radios más conservadores
 
   /// Factor de multiplicación por cantidad de reportes
-  static const double _reportCountMultiplier = 1.2;
+  static const double _reportCountMultiplier = 1.1; // Reducido para radios más conservadores
 
   /// Calcula el radio de la zona de peligro basándose en la severidad
   ///

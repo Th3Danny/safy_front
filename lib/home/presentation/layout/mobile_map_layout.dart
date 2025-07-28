@@ -1,15 +1,17 @@
 // lib/features/home/presentation/pages/mobile_map_layout.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
-import 'package:safy/home/presentation/widgets/danger_zone_overlay.dart';
 import 'package:safy/home/presentation/widgets/map_controls_widget.dart';
-import 'package:safy/home/presentation/widgets/map_widget.dart';
+import 'package:safy/home/presentation/widgets/mapbox_map_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_fab.dart';
 import 'package:safy/home/presentation/widgets/place_search_widget.dart';
-import 'package:safy/home/presentation/widgets/route_options_widget.dart';
 import 'package:safy/home/presentation/widgets/navigation_progress_widget.dart';
 import 'package:safy/home/presentation/widgets/gps_security_widget.dart';
+import 'package:safy/home/presentation/widgets/danger_zone_alert_widget.dart';
+import 'package:safy/core/router/app_router.dart';
+import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 
 class MobileMapLayout extends StatelessWidget {
   const MobileMapLayout({super.key});
@@ -21,10 +23,10 @@ class MobileMapLayout extends StatelessWidget {
         builder: (context, mapViewModel, child) {
           return Stack(
             children: [
-              // 🌍 Mapa principal
-              const MapWidget(),
+              // 🌍 Mapa principal con Mapbox
+              const MapboxMapWidget(),
 
-              // 🎯 Controles del mapa (ACTUALIZADO con todos los parámetros)
+              // 🎯 Controles del mapa (SIMPLIFICADO - solo botones esenciales)
               Positioned(
                 top: 50,
                 right: 16,
@@ -33,7 +35,6 @@ class MobileMapLayout extends StatelessWidget {
                       () => mapViewModel.centerOnCurrentLocation(),
                   onToggleDangerZones: () => mapViewModel.toggleDangerZones(),
                   onToggleClusters: () => mapViewModel.toggleClusters(),
-                  onRefreshClusters: () => mapViewModel.refreshDangerousZones(),
                   showDangerZones: mapViewModel.showDangerZones,
                   showClusters: mapViewModel.showClusters,
                   clustersLoading: mapViewModel.clustersLoading,
@@ -48,24 +49,37 @@ class MobileMapLayout extends StatelessWidget {
                 child: PlaceSearchWidget(),
               ),
 
-              // 📋 Opciones de ruta (cuando hay rutas calculadas)
+              // 📋 MEJORADO: Widget de rutas mejorado (cuando hay rutas calculadas)
               if (mapViewModel.routeOptions.isNotEmpty &&
                   mapViewModel.showRoutePanel)
                 Positioned(
                   top: 180, // Ajustado para dar espacio al PlaceSearchWidget
-                  left: 16,
-                  right: 16,
-                  child: FloatingRouteControl(
-                    routes: mapViewModel.routeOptions,
-                    onRouteSelected: (route) => mapViewModel.selectRoute(route),
-                    onClearRoute: () => mapViewModel.clearAllRoutes(),
-                    onClose: () => mapViewModel.hideRoutePanel(),
-                  ),
+                  left: 0,
+                  right: 0,
+                  child: _buildEnhancedRoutePanel(mapViewModel),
                 ),
 
-              // 🚨 Overlay de zona peligrosa
-              if (_shouldShowDangerWarning(mapViewModel))
-                const DangerZoneOverlay(),
+              // 🚨 Overlay de zona peligrosa (ELIMINADO - usando el nuevo sistema de alertas)
+              // if (_shouldShowDangerWarning(mapViewModel))
+              //   const DangerZoneOverlay(),
+
+              // 🚨 NUEVO: Alerta de zona peligrosa
+              if (mapViewModel.showDangerAlert &&
+                  mapViewModel.currentDangerZone != null)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.5),
+                    child: Center(
+                      child: DangerZoneAlertWidget(
+                        cluster: mapViewModel.currentDangerZone!,
+                        distance: mapViewModel.currentDangerDistance ?? 0,
+                        onSafeRoute: () => mapViewModel.navigateToSafeRoute(),
+                        onReport: () => mapViewModel.reportIncident(),
+                        onDismiss: () => mapViewModel.hideDangerAlert(),
+                      ),
+                    ),
+                  ),
+                ),
 
               // 🔒 Banner de GPS falso
               GpsSpoofingBanner(
@@ -82,38 +96,14 @@ class MobileMapLayout extends StatelessWidget {
                 onNavigationTap: (type) => _handleNavigationTap(context, type),
               ),
 
-              // ⚠️ Mensaje de error (mejorado para clusters) - EXCLUYENDO GPS FALSO
-              if ((mapViewModel.errorMessage != null &&
-                      !mapViewModel.errorMessage!.contains('GPS Falso')) ||
-                  mapViewModel.clustersError != null)
-                Positioned(
+              // 📊 MEJORADO: Widget de progreso de navegación
+              if (mapViewModel.isNavigating)
+                const Positioned(
                   bottom: 100,
                   left: 16,
                   right: 16,
-                  child: _buildErrorMessage(
-                    context,
-                    mapViewModel.errorMessage ?? mapViewModel.clustersError!,
-                    () => mapViewModel.clearError(),
-                  ),
+                  child: NavigationProgressWidget(),
                 ),
-
-              // 🔄 Indicador de carga para clusters (mejorado)
-              if (mapViewModel.clustersLoading)
-                Positioned(
-                  top: 120,
-                  left: 16,
-                  right: 16,
-                  child: _buildLoadingIndicator(),
-                ),
-
-              // 🧭 Widget de progreso de navegación
-              const NavigationProgressWidget(),
-
-              // 🔒 Widget de seguridad GPS - SOLO CUANDO HAY GPS FALSO
-              GpsSecurityWidget(
-                spoofingResult: mapViewModel.gpsSpoofingResult,
-                onReset: () => mapViewModel.resetGpsSpoofingDetector(),
-              ),
             ],
           );
         },
@@ -121,72 +111,82 @@ class MobileMapLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorMessage(
-    BuildContext context,
-    String message,
-    VoidCallback onDismiss,
-  ) {
+  // 🆕 NUEVO: Widget simplificado para mostrar rutas
+  Widget _buildEnhancedRoutePanel(MapViewModel mapViewModel) {
+    if (mapViewModel.routeOptions.isEmpty) return const SizedBox.shrink();
+
+    final selectedRoute = mapViewModel.routeOptions.first;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade200),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.red.shade100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              Icons.error_outline,
-              color: Colors.red.shade700,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Error en el mapa',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red.shade800,
-                    fontSize: 14,
-                  ),
+          Row(
+            children: [
+              Icon(Icons.route, color: Colors.blue, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Ruta Segura',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  message,
-                  style: TextStyle(color: Colors.red.shade700, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onDismiss,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                child: Icon(Icons.close, color: Colors.red.shade600, size: 18),
               ),
+              IconButton(
+                onPressed: () => mapViewModel.clearAllRoutes(),
+                icon: Icon(Icons.close, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildRouteInfo(
+            'Distancia',
+            '${selectedRoute.distance.toStringAsFixed(1)} km',
+          ),
+          _buildRouteInfo(
+            'Duración',
+            '${(selectedRoute.duration / 60).round()} min',
+          ),
+          _buildRouteInfo(
+            'Seguridad',
+            '${(selectedRoute.safetyLevel * 100).round()}%',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRouteInfo(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[900],
             ),
           ),
         ],
@@ -194,113 +194,143 @@ class MobileMapLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadingIndicator() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Actualizando mapa',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue.shade800,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Cargando zonas peligrosas...',
-                  style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool _shouldShowDangerWarning(MapViewModel mapViewModel) {
-    // Verificar si el usuario está cerca de una zona peligrosa usando los clusters
-    try {
-      return mapViewModel.isLocationDangerous(mapViewModel.currentLocation);
-    } catch (e) {
-      return false;
-    }
-  }
+  // Método eliminado - ya no se usa el DangerZoneOverlay antiguo
+  // bool _shouldShowDangerWarning(MapViewModel mapViewModel) {
+  //   return mapViewModel.showDangerZones &&
+  //       mapViewModel.clusters.isNotEmpty &&
+  //       mapViewModel.clusters.any((cluster) => cluster.severityNumber >= 3);
+  // }
 
   void _handleNavigationTap(BuildContext context, String type) {
     final mapViewModel = context.read<MapViewModel>();
 
     switch (type) {
-      case 'add':
-        // 🧹 Limpiar todas las rutas previas antes de iniciar nueva navegación
-        mapViewModel.clearAllRoutes();
-
-        // Mostrar mensaje de confirmación
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🧹 Rutas limpiadas. Listo para nueva navegación.'),
-            backgroundColor: Colors.blue,
-            duration: Duration(seconds: 2),
-          ),
-        );
+      case 'start':
+        if (mapViewModel.startPoint != null && mapViewModel.endPoint != null) {
+          mapViewModel.startNavigation();
+        } else {
+          _showNavigationError(
+            context,
+            'Selecciona puntos de inicio y destino',
+          );
+        }
         break;
-      // Los siguientes modos de transporte se reactivarán en una versión futura:
-      // case 'walk':
-      // case 'car':
-      // case 'bus':
-      //   mapViewModel.setTransportMode(type);
-      //   _showTransportModeMessage(context, type);
-      //   break;
+      case 'stop':
+        mapViewModel.stopNavigation();
+        break;
+      case 'clear':
+        mapViewModel.clearAllRoutes();
+        break;
+      case 'report':
+        _showReportOptions(context, mapViewModel.currentLocation);
+        break;
     }
   }
 
-  void _showTransportModeMessage(BuildContext context, String mode) {
-    final modeNames = {
-      'walk': 'Caminar',
-      'car': 'Auto',
-      'bus': 'Transporte público',
-    };
+  void _showReportOptions(BuildContext context, LatLng location) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Indicador visual
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
+                // Título
+                Row(
+                  children: [
+                    Icon(Icons.report, color: Colors.red, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Crear Reporte',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Información de ubicación
+                Text(
+                  'Ubicación: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+                const SizedBox(height: 20),
+
+                // Botones de acción
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutesConstant.createReport,
+                            arguments: {
+                              'latitude': location.latitude,
+                              'longitude': location.longitude,
+                            },
+                          );
+                        },
+                        icon: Icon(Icons.add),
+                        label: Text('Nuevo Reporte'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Botón de cancelar
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Cancelar'),
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  void _showNavigationError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Modo de transporte: ${modeNames[mode]}'),
-        duration: const Duration(seconds: 2),
+        content: Text(message),
+        backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),

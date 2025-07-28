@@ -31,28 +31,48 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  # UI y utilidades básicas
   cupertino_icons: ^1.0.8
+  
+  # 🗺️ MAPA CON FLUTTER MAP (MÁS ESTABLE)
   flutter_map: ^8.1.1
   latlong2: ^0.9.1
+  
+  # 📍 Geolocalización
   geolocator: ^14.0.1
   geocoding: ^4.0.0
+  
+  # 🌐 Networking
   dio: ^5.8.0+1
+  http: ^1.1.0
+  
+  # 🧭 Navegación
   go_router: ^15.1.2
+  
+  # 📱 Estado y inyección de dependencias
+  provider: ^6.1.5
   get_it: ^8.0.3
   equatable: ^2.0.7
   shared_preferences: ^2.5.3
-  provider: ^6.1.5
+  
+  # 🔥 Firebase
   firebase_core: ^2.31.0
   firebase_messaging: ^14.7.4
-  flutter_local_notifications: ^17.1.2
-  web_socket_channel: ^2.4.0
-  url_launcher: ^6.1.10
-  device_info_plus: ^10.1.0
-  # detect_fake_location: ^1.0.0  # Comentado por problemas de compatibilidad
-
   
+  # 🔔 Notificaciones
+  flutter_local_notifications: ^17.1.2
+  
+  # 🔌 WebSocket
+  web_socket_channel: ^2.4.0
+  
+  # 🔗 URL Launcher
+  url_launcher: ^6.1.10
+  
+  # 📱 Información del dispositivo
+  device_info_plus: ^10.1.0
+  
+  # 📳 Vibración y feedback háptico (usando servicios nativos)
+  # flutter_haptic: ^0.1.0
 
 dev_dependencies:
   flutter_test:
