@@ -4,6 +4,10 @@ import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:go_router/go_router.dart';
 import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:get_it/get_it.dart';
+import 'package:safy/home/data/repositories/places_repository_impl.dart';
+import 'package:safy/home/domain/entities/place.dart';
+import 'package:safy/home/domain/entities/location.dart';
 
 class DangerZoneOverlay extends StatefulWidget {
   const DangerZoneOverlay({super.key});
@@ -181,73 +185,304 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
     );
   }
 
-  void _findSafeRoute(MapViewModel mapViewModel) {
+  void _findSafeRoute(MapViewModel mapViewModel) async {
     print('[DangerZoneOverlay] 🛡️ Buscando rutas seguras automáticamente...');
+
+    // Mostrar indicador de carga
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Buscando lugares seguros cercanos...'),
+          ],
+        ),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 5),
+      ),
+    );
 
     // 🎯 Establecer automáticamente la posición actual como punto de inicio
     mapViewModel.setCurrentLocationAsStart();
 
-    // 🎯 Generar destinos seguros cercanos
-    final safeDestinations = _generateSafeDestinations(mapViewModel);
+    try {
+      // 🎯 Generar destinos seguros cercanos
+      final safeDestinations = await _generateSafeDestinations(mapViewModel);
 
-    if (safeDestinations.isNotEmpty) {
-      // Mostrar selector de destinos seguros
-      _showSafeDestinationSelector(context, mapViewModel, safeDestinations);
-    } else {
-      // Si no hay destinos seguros cercanos, mostrar mensaje
+      if (safeDestinations.isNotEmpty) {
+        // Mostrar selector de destinos seguros
+        _showSafeDestinationSelector(context, mapViewModel, safeDestinations);
+      } else {
+        // Si no hay destinos seguros cercanos, mostrar mensaje
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              '⚠️ No se encontraron destinos seguros cercanos. Considera reportar el incidente.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      print('[DangerZoneOverlay] ❌ Error buscando destinos seguros: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            '⚠️ No se encontraron destinos seguros cercanos. Considera reportar el incidente.',
-          ),
-          backgroundColor: Colors.orange,
+          content: Text('❌ Error buscando lugares seguros. Intenta de nuevo.'),
+          backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
       );
     }
   }
 
-  // 🎯 NUEVO: Generar destinos seguros cercanos
-  List<Map<String, dynamic>> _generateSafeDestinations(
+  // 🎯 NUEVO: Generar destinos seguros cercanos con lugares reales
+  Future<List<Map<String, dynamic>>> _generateSafeDestinations(
+    MapViewModel mapViewModel,
+  ) async {
+    final currentLocation = mapViewModel.currentLocation;
+    final destinations = <Map<String, dynamic>>[];
+
+    try {
+      print('[DangerZoneOverlay] 🔍 Buscando lugares reales cercanos...');
+
+      // Obtener el repositorio de lugares
+      final placesRepository = GetIt.instance<PlacesRepositoryImpl>();
+
+      // Lista de categorías de lugares seguros a buscar
+      final safeCategories = [
+        'hospital',
+        'police',
+        'bank',
+        'school',
+        'university',
+        'shopping_centre',
+        'supermarket',
+        'gas_station',
+        'park',
+        'library',
+        'post_office',
+        'fire_station',
+        'pharmacy',
+        'restaurant',
+        'cafe',
+      ];
+
+      // Buscar lugares en cada categoría
+      for (final category in safeCategories) {
+        try {
+          print('[DangerZoneOverlay] 🔍 Buscando $category...');
+
+          final places = await placesRepository.searchPlaces(
+            category,
+            nearLocation: Location(
+              latitude: currentLocation.latitude,
+              longitude: currentLocation.longitude,
+            ),
+            limit: 10,
+          );
+
+          for (final place in places) {
+            // Verificar que el lugar esté fuera de zonas peligrosas
+            if (!mapViewModel.isLocationDangerous(place.location.toLatLng())) {
+              final distance = _calculateDistance(
+                currentLocation,
+                place.location.toLatLng(),
+              );
+
+              // Solo incluir lugares dentro de 3km
+              if (distance <= 3000) {
+                destinations.add({
+                  'location': place.location.toLatLng(),
+                  'name': place.displayName,
+                  'description': _getPlaceDescription(place),
+                  'distance': distance,
+                  'timeToWalk': _estimateWalkingTime(distance),
+                  'category': category,
+                });
+              }
+            }
+          }
+        } catch (e) {
+          print('[DangerZoneOverlay] ⚠️ Error buscando $category: $e');
+        }
+      }
+
+      // Ordenar por distancia
+      destinations.sort(
+        (a, b) => (a['distance'] as double).compareTo(b['distance'] as double),
+      );
+
+      // Eliminar duplicados (lugares muy cercanos)
+      final uniqueDestinations = <Map<String, dynamic>>[];
+      for (final destination in destinations) {
+        bool isDuplicate = false;
+        for (final existing in uniqueDestinations) {
+          final distance = _calculateDistance(
+            destination['location'] as LatLng,
+            existing['location'] as LatLng,
+          );
+          if (distance < 100) {
+            // Si están a menos de 100m, es duplicado
+            isDuplicate = true;
+            break;
+          }
+        }
+        if (!isDuplicate) {
+          uniqueDestinations.add(destination);
+        }
+      }
+
+      print(
+        '[DangerZoneOverlay] ✅ Encontrados ${uniqueDestinations.length} lugares seguros reales',
+      );
+      return uniqueDestinations.take(8).toList(); // Limitar a 8 opciones
+    } catch (e) {
+      print('[DangerZoneOverlay] ❌ Error buscando lugares reales: $e');
+
+      // Fallback: usar lugares predefinidos si falla la búsqueda
+      return _generateFallbackDestinations(mapViewModel);
+    }
+  }
+
+  // 🎯 NUEVO: Generar descripción del lugar
+  String _getPlaceDescription(Place place) {
+    final category = place.category?.toLowerCase() ?? '';
+
+    switch (category) {
+      case 'hospital':
+        return 'Zona médica bien iluminada y segura';
+      case 'police':
+        return 'Cerca de autoridades y seguridad';
+      case 'bank':
+        return 'Zona bancaria con cámaras de seguridad';
+      case 'school':
+      case 'university':
+        return 'Campus educativo con vigilancia';
+      case 'shopping_centre':
+      case 'supermarket':
+        return 'Zona comercial con mucha gente';
+      case 'gas_station':
+        return 'Estación de servicio con cámaras';
+      case 'park':
+        return 'Área verde pública y segura';
+      case 'library':
+        return 'Biblioteca pública tranquila';
+      case 'post_office':
+        return 'Oficina postal con seguridad';
+      case 'fire_station':
+        return 'Estación de bomberos con personal';
+      case 'pharmacy':
+        return 'Farmacia con personal médico';
+      case 'restaurant':
+      case 'cafe':
+        return 'Establecimiento con gente y seguridad';
+      default:
+        return 'Lugar público seguro';
+    }
+  }
+
+  // 🎯 NUEVO: Fallback con lugares predefinidos
+  List<Map<String, dynamic>> _generateFallbackDestinations(
     MapViewModel mapViewModel,
   ) {
     final currentLocation = mapViewModel.currentLocation;
     final destinations = <Map<String, dynamic>>[];
 
-    // Generar puntos seguros en diferentes direcciones (radio de 1-3 km)
-    final directions = [
-      {'lat': 0.005, 'lng': 0.005, 'name': 'Noreste'},
-      {'lat': 0.005, 'lng': -0.005, 'name': 'Noroeste'},
-      {'lat': -0.005, 'lng': 0.005, 'name': 'Sureste'},
-      {'lat': -0.005, 'lng': -0.005, 'name': 'Suroeste'},
-      {'lat': 0.01, 'lng': 0.0, 'name': 'Norte'},
-      {'lat': -0.01, 'lng': 0.0, 'name': 'Sur'},
-      {'lat': 0.0, 'lng': 0.01, 'name': 'Este'},
-      {'lat': 0.0, 'lng': -0.01, 'name': 'Oeste'},
+    // Lugares predefinidos como fallback
+    final fallbackPlaces = [
+      {
+        'lat': 0.005,
+        'lng': 0.005,
+        'name': 'Zona Residencial',
+        'description': 'Área tranquila con casas',
+        'category': 'residential',
+      },
+      {
+        'lat': 0.005,
+        'lng': -0.005,
+        'name': 'Centro Comercial',
+        'description': 'Zona con tiendas y gente',
+        'category': 'commercial',
+      },
+      {
+        'lat': -0.005,
+        'lng': 0.005,
+        'name': 'Parque Público',
+        'description': 'Área verde y segura',
+        'category': 'park',
+      },
     ];
 
-    for (final direction in directions) {
+    for (final place in fallbackPlaces) {
       final safePoint = LatLng(
-        currentLocation.latitude + (direction['lat'] as double),
-        currentLocation.longitude + (direction['lng'] as double),
+        currentLocation.latitude + (place['lat'] as double),
+        currentLocation.longitude + (place['lng'] as double),
       );
 
-      // Verificar que el punto esté fuera de zonas peligrosas
       if (!mapViewModel.isLocationDangerous(safePoint)) {
+        final distance = _calculateDistance(currentLocation, safePoint);
         destinations.add({
           'location': safePoint,
-          'name': 'Zona Segura - ${direction['name']}',
-          'distance': _calculateDistance(currentLocation, safePoint),
+          'name': place['name'] as String,
+          'description': place['description'] as String,
+          'distance': distance,
+          'timeToWalk': _estimateWalkingTime(distance),
+          'category': place['category'] as String,
         });
       }
     }
 
-    // Ordenar por distancia
-    destinations.sort(
-      (a, b) => (a['distance'] as double).compareTo(b['distance'] as double),
-    );
+    return destinations;
+  }
 
-    return destinations.take(5).toList(); // Limitar a 5 opciones
+  // 🎯 NUEVO: Estimar tiempo de caminata
+  String _estimateWalkingTime(double distanceInMeters) {
+    const walkingSpeed = 1.4; // metros por segundo (5 km/h)
+    final timeInSeconds = distanceInMeters / walkingSpeed;
+    final timeInMinutes = (timeInSeconds / 60).round();
+
+    if (timeInMinutes < 1) {
+      return 'Menos de 1 min';
+    } else if (timeInMinutes < 60) {
+      return '$timeInMinutes min';
+    } else {
+      final hours = (timeInMinutes / 60).floor();
+      final minutes = timeInMinutes % 60;
+      return '${hours}h ${minutes}min';
+    }
+  }
+
+  // 🎯 NUEVO: Obtener icono según el tipo de destino
+  IconData _getDestinationIcon(String destinationName) {
+    switch (destinationName) {
+      case 'Zona Residencial':
+        return Icons.home;
+      case 'Centro Comercial':
+        return Icons.shopping_cart;
+      case 'Parque Público':
+        return Icons.park;
+      case 'Estación de Policía':
+        return Icons.local_police;
+      case 'Hospital':
+        return Icons.local_hospital;
+      case 'Universidad':
+        return Icons.school;
+      case 'Gasolinera':
+        return Icons.local_gas_station;
+      case 'Banco':
+        return Icons.account_balance;
+      default:
+        return Icons.location_on;
+    }
   }
 
   // 🎯 NUEVO: Calcular distancia entre dos puntos
@@ -329,20 +564,14 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
                 ...destinations.map((destination) {
                   final location = destination['location'] as LatLng;
                   final name = destination['name'] as String;
+                  final description = destination['description'] as String;
                   final distance = destination['distance'] as double;
+                  final timeToWalk = destination['timeToWalk'] as String;
 
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.location_on,
-                        color: Colors.green,
-                      ),
-                      title: Text(name),
-                      subtitle: Text(
-                        '${(distance / 1000).toStringAsFixed(1)} km de distancia',
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 2,
+                    child: InkWell(
                       onTap: () {
                         Navigator.pop(context);
 
@@ -367,6 +596,90 @@ class _DangerZoneOverlayState extends State<DangerZoneOverlay>
                           ),
                         );
                       },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            // Icono según el tipo de destino
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                _getDestinationIcon(name),
+                                color: Colors.green,
+                                size: 20,
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            // Información del destino
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    description,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.directions_walk,
+                                        size: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${(distance / 1000).toStringAsFixed(1)} km • $timeToWalk',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Botón de acción
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Text(
+                                'IR',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   );
                 }).toList(),

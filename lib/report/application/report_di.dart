@@ -13,6 +13,9 @@ import 'package:safy/report/domain/usecases/get_reports_use_case.dart';
 import 'package:safy/report/domain/usecases/get_reports_for_map_use_case.dart';
 import 'package:safy/report/domain/usecases/get_clusters_use_case.dart';
 import 'package:safy/report/domain/usecases/post_report.dart';
+import 'package:safy/report/domain/usecases/get_address_from_coordinates_use_case.dart';
+import 'package:safy/report/domain/usecases/correct_spelling_use_case.dart';
+import 'package:safy/report/domain/usecases/suggest_title_use_case.dart';
 
 // Presentation layer
 import 'package:safy/report/presentation/viewmodels/create_report_viewmodel.dart';
@@ -81,6 +84,28 @@ Future<void> setupReportDependencies() async {
         () => GetClustersUseCase(sl<ReportRepository>()),
       );
       print('[ReportDI] ✅ GetClustersUseCase registrado');
+    }
+
+    // ✅ Use Cases - Servicios de ayuda para reportes
+    if (!sl.isRegistered<GetAddressFromCoordinatesUseCase>()) {
+      sl.registerLazySingleton<GetAddressFromCoordinatesUseCase>(
+        () => GetAddressFromCoordinatesUseCase(sl<ReportRepository>()),
+      );
+      print('[ReportDI] ✅ GetAddressFromCoordinatesUseCase registrado');
+    }
+
+    if (!sl.isRegistered<CorrectSpellingUseCase>()) {
+      sl.registerLazySingleton<CorrectSpellingUseCase>(
+        () => CorrectSpellingUseCase(sl<ReportRepository>()),
+      );
+      print('[ReportDI] ✅ CorrectSpellingUseCase registrado');
+    }
+
+    if (!sl.isRegistered<SuggestTitleUseCase>()) {
+      sl.registerLazySingleton<SuggestTitleUseCase>(
+        () => SuggestTitleUseCase(sl<ReportRepository>()),
+      );
+      print('[ReportDI] ✅ SuggestTitleUseCase registrado');
     }
 
     // ========== PRESENTATION LAYER - VIEW MODELS ==========

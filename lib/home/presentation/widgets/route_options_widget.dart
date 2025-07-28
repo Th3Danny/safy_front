@@ -72,6 +72,9 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
   }
 
   void _closePanel() {
+    // 🧹 Limpiar rutas al cerrar el panel
+    widget.onClearRoute();
+
     // Usar el callback si está disponible, sino no hacer nada
     if (widget.onClose != null) {
       widget.onClose!();
@@ -131,6 +134,15 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
   }
 
   Widget _buildExpandedHeader() {
+    // Calcular estadísticas de seguridad
+    final totalRoutes = widget.routes.length;
+    final safeRoutes = widget.routes.where((r) => r.safetyLevel >= 70).length;
+    final avgSafety =
+        widget.routes.isEmpty
+            ? 0.0
+            : widget.routes.map((r) => r.safetyLevel).reduce((a, b) => a + b) /
+                totalRoutes;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -141,24 +153,68 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.route, color: Colors.white, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Rutas Seguras (${widget.routes.length})',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+          Row(
+            children: [
+              const Icon(Icons.route, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Rutas Seguras ($totalRoutes)',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ),
-            ),
+              IconButton(
+                onPressed: _toggleExpanded,
+                icon: const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Colors.white,
+                ),
+                tooltip: 'Minimizar',
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: _toggleExpanded,
-            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-            tooltip: 'Minimizar',
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$safeRoutes/$totalRoutes seguras',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Promedio: ${avgSafety.toInt()}%',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -247,9 +303,36 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '${route.distance.toStringAsFixed(1)} km • ${route.duration} min • ${route.safetyLevel.toInt()}% segura',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${route.distance.toStringAsFixed(1)} km • ${route.duration} min',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: route.safetyColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${route.safetyLevel.toInt()}%',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: route.safetyColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -346,9 +429,33 @@ class _FloatingRouteControlState extends State<FloatingRouteControl>
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  '${selectedRoute.distance.toStringAsFixed(1)} km • ${selectedRoute.duration} min • ${selectedRoute.safetyLevel.toInt()}% segura',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${selectedRoute.distance.toStringAsFixed(1)} km • ${selectedRoute.duration} min',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selectedRoute.safetyColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${selectedRoute.safetyLevel.toInt()}%',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: selectedRoute.safetyColor,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

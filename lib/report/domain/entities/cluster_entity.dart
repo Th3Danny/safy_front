@@ -1,3 +1,4 @@
+import 'package:safy/report/domain/value_objects/danger_zone_radius_calculator.dart';
 
 class ClusterEntity {
   final String clusterId;
@@ -17,6 +18,12 @@ class ClusterEntity {
   final String riskLevel;
   final List<String> tags;
 
+  // Propiedades calculadas para el radio de la zona de peligro
+  late final double _calculatedRadius;
+  late final String _zoneColor;
+  late final double _zoneOpacity;
+  late final double _borderWidth;
+
   ClusterEntity({
     required this.clusterId,
     required this.clusterType,
@@ -34,7 +41,21 @@ class ClusterEntity {
     required this.description,
     required this.riskLevel,
     required this.tags,
-  });
+  }) {
+    // Calcular propiedades de la zona de peligro
+    final radiusInfo = DangerZoneRadiusCalculator.calculateRecommendedRadius(
+      averageSeverity: averageSeverity,
+      maxSeverity: maxSeverity,
+      reportCount: reportCount,
+      riskLevel: riskLevel,
+      clusterType: clusterType,
+    );
+
+    _calculatedRadius = radiusInfo['radius'] as double;
+    _zoneColor = radiusInfo['color'] as String;
+    _zoneOpacity = radiusInfo['opacity'] as double;
+    _borderWidth = radiusInfo['borderWidth'] as double;
+  }
 
   // Mapear severidad de texto a número para visualización
   int get severityNumber {
@@ -52,8 +73,14 @@ class ClusterEntity {
     }
   }
 
+  // Getters para las propiedades calculadas de la zona de peligro
+  double get calculatedRadius => _calculatedRadius;
+  String get zoneColor => _zoneColor;
+  double get zoneOpacity => _zoneOpacity;
+  double get borderWidth => _borderWidth;
+
   @override
   String toString() {
-    return 'ClusterEntity(id: $clusterId, type: $dominantIncidentType, severity: $severity, reports: $reportCount, lat: $centerLatitude, lng: $centerLongitude)';
+    return 'ClusterEntity(id: $clusterId, type: $dominantIncidentType, severity: $severity, reports: $reportCount, lat: $centerLatitude, lng: $centerLongitude, radius: ${_calculatedRadius.toStringAsFixed(1)}m)';
   }
 }

@@ -100,15 +100,7 @@ class MobileMapLayout extends StatelessWidget {
               const NavigationProgressWidget(),
 
               // 🔒 Widget de seguridad GPS - SOLO CUANDO HAY GPS FALSO
-              if (mapViewModel.lastSpoofingResult?.isSpoofed == true)
-                Positioned(
-                  top: 120,
-                  left: 16,
-                  child: GpsSecurityWidget(
-                    spoofingResult: mapViewModel.lastSpoofingResult,
-                    onTap: () => _showGpsSecurityDetails(context, mapViewModel),
-                  ),
-                ),
+             
             ],
           );
         },
@@ -302,22 +294,5 @@ class MobileMapLayout extends StatelessWidget {
     );
   }
 
-  // 🔒 NUEVO: Método para mostrar detalles de seguridad GPS
-  void _showGpsSecurityDetails(
-    BuildContext context,
-    MapViewModel mapViewModel,
-  ) {
-    if (mapViewModel.lastSpoofingResult == null) return;
 
-    showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            child: GpsSecurityDetailsWidget(
-              spoofingResult: mapViewModel.lastSpoofingResult!,
-              onClose: () => Navigator.of(context).pop(),
-            ),
-          ),
-    );
   }
-}
