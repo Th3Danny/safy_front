@@ -9,6 +9,9 @@ import 'package:safy/report/domain/value_objects/incident_type.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:safy/report/domain/usecases/get_address_from_coordinates_use_case.dart';
+import 'package:safy/report/domain/usecases/correct_spelling_use_case.dart';
+import 'package:safy/report/domain/usecases/suggest_title_use_case.dart';
 
 final sl = GetIt.instance;
 
@@ -35,6 +38,11 @@ class _ReportFormState extends State<ReportForm> {
   int _severity = 1;
   double? _latitude;
   double? _longitude;
+
+  // Estados para los botones de ayuda
+  bool _isLoadingAddress = false;
+  bool _isLoadingSpelling = false;
+  bool _isLoadingTitle = false;
 
   final List<Map<String, dynamic>> _incidentTypes = [
     {
@@ -122,20 +130,77 @@ class _ReportFormState extends State<ReportForm> {
             key: _formKey,
             child: Column(
               children: [
-                // Campo Título
-                CustomTextField(
-                  controller: _titleController,
-                  label: 'Título del Incidente',
-                  hint: 'Ej: Asalto en la Av. Central',
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'El título del incidente es requerido';
-                    }
-                    if (value.trim().length < 3) {
-                      return 'El título debe tener al menos 3 caracteres';
-                    }
-                    return null;
-                  },
+                // Campo Título con botón de sugerir
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.title, color: Colors.blue, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Título del Incidente',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color:
+                                _isLoadingTitle
+                                    ? Colors.grey.shade200
+                                    : Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color:
+                                  _isLoadingTitle
+                                      ? Colors.grey.shade300
+                                      : Colors.blue.shade200,
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: _isLoadingTitle ? null : _suggestTitle,
+                              child:
+                                  _isLoadingTitle
+                                      ? const Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                      : Icon(
+                                        Icons.lightbulb,
+                                        color: Colors.blue.shade600,
+                                        size: 20,
+                                      ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      controller: _titleController,
+                      label: 'Título del Incidente',
+                      hint: 'Ej: Asalto en la Av. Central',
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'El título del incidente es requerido';
+                        }
+                        if (value.trim().length < 3) {
+                          return 'El título debe tener al menos 3 caracteres';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 24),
@@ -204,21 +269,83 @@ class _ReportFormState extends State<ReportForm> {
 
                 const SizedBox(height: 24),
 
-                // Campo Descripción
-                CustomTextField(
-                  controller: _descriptionController,
-                  label: 'Descripción',
-                  hint: 'Describe el incidente en detalle',
-                  maxLines: 4,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'La descripción es requerida';
-                    }
-                    if (value.trim().length < 10) {
-                      return 'La descripción debe tener al menos 10 caracteres';
-                    }
-                    return null;
-                  },
+                // Campo Descripción con botón de corrección ortográfica
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.description,
+                          color: Colors.purple,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Descripción',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color:
+                                _isLoadingSpelling
+                                    ? Colors.grey.shade200
+                                    : Colors.purple.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color:
+                                  _isLoadingSpelling
+                                      ? Colors.grey.shade300
+                                      : Colors.purple.shade200,
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap:
+                                  _isLoadingSpelling ? null : _correctSpelling,
+                              child:
+                                  _isLoadingSpelling
+                                      ? const Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                      : Icon(
+                                        Icons.spellcheck,
+                                        color: Colors.purple.shade600,
+                                        size: 20,
+                                      ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      controller: _descriptionController,
+                      label: 'Descripción',
+                      hint: 'Describe el incidente en detalle',
+                      maxLines: 4,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'La descripción es requerida';
+                        }
+                        if (value.trim().length < 10) {
+                          return 'La descripción debe tener al menos 10 caracteres';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 32),
@@ -426,11 +553,66 @@ class _ReportFormState extends State<ReportForm> {
 
         const SizedBox(height: 12),
 
-        // Campo opcional de dirección
-        CustomTextField(
-          controller: _addressController,
-          label: 'Dirección (opcional)',
-          hint: 'Ej: Calle 5 de Mayo #123, Centro',
+        // Campo opcional de dirección con botón de obtener automáticamente
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.location_on, color: Colors.green, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Dirección (opcional)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+                const Spacer(),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color:
+                        _isLoadingAddress
+                            ? Colors.grey.shade200
+                            : Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color:
+                          _isLoadingAddress
+                              ? Colors.grey.shade300
+                              : Colors.green.shade200,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap:
+                          _isLoadingAddress ? null : _getAddressFromCoordinates,
+                      child:
+                          _isLoadingAddress
+                              ? const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Icon(
+                                Icons.my_location,
+                                color: Colors.green.shade600,
+                                size: 20,
+                              ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            CustomTextField(
+              controller: _addressController,
+              label: 'Dirección (opcional)',
+              hint: 'Ej: Calle 5 de Mayo #123, Centro',
+            ),
+          ],
         ),
       ],
     );
@@ -588,6 +770,188 @@ class _ReportFormState extends State<ReportForm> {
       if (mounted) {
         setState(() => _isLoadingLocation = false);
       }
+    }
+  }
+
+  // ===== Nuevos métodos para servicios de ayuda =====
+
+  /// Obtiene la dirección desde las coordenadas actuales
+  void _getAddressFromCoordinates() async {
+    if (_latitude == null || _longitude == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Primero obtén tu ubicación actual'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoadingAddress = true;
+    });
+
+    try {
+      final useCase = sl<GetAddressFromCoordinatesUseCase>();
+      final result = await useCase(
+        latitude: _latitude!,
+        longitude: _longitude!,
+      );
+
+      setState(() {
+        _addressController.text = result.direccion;
+        _isLoadingAddress = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.location_on, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Dirección obtenida automáticamente')),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoadingAddress = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al obtener dirección: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Corrige la ortografía de la descripción
+  void _correctSpelling() async {
+    if (_descriptionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Primero escribe una descripción'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoadingSpelling = true;
+    });
+
+    try {
+      final useCase = sl<CorrectSpellingUseCase>();
+      final result = await useCase(
+        description: _descriptionController.text.trim(),
+      );
+
+      setState(() {
+        _descriptionController.text = result.descripcion_corregida;
+        _isLoadingSpelling = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.spellcheck, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Ortografía corregida')),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoadingSpelling = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al corregir ortografía: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Sugiere un título basado en el contenido
+  void _suggestTitle() async {
+    if (_descriptionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Primero escribe una descripción'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedIncident == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Primero selecciona un tipo de incidente'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoadingTitle = true;
+    });
+
+    try {
+      final useCase = sl<SuggestTitleUseCase>();
+      final result = await useCase(
+        description: _descriptionController.text.trim(),
+        incident_type: _selectedIncident!,
+        address:
+            _addressController.text.trim().isEmpty
+                ? 'Sin dirección especificada'
+                : _addressController.text.trim(),
+        severity: _severity,
+        is_anonymous: _isAnonymous,
+      );
+
+      setState(() {
+        _titleController.text = result.titulo_sugerido;
+        _isLoadingTitle = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.lightbulb, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Título sugerido automáticamente')),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoadingTitle = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al sugerir título: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

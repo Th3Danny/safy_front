@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
+import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
+import 'package:get_it/get_it.dart';
 import 'dart:math' as math;
 
 /// Mixin para gestión de rutas y navegación
@@ -98,9 +100,8 @@ mixin RouteMixin on ChangeNotifier {
   void _createSimpleRoute() {
     if (_startPoint == null || _endPoint == null) return;
 
-    print('[RouteMixin] 🛡️ Creando ruta simple como fallback...');
-
     final simpleRoute = [_startPoint!, _endPoint!];
+    final safetyLevel = _calculateRouteSafety(simpleRoute);
 
     _routeOptions.clear();
     _routeOptions.add(
@@ -109,8 +110,8 @@ mixin RouteMixin on ChangeNotifier {
         points: simpleRoute,
         distance: _calculateDistance(simpleRoute),
         duration: _calculateDuration(simpleRoute, _selectedTransportMode),
-        safetyLevel: 85.0,
-        isRecommended: true,
+        safetyLevel: safetyLevel,
+        isRecommended: safetyLevel >= 70.0,
       ),
     );
 
@@ -122,7 +123,6 @@ mixin RouteMixin on ChangeNotifier {
   // Calcular rutas
   Future<void> calculateRoutes() async {
     if (_startPoint == null || _endPoint == null) {
-      print('[RouteMixin] ⚠️ Puntos de inicio o fin no definidos');
       return;
     }
 
@@ -137,26 +137,31 @@ mixin RouteMixin on ChangeNotifier {
     try {
       _routeOptions.clear();
 
-      // Solo calcular una ruta directa
-      print('[RouteMixin] 🌐 Llamando a OpenRouteService...');
-      final realRoute = await _calculateRealRoute(_startPoint!, _endPoint!);
-      print('[RouteMixin] ✅ Ruta calculada: ${realRoute.length} puntos');
+      // 🛡️ NUEVO: Calcular múltiples rutas con diferentes niveles de seguridad
+      final routes = await _calculateMultipleRoutes(_startPoint!, _endPoint!);
 
-      _routeOptions.add(
-        RouteOption(
-          name: 'Ruta Directa',
-          points: realRoute,
-          distance: _calculateDistance(realRoute),
-          duration: _calculateDuration(realRoute, _selectedTransportMode),
-          safetyLevel: 85.0,
-          isRecommended: true,
-        ),
-      );
+      print('[RouteMixin] ✅ Calculadas ${routes.length} rutas');
 
-      // Seleccionar la ruta
-      selectRoute(_routeOptions.first);
+      // Agregar rutas calculadas
+      for (final route in routes) {
+        print(
+          '[RouteMixin] 📊 Ruta: ${route.name} - Seguridad: ${route.safetyLevel.toInt()}%',
+        );
+        _routeOptions.add(route);
+      }
+
+      // Seleccionar la ruta más segura por defecto
+      if (_routeOptions.isNotEmpty) {
+        final recommendedRoute = _routeOptions.reduce(
+          (a, b) => a.safetyLevel > b.safetyLevel ? a : b,
+        );
+        selectRoute(recommendedRoute);
+        print(
+          '[RouteMixin] 🎯 Ruta recomendada: ${recommendedRoute.name} - ${recommendedRoute.safetyLevel.toInt()}%',
+        );
+      }
+
       onRoutesPanelShow();
-      print('[RouteMixin] ✅ Rutas calculadas exitosamente');
     } catch (e) {
       print('[RouteMixin] ❌ Error calculando rutas: $e');
       onRouteError('Error calculando rutas: $e');
@@ -165,16 +170,116 @@ mixin RouteMixin on ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<LatLng>> _calculateRealRoute(LatLng start, LatLng end) async {
+  // 🛡️ NUEVO: Calcular múltiples rutas con diferentes niveles de seguridad
+  Future<List<RouteOption>> _calculateMultipleRoutes(
+    LatLng start,
+    LatLng end,
+  ) async {
+    final routes = <RouteOption>[];
+
     try {
-      print('[RouteMixin] 🔍 Verificando GetOpenRouteUseCase...');
-      if (getOpenRouteUseCase != null) {
-        print('[RouteMixin] ✅ GetOpenRouteUseCase disponible');
+      // 🚨 NUEVO: Verificar si hay zonas peligrosas primero
+      final dangerZones = _getNearbyDangerZones(start, end);
+      print(
+        '[RouteMixin] 🚨 Zonas peligrosas detectadas: ${dangerZones.length}',
+      );
+
+      if (dangerZones.isEmpty) {
         print(
-          '[RouteMixin] 📡 Enviando coordenadas: [${start.longitude}, ${start.latitude}] -> [${end.longitude}, ${end.latitude}]',
+          '[RouteMixin] ✅ No hay zonas peligrosas, calculando ruta directa...',
+        );
+        // Solo calcular ruta directa si NO hay zonas peligrosas
+        final directRoute = await _calculateRealRoute(start, end);
+        final directSafety = _calculateRouteSafety(directRoute);
+        print(
+          '[RouteMixin] 📊 Ruta directa - Seguridad: ${directSafety.toInt()}%',
         );
 
-        // Agregar timeout de 8 segundos para evitar bloqueos
+        routes.add(
+          RouteOption(
+            name: 'Ruta Directa',
+            points: directRoute,
+            distance: _calculateDistance(directRoute),
+            duration: _calculateDuration(directRoute, _selectedTransportMode),
+            safetyLevel: directSafety,
+            isRecommended: directSafety >= 70.0,
+          ),
+        );
+      } else {
+        print(
+          '[RouteMixin] 🚨 HAY ZONAS PELIGROSAS - Solo calculando rutas seguras...',
+        );
+
+        // 🛡️ NO calcular ruta directa si hay zonas peligrosas
+        print('[RouteMixin] 🛡️ Calculando ruta segura...');
+        final safeRoute = await _calculateSafeRoute(start, end);
+        if (safeRoute != null) {
+          final safeSafety = _calculateRouteSafety(safeRoute);
+          print(
+            '[RouteMixin] 📊 Ruta segura - Seguridad: ${safeSafety.toInt()}%',
+          );
+
+          routes.add(
+            RouteOption(
+              name: 'Ruta Segura',
+              points: safeRoute,
+              distance: _calculateDistance(safeRoute),
+              duration: _calculateDuration(safeRoute, _selectedTransportMode),
+              safetyLevel: safeSafety,
+              isRecommended: safeSafety >= 80.0,
+            ),
+          );
+        } else {
+          print('[RouteMixin] ⚠️ No se pudo calcular ruta segura');
+        }
+      }
+
+      // 3. Ruta alternativa (solo si hay rutas seguras y es necesario)
+      if (routes.isNotEmpty && dangerZones.isNotEmpty) {
+        print('[RouteMixin] 🔄 Calculando ruta alternativa...');
+        final alternativeRoute = await _calculateAlternativeRoute(start, end);
+        if (alternativeRoute != null) {
+          final altSafety = _calculateRouteSafety(alternativeRoute);
+          print(
+            '[RouteMixin] 📊 Ruta alternativa - Seguridad: ${altSafety.toInt()}%',
+          );
+
+          routes.add(
+            RouteOption(
+              name: 'Ruta Alternativa',
+              points: alternativeRoute,
+              distance: _calculateDistance(alternativeRoute),
+              duration: _calculateDuration(
+                alternativeRoute,
+                _selectedTransportMode,
+              ),
+              safetyLevel: altSafety,
+              isRecommended: altSafety >= 75.0,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('[RouteMixin] ❌ Error en cálculo de rutas: $e');
+      // Fallback: ruta directa simple
+      routes.add(
+        RouteOption(
+          name: 'Ruta Directa (Fallback)',
+          points: [start, end],
+          distance: _calculateDistance([start, end]),
+          duration: _calculateDuration([start, end], _selectedTransportMode),
+          safetyLevel: 60.0,
+          isRecommended: true,
+        ),
+      );
+    }
+
+    return routes;
+  }
+
+  Future<List<LatLng>> _calculateRealRoute(LatLng start, LatLng end) async {
+    try {
+      if (getOpenRouteUseCase != null) {
         final coordinates = await getOpenRouteUseCase!
             .call(
               start: [start.longitude, start.latitude],
@@ -183,28 +288,838 @@ mixin RouteMixin on ChangeNotifier {
             .timeout(
               const Duration(seconds: 8),
               onTimeout: () {
-                print('[RouteMixin] ⏰ Timeout en GetOpenRouteUseCase');
                 throw Exception('Timeout: La API no respondió en tiempo');
               },
             );
 
-        print(
-          '[RouteMixin] 📊 Coordenadas recibidas: ${coordinates.length} puntos',
-        );
         final route =
             coordinates.map((coord) => LatLng(coord[1], coord[0])).toList();
-        print('[RouteMixin] ✅ Ruta convertida: ${route.length} puntos');
         return route;
-      } else {
-        print(
-          '[RouteMixin] ⚠️ GetOpenRouteUseCase no disponible, usando ruta directa',
-        );
       }
     } catch (e) {
-      print('[RouteMixin] ❌ Error calculating real route: $e');
+      // Error en cálculo de ruta
     }
-    print('[RouteMixin] 🔄 Usando ruta directa como fallback');
     return [start, end];
+  }
+
+  // 🛡️ NUEVO: Calcular ruta segura que evita zonas peligrosas
+  Future<List<LatLng>?> _calculateSafeRoute(LatLng start, LatLng end) async {
+    try {
+      print('[RouteMixin] 🛡️ Iniciando cálculo de ruta segura...');
+
+      // Obtener zonas peligrosas cercanas
+      final dangerZones = _getNearbyDangerZones(start, end);
+      print(
+        '[RouteMixin] 🚨 Zonas peligrosas encontradas: ${dangerZones.length}',
+      );
+
+      if (dangerZones.isEmpty) {
+        print('[RouteMixin] ✅ No hay zonas peligrosas, usando ruta directa');
+        return await _calculateRealRoute(start, end);
+      }
+
+      // 🚨 Verificar si la ruta directa pasa por zonas peligrosas
+      final directRoute = await _calculateRealRoute(start, end);
+      bool directRouteIsSafe = true;
+      int dangerousPoints = 0;
+
+      print(
+        '[RouteMixin] 🔍 Verificando ${directRoute.length} puntos de la ruta directa...',
+      );
+
+      // Verificar cada punto de la ruta directa
+      for (final point in directRoute) {
+        if (isPointInDangerZone(point)) {
+          dangerousPoints++;
+          directRouteIsSafe = false;
+        }
+      }
+
+      print(
+        '[RouteMixin] 📊 Puntos peligrosos en ruta directa: $dangerousPoints',
+      );
+
+      // Si la ruta directa es segura, usarla
+      if (directRouteIsSafe) {
+        print('[RouteMixin] ✅ Ruta directa es segura');
+        return directRoute;
+      }
+
+      print(
+        '[RouteMixin] 🚨 Ruta directa NO es segura, calculando ruta alternativa...',
+      );
+
+      // 🛡️ Si no es segura, calcular ruta que evite zonas peligrosas
+      final safeRoute = await _calculateRouteAvoidingDangerZones(
+        start,
+        end,
+        dangerZones,
+      );
+
+      if (safeRoute != null) {
+        print(
+          '[RouteMixin] ✅ Ruta segura calculada con ${safeRoute.length} puntos',
+        );
+
+        // Verificar que la ruta segura realmente sea segura
+        int safeRouteDangerousPoints = 0;
+        for (final point in safeRoute) {
+          if (isPointInDangerZone(point)) {
+            safeRouteDangerousPoints++;
+          }
+        }
+
+        print(
+          '[RouteMixin] 📊 Puntos peligrosos en ruta segura: $safeRouteDangerousPoints',
+        );
+
+        if (safeRouteDangerousPoints == 0) {
+          print('[RouteMixin] ✅ Ruta segura verificada como segura');
+          return safeRoute;
+        } else {
+          print(
+            '[RouteMixin] ⚠️ Ruta segura aún tiene puntos peligrosos, intentando desvío más amplio...',
+          );
+        }
+      }
+
+      // 🚨 Si no se pudo calcular ruta segura, usar ruta con waypoints seguros
+      print('[RouteMixin] 🚨 Intentando ruta con waypoints seguros...');
+      final waypointRoute = await _calculateRouteWithSafeWaypoints(
+        start,
+        end,
+        dangerZones,
+      );
+
+      if (waypointRoute != null) {
+        print(
+          '[RouteMixin] ✅ Ruta con waypoints creada con ${waypointRoute.length} puntos',
+        );
+        return waypointRoute;
+      }
+
+      print(
+        '[RouteMixin] ⚠️ No se pudo crear ruta segura, usando ruta directa como fallback',
+      );
+      return directRoute;
+    } catch (e) {
+      print('[RouteMixin] ❌ Error en cálculo de ruta segura: $e');
+      return null;
+    }
+  }
+
+  // 🛡️ NUEVO: Calcular ruta alternativa usando API real
+  Future<List<LatLng>?> _calculateAlternativeRoute(
+    LatLng start,
+    LatLng end,
+  ) async {
+    try {
+      print('[RouteMixin] 🔄 Calculando ruta alternativa...');
+
+      // Obtener zonas peligrosas para evitar
+      final dangerZones = _getNearbyDangerZones(start, end);
+
+      if (dangerZones.isEmpty) {
+        print(
+          '[RouteMixin] ✅ No hay zonas peligrosas, usando ruta directa como alternativa',
+        );
+        return await _calculateRealRoute(start, end);
+      }
+
+      // Encontrar punto seguro alejado para desvío
+      final midPoint = LatLng(
+        (start.latitude + end.latitude) / 2,
+        (start.longitude + end.longitude) / 2,
+      );
+
+      final safeDetourPoint = _findSafePointAwayFromDangerZones(
+        midPoint,
+        dangerZones,
+      );
+
+      if (safeDetourPoint != null) {
+        print(
+          '[RouteMixin] ✅ Punto de desvío seguro encontrado: ${safeDetourPoint.latitude}, ${safeDetourPoint.longitude}',
+        );
+
+        // Calcular ruta por segmentos usando API real
+        final route = <LatLng>[];
+
+        try {
+          // Segmento 1: start -> detourPoint
+          final segment1Coordinates = await getOpenRouteUseCase!
+              .call(
+                start: [start.longitude, start.latitude],
+                end: [safeDetourPoint.longitude, safeDetourPoint.latitude],
+              )
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () {
+                  throw Exception('Timeout: La API no respondió en tiempo');
+                },
+              );
+
+          final segment1Route =
+              segment1Coordinates
+                  .map((coord) => LatLng(coord[1], coord[0]))
+                  .toList();
+
+          route.addAll(segment1Route);
+
+          // Segmento 2: detourPoint -> end
+          final segment2Coordinates = await getOpenRouteUseCase!
+              .call(
+                start: [safeDetourPoint.longitude, safeDetourPoint.latitude],
+                end: [end.longitude, end.latitude],
+              )
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () {
+                  throw Exception('Timeout: La API no respondió en tiempo');
+                },
+              );
+
+          final segment2Route =
+              segment2Coordinates
+                  .map((coord) => LatLng(coord[1], coord[0]))
+                  .toList();
+
+          // Agregar segmento 2 (excluyendo el primer punto para evitar duplicados)
+          route.addAll(segment2Route.skip(1));
+
+          print(
+            '[RouteMixin] ✅ Ruta alternativa calculada con ${route.length} puntos usando API real',
+          );
+
+          // Verificar que la ruta sea segura
+          int dangerousPoints = 0;
+          for (final point in route) {
+            if (isPointInDangerZone(point)) {
+              dangerousPoints++;
+            }
+          }
+
+          print(
+            '[RouteMixin] 📊 Puntos peligrosos en ruta alternativa: $dangerousPoints',
+          );
+
+          if (dangerousPoints == 0) {
+            print('[RouteMixin] ✅ Ruta alternativa es segura');
+            return route;
+          } else {
+            print(
+              '[RouteMixin] ⚠️ Ruta alternativa aún tiene puntos peligrosos',
+            );
+            return null;
+          }
+        } catch (e) {
+          print('[RouteMixin] ❌ Error calculando ruta alternativa con API: $e');
+          return null;
+        }
+      } else {
+        print('[RouteMixin] ❌ No se pudo encontrar punto de desvío seguro');
+        return null;
+      }
+    } catch (e) {
+      print('[RouteMixin] ❌ Error en cálculo de ruta alternativa: $e');
+      return null;
+    }
+  }
+
+  // 🛡️ NUEVO: Calcular seguridad de una ruta
+  double _calculateRouteSafety(List<LatLng> route) {
+    if (route.isEmpty) return 100.0;
+
+    double safetyScore = 100.0;
+    int dangerousPoints = 0;
+    int totalPoints = 0;
+
+    // Verificar cada punto de la ruta contra zonas peligrosas
+    for (final point in route) {
+      totalPoints++;
+      if (isPointInDangerZone(point)) {
+        dangerousPoints++;
+        safetyScore -= 15.0; // Penalización por punto peligroso
+      }
+    }
+
+    // Penalización adicional por densidad de puntos peligrosos
+    if (totalPoints > 0) {
+      final dangerPercentage = dangerousPoints / totalPoints;
+      if (dangerPercentage > 0.5) {
+        safetyScore -= 30.0; // Muchos puntos peligrosos
+      } else if (dangerPercentage > 0.2) {
+        safetyScore -= 15.0; // Algunos puntos peligrosos
+      }
+    }
+
+    // Factor de hora del día
+    final hour = DateTime.now().hour;
+    if (hour >= 22 || hour <= 6) {
+      safetyScore -= 10.0; // Noche: más peligroso
+    }
+
+    return safetyScore.clamp(0.0, 100.0);
+  }
+
+  // 🛡️ NUEVO: Obtener zonas peligrosas cercanas
+  List<LatLng> _getNearbyDangerZones(LatLng start, LatLng end) {
+    try {
+      // Intentar obtener zonas peligrosas del MapViewModel
+      final mapViewModel = GetIt.instance<MapViewModel>();
+      final clusters = mapViewModel.clusters;
+
+      if (clusters.isNotEmpty) {
+        print(
+          '[RouteMixin] 🚨 Encontrados ${clusters.length} clusters de peligro',
+        );
+
+        // Filtrar solo clusters con severidad alta
+        final dangerousClusters =
+            clusters.where((cluster) {
+              final severity = cluster.severityNumber ?? 1;
+              return severity >= 3; // Solo clusters con severidad 3 o mayor
+            }).toList();
+
+        print(
+          '[RouteMixin] 🚨 ${dangerousClusters.length} clusters peligrosos encontrados',
+        );
+
+        return dangerousClusters
+            .map(
+              (cluster) =>
+                  LatLng(cluster.centerLatitude, cluster.centerLongitude),
+            )
+            .toList();
+      } else {
+        print('[RouteMixin] ⚠️ No se encontraron clusters de peligro');
+      }
+    } catch (e) {
+      print('[RouteMixin] ❌ Error obteniendo clusters: $e');
+    }
+
+    // Datos ficticios como fallback para testing
+    print('[RouteMixin] 🔄 Usando zonas peligrosas de prueba');
+    return [
+      LatLng(16.7569, -93.1292), // Ejemplo de zona peligrosa
+      LatLng(16.7570, -93.1293), // Ejemplo de zona peligrosa
+    ];
+  }
+
+  // 🛡️ NUEVO: Calcular ruta que evita zonas peligrosas
+  Future<List<LatLng>?> _calculateRouteAvoidingDangerZones(
+    LatLng start,
+    LatLng end,
+    List<LatLng> dangerZones,
+  ) async {
+    try {
+      print('[RouteMixin] 🛡️ Calculando ruta que evita zonas peligrosas...');
+
+      // 1. Encontrar waypoints seguros
+      final safeWaypoints = _findSafeWaypoints(start, end, dangerZones);
+      print(
+        '[RouteMixin] 📍 Waypoints seguros encontrados: ${safeWaypoints.length}',
+      );
+
+      if (safeWaypoints.isEmpty) {
+        print(
+          '[RouteMixin] ⚠️ No hay waypoints seguros, intentando desvío amplio...',
+        );
+        // Si no hay waypoints seguros, intentar con desvíos más amplios
+        return await _calculateDetourRoute(start, end, dangerZones);
+      }
+
+      // 2. Construir ruta con waypoints seguros
+      final route = <LatLng>[start];
+      route.addAll(safeWaypoints);
+      route.add(end);
+
+      print('[RouteMixin] 📊 Ruta construida con ${route.length} puntos');
+
+      // 3. Verificar que la ruta final sea segura
+      int dangerousPoints = 0;
+      for (final point in route) {
+        if (isPointInDangerZone(point)) {
+          dangerousPoints++;
+        }
+      }
+
+      print(
+        '[RouteMixin] 📊 Puntos peligrosos en ruta con waypoints: $dangerousPoints',
+      );
+
+      if (dangerousPoints == 0) {
+        print('[RouteMixin] ✅ Ruta con waypoints es segura');
+        return route;
+      }
+
+      print(
+        '[RouteMixin] ⚠️ Ruta con waypoints aún tiene puntos peligrosos, intentando desvío amplio...',
+      );
+
+      // 4. Si aún no es segura, usar desvío más amplio
+      return await _calculateDetourRoute(start, end, dangerZones);
+    } catch (e) {
+      print('[RouteMixin] ❌ Error calculando ruta que evita zonas: $e');
+      return null;
+    }
+  }
+
+  // 🛡️ NUEVO: Calcular ruta con desvío amplio
+  Future<List<LatLng>?> _calculateDetourRoute(
+    LatLng start,
+    LatLng end,
+    List<LatLng> dangerZones,
+  ) async {
+    try {
+      // Calcular punto medio
+      final midPoint = LatLng(
+        (start.latitude + end.latitude) / 2,
+        (start.longitude + end.longitude) / 2,
+      );
+
+      // Encontrar punto seguro alejado de zonas peligrosas
+      final safeMidPoint = _findSafePointAwayFromDangerZones(
+        midPoint,
+        dangerZones,
+      );
+
+      if (safeMidPoint != null) {
+        // Construir ruta con desvío: start -> safeMidPoint -> end
+        final route = <LatLng>[start, safeMidPoint, end];
+
+        // Verificar que la ruta sea segura
+        bool routeIsSafe = true;
+        for (final point in route) {
+          if (isPointInDangerZone(point)) {
+            routeIsSafe = false;
+            break;
+          }
+        }
+
+        if (routeIsSafe) {
+          return route;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 🛡️ NUEVO: Calcular ruta con waypoints seguros usando API real
+  Future<List<LatLng>?> _calculateRouteWithSafeWaypoints(
+    LatLng start,
+    LatLng end,
+    List<LatLng> dangerZones,
+  ) async {
+    try {
+      print('[RouteMixin] 🛡️ Calculando ruta con waypoints seguros...');
+
+      // Encontrar waypoints seguros
+      final safeWaypoints = _findSafeWaypoints(start, end, dangerZones);
+      print(
+        '[RouteMixin] 📍 Waypoints seguros encontrados: ${safeWaypoints.length}',
+      );
+
+      if (safeWaypoints.isEmpty) {
+        print('[RouteMixin] ⚠️ No se encontraron waypoints seguros');
+        return null;
+      }
+
+      // Usar la API de rutas con waypoints
+      if (getOpenRouteUseCase != null) {
+        try {
+          // Crear lista de coordenadas: start -> waypoints -> end
+          final coordinates = <List<double>>[];
+
+          // Agregar punto de inicio
+          coordinates.add([start.longitude, start.latitude]);
+
+          // Agregar waypoints seguros
+          for (final waypoint in safeWaypoints) {
+            coordinates.add([waypoint.longitude, waypoint.latitude]);
+          }
+
+          // Agregar punto final
+          coordinates.add([end.longitude, end.latitude]);
+
+          print(
+            '[RouteMixin] 🗺️ Calculando ruta con ${coordinates.length} puntos usando API...',
+          );
+
+          // Calcular ruta por segmentos usando la API
+          final route = <LatLng>[];
+
+          // Agregar punto de inicio
+          route.add(start);
+
+          // Calcular rutas entre waypoints
+          for (int i = 0; i < safeWaypoints.length; i++) {
+            final segmentStart = i == 0 ? start : safeWaypoints[i - 1];
+            final segmentEnd = safeWaypoints[i];
+
+            try {
+              final segmentCoordinates = await getOpenRouteUseCase!
+                  .call(
+                    start: [segmentStart.longitude, segmentStart.latitude],
+                    end: [segmentEnd.longitude, segmentEnd.latitude],
+                  )
+                  .timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () {
+                      throw Exception('Timeout: La API no respondió en tiempo');
+                    },
+                  );
+
+              final segmentRoute =
+                  segmentCoordinates
+                      .map((coord) => LatLng(coord[1], coord[0]))
+                      .toList();
+
+              // Agregar puntos del segmento (excluyendo el primer punto para evitar duplicados)
+              route.addAll(segmentRoute.skip(1));
+            } catch (e) {
+              print(
+                '[RouteMixin] ⚠️ Error en segmento $i, usando línea recta: $e',
+              );
+              // Fallback: línea recta entre puntos
+              route.add(segmentEnd);
+            }
+          }
+
+          // Calcular último segmento hasta el final
+          if (safeWaypoints.isNotEmpty) {
+            final lastWaypoint = safeWaypoints.last;
+            try {
+              final finalSegmentCoordinates = await getOpenRouteUseCase!
+                  .call(
+                    start: [lastWaypoint.longitude, lastWaypoint.latitude],
+                    end: [end.longitude, end.latitude],
+                  )
+                  .timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () {
+                      throw Exception('Timeout: La API no respondió en tiempo');
+                    },
+                  );
+
+              final finalSegmentRoute =
+                  finalSegmentCoordinates
+                      .map((coord) => LatLng(coord[1], coord[0]))
+                      .toList();
+
+              // Agregar puntos del segmento final (excluyendo el primer punto)
+              route.addAll(finalSegmentRoute.skip(1));
+            } catch (e) {
+              print(
+                '[RouteMixin] ⚠️ Error en segmento final, usando línea recta: $e',
+              );
+              route.add(end);
+            }
+          } else {
+            // Si no hay waypoints, calcular ruta directa
+            try {
+              final directCoordinates = await getOpenRouteUseCase!
+                  .call(
+                    start: [start.longitude, start.latitude],
+                    end: [end.longitude, end.latitude],
+                  )
+                  .timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () {
+                      throw Exception('Timeout: La API no respondió en tiempo');
+                    },
+                  );
+
+              final directRoute =
+                  directCoordinates
+                      .map((coord) => LatLng(coord[1], coord[0]))
+                      .toList();
+
+              route.clear();
+              route.addAll(directRoute);
+            } catch (e) {
+              print('[RouteMixin] ⚠️ Error en ruta directa: $e');
+              route.clear();
+              route.addAll([start, end]);
+            }
+          }
+
+          print(
+            '[RouteMixin] ✅ Ruta con waypoints calculada: ${route.length} puntos',
+          );
+
+          // Verificar que la ruta sea segura
+          int dangerousPoints = 0;
+          for (final point in route) {
+            if (isPointInDangerZone(point)) {
+              dangerousPoints++;
+            }
+          }
+
+          print(
+            '[RouteMixin] 📊 Puntos peligrosos en ruta con waypoints: $dangerousPoints',
+          );
+
+          if (dangerousPoints == 0) {
+            print('[RouteMixin] ✅ Ruta con waypoints es segura');
+            return route;
+          } else {
+            print(
+              '[RouteMixin] ⚠️ Ruta con waypoints aún tiene puntos peligrosos',
+            );
+            return null;
+          }
+        } catch (e) {
+          print('[RouteMixin] ❌ Error calculando ruta con waypoints: $e');
+          return null;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print('[RouteMixin] ❌ Error en cálculo de ruta con waypoints: $e');
+      return null;
+    }
+  }
+
+  // 🛡️ NUEVO: Crear desvío manual que evita zonas peligrosas
+  List<LatLng>? _createManualDetour(
+    LatLng start,
+    LatLng end,
+    List<LatLng> dangerZones,
+  ) {
+    try {
+      print('[RouteMixin] 🚨 Creando desvío manual...');
+
+      // Calcular punto medio
+      final midPoint = LatLng(
+        (start.latitude + end.latitude) / 2,
+        (start.longitude + end.longitude) / 2,
+      );
+
+      // Encontrar punto seguro alejado
+      final safeMidPoint = _findSafePointAwayFromDangerZones(
+        midPoint,
+        dangerZones,
+      );
+
+      if (safeMidPoint != null) {
+        print(
+          '[RouteMixin] ✅ Punto seguro encontrado: ${safeMidPoint.latitude}, ${safeMidPoint.longitude}',
+        );
+
+        // Crear ruta con desvío: start -> safeMidPoint -> end
+        final detourRoute = [start, safeMidPoint, end];
+
+        // Verificar que la ruta sea segura
+        int dangerousPoints = 0;
+        for (final point in detourRoute) {
+          if (isPointInDangerZone(point)) {
+            dangerousPoints++;
+          }
+        }
+
+        print(
+          '[RouteMixin] 📊 Puntos peligrosos en desvío manual: $dangerousPoints',
+        );
+
+        if (dangerousPoints == 0) {
+          print('[RouteMixin] ✅ Desvío manual es seguro');
+          return detourRoute;
+        } else {
+          print('[RouteMixin] ⚠️ Desvío manual aún tiene puntos peligrosos');
+        }
+      } else {
+        print('[RouteMixin] ❌ No se pudo encontrar punto seguro');
+      }
+
+      // Si no funciona, intentar con múltiples waypoints
+      print('[RouteMixin] 🔄 Intentando con múltiples waypoints...');
+      final multiWaypointRoute = _createMultiWaypointDetour(
+        start,
+        end,
+        dangerZones,
+      );
+
+      if (multiWaypointRoute != null) {
+        print('[RouteMixin] ✅ Ruta con múltiples waypoints creada');
+        return multiWaypointRoute;
+      }
+
+      return null;
+    } catch (e) {
+      print('[RouteMixin] ❌ Error creando desvío manual: $e');
+      return null;
+    }
+  }
+
+  // 🛡️ NUEVO: Crear ruta con múltiples waypoints
+  List<LatLng>? _createMultiWaypointDetour(
+    LatLng start,
+    LatLng end,
+    List<LatLng> dangerZones,
+  ) {
+    try {
+      final route = <LatLng>[start];
+
+      // Calcular múltiples puntos intermedios
+      final totalDistance = Distance().as(LengthUnit.Meter, start, end);
+      final numWaypoints = (totalDistance / 1000).ceil(); // Waypoint cada 1km
+
+      for (int i = 1; i <= numWaypoints; i++) {
+        final ratio = i / (numWaypoints + 1);
+        final waypoint = LatLng(
+          start.latitude + (end.latitude - start.latitude) * ratio,
+          start.longitude + (end.longitude - start.longitude) * ratio,
+        );
+
+        // Buscar punto seguro cerca del waypoint
+        final safeWaypoint = _findSafePointAwayFromDangerZones(
+          waypoint,
+          dangerZones,
+        );
+
+        if (safeWaypoint != null) {
+          route.add(safeWaypoint);
+        } else {
+          // Si no se encuentra punto seguro, usar el waypoint original
+          route.add(waypoint);
+        }
+      }
+
+      route.add(end);
+
+      // Verificar que la ruta sea segura
+      int dangerousPoints = 0;
+      for (final point in route) {
+        if (isPointInDangerZone(point)) {
+          dangerousPoints++;
+        }
+      }
+
+      if (dangerousPoints == 0) {
+        return route;
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 🛡️ NUEVO: Encontrar punto seguro alejado de zonas peligrosas
+  LatLng? _findSafePointAwayFromDangerZones(
+    LatLng center,
+    List<LatLng> dangerZones,
+  ) {
+    const maxAttempts = 8;
+    const baseDistance = 500.0; // 500m de distancia base
+
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      final angle = (attempt * 45.0) * (3.14159 / 180); // 45 grados por intento
+      final distance =
+          baseDistance + (attempt * 100.0); // Aumentar distancia cada intento
+
+      final safePoint = _getPointAtDistance(
+        center,
+        distance,
+        angle * (180 / 3.14159),
+      );
+
+      // Verificar si el punto está lejos de todas las zonas peligrosas
+      bool isSafe = true;
+      for (final dangerZone in dangerZones) {
+        final distToDanger = Distance().as(
+          LengthUnit.Meter,
+          safePoint,
+          dangerZone,
+        );
+        if (distToDanger < 300) {
+          // Mínimo 300m de distancia
+          isSafe = false;
+          break;
+        }
+      }
+
+      if (isSafe) {
+        return safePoint;
+      }
+    }
+
+    return null;
+  }
+
+  // 🛡️ NUEVO: Encontrar waypoints seguros
+  List<LatLng> _findSafeWaypoints(
+    LatLng start,
+    LatLng end,
+    List<LatLng> dangerZones,
+  ) {
+    final waypoints = <LatLng>[];
+
+    // Calcular puntos intermedios cada 300m (más frecuente para mejor cobertura)
+    final totalDistance = Distance().as(LengthUnit.Meter, start, end);
+    final numPoints = (totalDistance / 300).ceil();
+
+    print(
+      '[RouteMixin] 🔍 Buscando waypoints seguros en $numPoints puntos intermedios...',
+    );
+
+    for (int i = 1; i < numPoints; i++) {
+      final ratio = i / numPoints;
+      final midPoint = LatLng(
+        start.latitude + (end.latitude - start.latitude) * ratio,
+        start.longitude + (end.longitude - start.longitude) * ratio,
+      );
+
+      // Verificar si el punto está en zona peligrosa
+      bool isSafe = true;
+      double minDistanceToDanger = double.infinity;
+
+      for (final dangerZone in dangerZones) {
+        final distance = Distance().as(LengthUnit.Meter, midPoint, dangerZone);
+        if (distance < 300) {
+          // Aumentar radio de seguridad a 300m
+          isSafe = false;
+          minDistanceToDanger = distance;
+          break;
+        }
+        if (distance < minDistanceToDanger) {
+          minDistanceToDanger = distance;
+        }
+      }
+
+      if (isSafe) {
+        waypoints.add(midPoint);
+        print(
+          '[RouteMixin] ✅ Waypoint seguro encontrado: ${midPoint.latitude}, ${midPoint.longitude}',
+        );
+      } else {
+        print(
+          '[RouteMixin] ⚠️ Waypoint peligroso: ${midPoint.latitude}, ${midPoint.longitude} - Distancia mínima: ${minDistanceToDanger.toInt()}m',
+        );
+
+        // Intentar encontrar punto seguro cercano
+        final safePoint = _findSafePointAwayFromDangerZones(
+          midPoint,
+          dangerZones,
+        );
+        if (safePoint != null) {
+          waypoints.add(safePoint);
+          print(
+            '[RouteMixin] ✅ Punto seguro alternativo encontrado: ${safePoint.latitude}, ${safePoint.longitude}',
+          );
+        }
+      }
+    }
+
+    print(
+      '[RouteMixin] 📊 Total waypoints seguros encontrados: ${waypoints.length}',
+    );
+    return waypoints;
   }
 
   Future<List<LatLng>> _calculateSafeRouteReal(LatLng start, LatLng end) async {
@@ -221,13 +1136,6 @@ mixin RouteMixin on ChangeNotifier {
   }
 
   // Métodos simplificados - no se usan en la versión básica
-  List<LatLng> _findSafeWaypoints(LatLng start, LatLng end) {
-    return [];
-  }
-
-  LatLng? _findNearestSafePoint(LatLng dangerousPoint) {
-    return null;
-  }
 
   LatLng _getPointAtDistance(
     LatLng center,
@@ -365,9 +1273,67 @@ mixin RouteMixin on ChangeNotifier {
     notifyListeners();
   }
 
+  // 🛡️ NUEVO: Verificar si un punto está en zona peligrosa
+  bool isPointInDangerZone(LatLng point) {
+    try {
+      // Intentar obtener clusters del MapViewModel
+      final mapViewModel = GetIt.instance<MapViewModel>();
+      final clusters = mapViewModel.clusters;
+
+      for (final cluster in clusters) {
+        final severity = cluster.severityNumber ?? 1;
+
+        // Solo verificar clusters con severidad alta
+        if (severity >= 3) {
+          final clusterPoint = LatLng(
+            cluster.centerLatitude,
+            cluster.centerLongitude,
+          );
+          final distance = Distance().as(LengthUnit.Meter, point, clusterPoint);
+
+          // Radio del cluster basado en la severidad
+          final clusterRadius = _calculateClusterRadius(cluster);
+
+          if (distance <= clusterRadius) {
+            print(
+              '[RouteMixin] 🚨 Punto en zona peligrosa: ${point.latitude}, ${point.longitude}',
+            );
+            print(
+              '[RouteMixin] 🚨 Distancia al cluster: ${distance.toInt()}m, Radio: ${clusterRadius.toInt()}m',
+            );
+            return true;
+          }
+        }
+      }
+    } catch (e) {
+      print('[RouteMixin] ❌ Error verificando zona peligrosa: $e');
+    }
+
+    return false;
+  }
+
+  // 🛡️ NUEVO: Calcular radio del cluster basado en severidad
+  double _calculateClusterRadius(dynamic cluster) {
+    try {
+      final severity = cluster.severityNumber ?? 3;
+      final reportCount = cluster.reportCount ?? 1;
+
+      // Radio base de 100m + factor de severidad + factor de cantidad
+      double radius = 100.0;
+      radius += (severity - 1) * 50.0; // +50m por cada nivel de severidad
+      radius += math.min(
+        reportCount * 10.0,
+        200.0,
+      ); // +10m por reporte, máximo 200m
+
+      return radius.clamp(100.0, 500.0);
+    } catch (e) {
+      return 200.0; // Radio por defecto
+    }
+  }
+
   // Callbacks abstractos
   double calculateRouteSafety(List<LatLng> route);
-  bool isPointInDangerZone(LatLng point);
   void onStartPointChanged(LatLng point);
   void onEndPointChanged(LatLng point);
   void onStartPointCleared();

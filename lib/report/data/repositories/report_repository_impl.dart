@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:safy/auth/domain/exceptions/auth_exceptions.dart';
+import 'package:safy/report/data/dtos/address_response_dto.dart';
 import 'package:safy/report/data/dtos/report_request_dto.dart';
 import 'package:safy/report/data/dtos/report_response_dto.dart';
+import 'package:safy/report/data/dtos/spelling_correction_dto.dart';
+import 'package:safy/report/data/dtos/title_suggestion_dto.dart';
 import 'package:safy/report/domain/entities/cluster_entity.dart';
 import 'package:safy/report/domain/entities/report.dart';
 import 'package:safy/report/domain/exceptions/report_exceptions.dart';
@@ -177,6 +180,57 @@ class ReportRepositoryImpl implements ReportRepository {
         );
       default:
         return ReportExceptions('Error desconocido: ${e.message}');
+    }
+  }
+
+  // ===== Nuevos servicios de ayuda para reportes =====
+
+  @override
+  Future<AddressResponseDto> getAddressFromCoordinates({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      return await _apiClient.getAddressFromCoordinates(
+        latitude: latitude,
+        longitude: longitude,
+      );
+    } catch (e) {
+      throw ReportExceptions(
+        'Error al obtener dirección desde coordenadas: $e',
+      );
+    }
+  }
+
+  @override
+  Future<SpellingCorrectionDto> correctSpelling({
+    required String description,
+  }) async {
+    try {
+      return await _apiClient.correctSpelling(description: description);
+    } catch (e) {
+      throw ReportExceptions('Error al corregir ortografía: $e');
+    }
+  }
+
+  @override
+  Future<TitleSuggestionDto> suggestTitle({
+    required String description,
+    required String incident_type,
+    required String address,
+    required int severity,
+    required bool is_anonymous,
+  }) async {
+    try {
+      return await _apiClient.suggestTitle(
+        description: description,
+        incident_type: incident_type,
+        address: address,
+        severity: severity,
+        is_anonymous: is_anonymous,
+      );
+    } catch (e) {
+      throw ReportExceptions('Error al sugerir título: $e');
     }
   }
 }

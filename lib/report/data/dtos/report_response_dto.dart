@@ -60,29 +60,49 @@ class ReportResponseDto {
       description: json['description'] as String,
       incidentType: json['incident_type'] as String,
       status: json['status'] as String,
-      latitude: (json['latitude'] as num).toDouble(), // Casteo seguro para double
-      longitude: (json['longitude'] as num).toDouble(), // Casteo seguro para double
+      latitude:
+          (json['latitude'] as num).toDouble(), // Casteo seguro para double
+      longitude:
+          (json['longitude'] as num).toDouble(), // Casteo seguro para double
       address: json['address'] as String?, // Nullable string, usa 'as String?'
       reporterName: json['reporter_name'] as String,
       isAnonymous: json['is_anonymous'] as bool,
       severity: (json['severity'] as num).toInt(), // Casteo seguro para int
       imageUrl: json['image_url'] as String?, // Nullable string
       audioUrl: json['audio_url'] as String?, // Nullable string
-
       // Manejo de DateTime, proporcionando null si el valor del JSON es null
-      createdAt: json['created_at'] != null ? _parseDateTime(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? _parseDateTime(json['updated_at']) : null,
+      createdAt:
+          json['created_at'] != null
+              ? _parseDateTime(json['created_at'])
+              : null,
+      updatedAt:
+          json['updated_at'] != null
+              ? _parseDateTime(json['updated_at'])
+              : null,
 
-      // Campos int nulos
-      verifiedBy: (json['verified_by'] as num?)?.toInt(), // Casteo seguro para int nulo
-      verifiedAt: json['verified_at'] != null ? _parseDateTime(json['verified_at']) : null,
+      // Campos int nulos - manejo seguro para valores null
+      verifiedBy:
+          json['verified_by'] != null
+              ? (json['verified_by'] as num).toInt()
+              : null,
+      verifiedAt:
+          json['verified_at'] != null
+              ? _parseDateTime(json['verified_at'])
+              : null,
       verificationNotes: json['verification_notes'] as String?, // String nulo
-
-      // Campos int nulos
-      resolvedBy: (json['resolved_by'] as num?)?.toInt(), // Casteo seguro para int nulo
-      resolvedAt: json['resolved_at'] != null ? _parseDateTime(json['resolved_at']) : null,
+      // Campos int nulos - manejo seguro para valores null
+      resolvedBy:
+          json['resolved_by'] != null
+              ? (json['resolved_by'] as num).toInt()
+              : null,
+      resolvedAt:
+          json['resolved_at'] != null
+              ? _parseDateTime(json['resolved_at'])
+              : null,
       resolutionNotes: json['resolution_notes'] as String?, // String nulo
-      comments: json['comments'] as String?, // String nulo (si es un string simple; si es un objeto o lista, se necesita más parsing)
+      comments:
+          json['comments']
+              as String?, // String nulo (si es un string simple; si es un objeto o lista, se necesita más parsing)
     );
   }
 
@@ -101,10 +121,14 @@ class ReportResponseDto {
           dateValue[3] as int, // hora
           dateValue[4] as int, // minuto
           dateValue[5] as int, // segundo
-          (dateValue.length > 6 ? (dateValue[6] as int) ~/ 1000000 : 0), // milisegundos de nanosegundos
+          (dateValue.length > 6
+              ? (dateValue[6] as int) ~/ 1000000
+              : 0), // milisegundos de nanosegundos
         );
       } catch (e) {
-        print('[ReportResponseDto] Error parsing date from array: $dateValue -> $e');
+        print(
+          '[ReportResponseDto] Error parsing date from array: $dateValue -> $e',
+        );
         return null;
       }
     }
@@ -114,7 +138,9 @@ class ReportResponseDto {
       try {
         return DateTime.parse(dateValue);
       } catch (e) {
-        print('[ReportResponseDto] Error parsing date from string: $dateValue -> $e');
+        print(
+          '[ReportResponseDto] Error parsing date from string: $dateValue -> $e',
+        );
         return null;
       }
     }
@@ -134,7 +160,8 @@ class ReportResponseDto {
       longitude: longitude,
       address: address,
       reporterName: reporterName,
-      reporterEmail: null, // Este campo no está en tu DTO ni en la respuesta del servidor
+      reporterEmail:
+          null, // Este campo no está en tu DTO ni en la respuesta del servidor
       severity: severity,
       isAnonymous: isAnonymous,
       // Considera añadir más campos si ReportInfoEntity los necesita
