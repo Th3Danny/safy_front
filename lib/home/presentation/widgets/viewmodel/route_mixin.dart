@@ -64,6 +64,16 @@ mixin RouteMixin on ChangeNotifier {
   void setEndPoint(LatLng point) {
     _endPoint = point;
     onEndPointChanged(point);
+
+    // 🆕 NUEVO: Cargar predicciones automáticamente cuando se establece un destino
+    if (this is MapViewModel) {
+      final mapViewModel = this as MapViewModel;
+      print(
+        '[RouteMixin] 🔮 Cargando predicciones para destino establecido: ${point.latitude}, ${point.longitude}',
+      );
+      mapViewModel.loadPredictionsForDestination(point);
+    }
+
     if (_startPoint != null) {
       // Llamar calculateRoutes de forma asíncrona para evitar bloqueos
       _calculateRoutesAsync();

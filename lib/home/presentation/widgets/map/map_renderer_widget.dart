@@ -50,14 +50,11 @@ class _MapRendererWidgetState extends State<MapRendererWidget> {
                 // Capa base del mapa
                 MapLayers.buildTileLayer(),
 
-                // Capa de marcadores
-                MapLayers.buildMarkerLayer(mapViewModel),
-
                 // Capa de rutas
                 MapLayers.buildPolylineLayer(mapViewModel),
 
-                // Capa de clusters
-                MapLayers.buildClusterLayer(mapViewModel),
+                // 🆕 NUEVO: Capa de todos los marcadores (incluye predicciones)
+                MapLayers.buildAllMarkersLayer(mapViewModel),
               ],
             ),
 

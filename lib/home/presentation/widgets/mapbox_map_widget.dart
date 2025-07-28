@@ -105,11 +105,8 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
                     return <Widget>[];
                   })(),
 
-                // Capa de marcadores con escalado dinámico
-                MarkerLayer(markers: _buildDynamicMarkers(mapViewModel)),
-
-                // Capa de clusters
-                MapLayers.buildClusterLayer(mapViewModel, context),
+                // 🆕 NUEVO: Capa de todos los marcadores (incluye predicciones)
+                MapLayers.buildAllMarkersLayer(mapViewModel),
               ],
             ),
 

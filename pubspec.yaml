@@ -62,6 +62,13 @@ dependencies:
   # 🔔 Notificaciones
   flutter_local_notifications: ^17.1.2
   
+  # 🔄 Servicio en segundo plano
+  flutter_background_service: ^5.0.5
+  flutter_background_service_android: ^6.2.2
+  
+  # 📍 Geolocalización en segundo plano
+  location: ^6.0.0
+  
   # 🔌 WebSocket
   web_socket_channel: ^2.4.0
   

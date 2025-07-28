@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:safy/home/domain/entities/place.dart';
+import 'package:safy/home/domain/entities/prediction.dart';
 import 'dart:async';
 
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
+import 'package:safy/home/domain/usecases/get_predictions_use_case.dart';
 
 import 'package:safy/report/domain/entities/cluster_entity.dart';
 import 'package:safy/report/domain/entities/report.dart';
@@ -22,6 +24,7 @@ import '../widgets/viewmodel/reports_mixin.dart';
 import '../widgets/viewmodel/search_mixin.dart';
 import '../widgets/viewmodel/markers_mixin.dart';
 import '../widgets/viewmodel/navigation_tracking_mixin.dart';
+import '../widgets/viewmodel/predictions_mixin.dart';
 import 'package:safy/core/services/security/gps_spoofing_detector.dart';
 
 /// ViewModel principal del mapa que integra todas las funcionalidades
@@ -34,7 +37,8 @@ class MapViewModel extends ChangeNotifier
         ReportsMixin,
         SearchMixin,
         MarkersMixin,
-        NavigationTrackingMixin {
+        NavigationTrackingMixin,
+        PredictionsMixin {
   // ============================================================================
   // DEPENDENCIAS E INYECCIÓN
   // ============================================================================
@@ -49,10 +53,15 @@ class MapViewModel extends ChangeNotifier
   @override
   final GetClustersUseCase? getClustersUseCase;
 
+  // 🆕 NUEVO: Caso de uso para predicciones
+  @override
+  final GetPredictionsUseCase? getPredictionsUseCase;
+
   MapViewModel({
     this.searchPlacesUseCase,
     this.getReportsForMapUseCase,
     this.getClustersUseCase, // NUEVO
+    this.getPredictionsUseCase, // 🆕 NUEVO
   }) {
     // Listener para cambios de zoom y movimiento del mapa
     _mapController.mapEventStream.listen((event) {
@@ -166,6 +175,12 @@ class MapViewModel extends ChangeNotifier
     print('🛣️ [MapViewModel] Llamando a selectRoute...');
     selectRoute(routeOption);
 
+    // 🆕 NUEVO: Cargar predicciones automáticamente para la ruta
+    if (route.isNotEmpty) {
+      print('[MapViewModel] 🔮 Cargando predicciones para ruta establecida');
+      loadPredictionsForRouteAutomatically(route);
+    }
+
     print(
       '🛣️ [MapViewModel] Ruta actual después de selectRoute: ${currentRoute.length} puntos',
     );
@@ -196,6 +211,14 @@ class MapViewModel extends ChangeNotifier
     // Agregar reportes individuales si están activados (por si los necesitas después)
     if (showDangerZones) {
       allMarkers.addAll(dangerMarkers);
+    }
+
+    // 🆕 NUEVO: Agregar marcadores de predicciones si están activados
+    if (showPredictions) {
+      allMarkers.addAll(predictionMarkers);
+      print(
+        '[MapViewModel] 🔮 Agregando ${predictionMarkers.length} marcadores de predicciones al mapa',
+      );
     }
 
     return allMarkers;
@@ -454,12 +477,21 @@ class MapViewModel extends ChangeNotifier
   }
 
   @override
-  void onRouteSelected(RouteOption route) {}
+  void onRouteSelected(RouteOption route) {
+    // 🆕 NUEVO: Cargar predicciones automáticamente cuando se selecciona una ruta
+    if (route.points.isNotEmpty) {
+      print('[MapViewModel] 🔮 Cargando predicciones para ruta seleccionada');
+      loadPredictionsForRouteAutomatically(route.points);
+    }
+  }
 
   @override
   void onRoutesCleared() {
     clearRouteMarkers();
     hideRoutePanel();
+
+    // 🆕 NUEVO: Limpiar predicciones cuando se limpia la ruta
+    clearPredictions();
 
     // NO llamar a clearRoute() aquí para evitar recursión infinita
     // Las rutas ya se limpian en el RouteMixin
@@ -657,6 +689,9 @@ class MapViewModel extends ChangeNotifier
     // Limpiar errores
     _errorMessage = null;
 
+    // 🆕 NUEVO: Limpiar predicciones cuando se limpian todas las rutas
+    clearPredictions();
+
     // Limpiar rutas del RouteMixin sin recursión
     clearRouteSilently();
 
@@ -707,6 +742,32 @@ class MapViewModel extends ChangeNotifier
   // Verificar si una ubicación está en zona peligrosa
   bool isLocationDangerous(LatLng location) {
     return isPointInDangerousCluster(location);
+  }
+
+  // ============================================================================
+  // IMPLEMENTACIÓN DE CALLBACKS DE PREDICTIONS_MIXIN
+  // ============================================================================
+
+  @override
+  void onPredictionSelected(Prediction prediction) {
+    if (_mapReady) {
+      final predictionLocation = LatLng(
+        prediction.location.latitude,
+        prediction.location.longitude,
+      );
+      _mapController.move(predictionLocation, 17.0);
+      print(
+        '[MapViewModel] 🔮 Predicción seleccionada: ${prediction.riskLevel}',
+      );
+    }
+  }
+
+  @override
+  void onPredictionsToggled(bool visible) {
+    print(
+      '[MapViewModel] 👁️ Predicciones ${visible ? 'mostradas' : 'ocultadas'}',
+    );
+    notifyListeners();
   }
 
   // ============================================================================
