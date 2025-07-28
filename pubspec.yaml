@@ -50,6 +50,7 @@ dependencies:
   web_socket_channel: ^2.4.0
   url_launcher: ^6.1.10
   device_info_plus: ^10.1.0
+  # detect_fake_location: ^1.0.0  # Comentado por problemas de compatibilidad
 
   
 

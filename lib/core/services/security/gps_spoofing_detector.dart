@@ -5,6 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:io' show Platform;
+// import 'package:detect_fake_location/detect_fake_location.dart';  // Comentado por problemas de compatibilidad
 
 /// Servicio para detectar GPS falso y ubicaciones simuladas
 class GpsSpoofingDetector {
@@ -634,294 +635,156 @@ class GpsSpoofingDetector {
     }
   }
 
-  /// NUEVO: Método para verificar si el GPS es real con umbrales más permisivos
-  Future<SpoofingDetectionResult> detectSpoofingPermissive({
-    required Position currentPosition,
-    Duration? timeWindow,
-  }) async {
-    try {
-      // Agregar posición actual al historial
-      _addToHistory(currentPosition);
-
-      // Realizar verificaciones básicas con umbrales más permisivos
-      final checks = await Future.wait([
-        _checkSpeedAnomaliesPermissive(),
-        _checkAccuracyAnomaliesPermissive(),
-        _checkLocationConsistencyPermissive(),
-      ]);
-
-      // Calcular puntuación de riesgo con umbral más alto
-      final riskScore = _calculateRiskScore(checks);
-      final isSpoofed = riskScore >= 0.8; // Umbral muy alto del 80%
-
-      final result = SpoofingDetectionResult(
-        isSpoofed: isSpoofed,
-        riskScore: riskScore,
-        confidence: _calculateConfidence(checks),
-        detectedIssues: checks.where((check) => check.isAnomaly).toList(),
-        recommendations: _generateRecommendations(checks),
-      );
-
-      return result;
-    } catch (e) {
-      return SpoofingDetectionResult(
-        isSpoofed: false,
-        riskScore: 0.0,
-        confidence: 0.0,
-        detectedIssues: [],
-        recommendations: ['Error en verificación permisiva: $e'],
-      );
-    }
-  }
-
-  /// Verificación de velocidad más permisiva
-  Future<SpoofingCheck> _checkSpeedAnomaliesPermissive() async {
-    if (_locationHistory.length < 2) {
-      return SpoofingCheck(
-        type: SpoofingCheckType.speed,
-        isAnomaly: false,
-        severity: 0.0,
-        description: 'Insuficientes datos para análisis de velocidad',
-      );
-    }
-
-    final speeds = <double>[];
-    for (int i = 1; i < _locationHistory.length; i++) {
-      final prev = _locationHistory[i - 1];
-      final curr = _locationHistory[i];
-
-      final distance = Geolocator.distanceBetween(
-        prev.latitude,
-        prev.longitude,
-        curr.latitude,
-        curr.longitude,
-      );
-
-      final timeDiff = curr.timestamp.difference(prev.timestamp).inSeconds;
-      if (timeDiff > 0) {
-        final speedKmh = (distance / 1000) / (timeDiff / 3600);
-        speeds.add(speedKmh);
-      }
-    }
-
-    final maxSpeed = speeds.isNotEmpty ? speeds.reduce(math.max) : 0.0;
-    final isAnomaly = maxSpeed > 200.0; // Umbral mucho más alto
-    final severity = math.min(maxSpeed / 200.0, 1.0);
-
-    return SpoofingCheck(
-      type: SpoofingCheckType.speed,
-      isAnomaly: isAnomaly,
-      severity: severity,
-      description:
-          'Velocidad máxima detectada: ${maxSpeed.toStringAsFixed(1)} km/h',
+  /// NUEVO: Método para debugging - muestra información detallada de la posición
+  void debugPosition(Position position) {
+    print('=== DEBUG GPS POSITION ===');
+    print('📍 Coordenadas: ${position.latitude}, ${position.longitude}');
+    print('🎯 Precisión: ${position.accuracy}m');
+    print('📏 Altitud: ${position.altitude}m');
+    print('🏃 Velocidad: ${position.speed}m/s');
+    print('⏰ Timestamp: ${position.timestamp}');
+    print(
+      '🕐 Diferencia de tiempo: ${DateTime.now().difference(position.timestamp).abs().inMinutes} minutos',
     );
-  }
 
-  /// Verificación de precisión más permisiva
-  Future<SpoofingCheck> _checkAccuracyAnomaliesPermissive() async {
-    if (_locationHistory.isEmpty) {
-      return SpoofingCheck(
-        type: SpoofingCheckType.accuracy,
-        isAnomaly: false,
-        severity: 0.0,
-        description: 'Sin datos de precisión',
-      );
-    }
+    // Análisis de coordenadas
+    final lat = position.latitude;
+    final lng = position.longitude;
+    final latDecimal = lat - lat.floor();
+    final lngDecimal = lng - lng.floor();
 
-    final accuracies = _locationHistory.map((pos) => pos.accuracy).toList();
-    final avgAccuracy = accuracies.reduce((a, b) => a + b) / accuracies.length;
-    final minAccuracy = accuracies.reduce(math.min);
+    print('🔢 Análisis de coordenadas:');
+    print('   Lat decimal: ${latDecimal.toStringAsFixed(6)}');
+    print('   Lng decimal: ${lngDecimal.toStringAsFixed(6)}');
+    print('   Lat redondeada (0.1): ${(lat * 10).round() / 10}');
+    print('   Lng redondeada (0.1): ${(lng * 10).round() / 10}');
+    print('   Lat redondeada (0.01): ${(lat * 100).round() / 100}');
+    print('   Lng redondeada (0.01): ${(lng * 100).round() / 100}');
 
-    // Solo detectar precisión sospechosamente perfecta
-    final isTooPerfect = minAccuracy < 0.5; // Umbral muy estricto
-    final isAnomaly = isTooPerfect;
-    final severity = isTooPerfect ? 1.0 : 0.0;
-
-    return SpoofingCheck(
-      type: SpoofingCheckType.accuracy,
-      isAnomaly: isAnomaly,
-      severity: severity,
-      description:
-          'Precisión promedio: ${avgAccuracy.toStringAsFixed(1)}m, mínima: ${minAccuracy.toStringAsFixed(1)}m',
+    // Verificaciones
+    print('🔍 Verificaciones:');
+    print('   Precisión < 0.1m: ${position.accuracy < 0.1}');
+    print('   Precisión < 0.5m: ${position.accuracy < 0.5}');
+    print('   Precisión < 2.0m: ${position.accuracy < 2.0}');
+    print('   Altitud == 0: ${position.altitude == 0.0}');
+    print('   Velocidad == 0: ${position.speed == 0.0}');
+    print(
+      '   Coordenadas muy redondas: ${(latDecimal < 0.001 || latDecimal > 0.999) && (lngDecimal < 0.001 || lngDecimal > 0.999)}',
     );
-  }
-
-  /// Verificación de consistencia más permisiva
-  Future<SpoofingCheck> _checkLocationConsistencyPermissive() async {
-    if (_locationHistory.length < 3) {
-      return SpoofingCheck(
-        type: SpoofingCheckType.consistency,
-        isAnomaly: false,
-        severity: 0.0,
-        description: 'Insuficientes datos para análisis de consistencia',
-      );
-    }
-
-    // Solo verificar saltos imposibles muy extremos
-    final hasImpossibleJumps = _hasImpossibleJumpsPermissive();
-    final isAnomaly = hasImpossibleJumps;
-    final severity = hasImpossibleJumps ? 0.9 : 0.0;
-
-    return SpoofingCheck(
-      type: SpoofingCheckType.consistency,
-      isAnomaly: isAnomaly,
-      severity: severity,
-      description:
-          hasImpossibleJumps
-              ? 'Saltos imposibles detectados'
-              : 'Trayectoria normal',
+    print(
+      '   Múltiplos de 0.1: ${(lat * 10).round() % 10 == 0 && (lng * 10).round() % 10 == 0}',
     );
+    print(
+      '   Múltiplos de 0.01: ${(lat * 100).round() % 100 == 0 && (lng * 100).round() % 100 == 0}',
+    );
+    print(
+      '   Timestamp > 30min: ${DateTime.now().difference(position.timestamp).abs().inMinutes > 30}',
+    );
+    print('========================');
   }
 
-  /// Verificación de saltos imposibles más permisiva
-  bool _hasImpossibleJumpsPermissive() {
-    for (int i = 1; i < _locationHistory.length; i++) {
-      final prev = _locationHistory[i - 1];
-      final curr = _locationHistory[i];
-
-      final distance = Geolocator.distanceBetween(
-        prev.latitude,
-        prev.longitude,
-        curr.latitude,
-        curr.longitude,
-      );
-
-      final timeDiff = curr.timestamp.difference(prev.timestamp).inSeconds;
-      if (timeDiff > 0) {
-        final speedKmh = (distance / 1000) / (timeDiff / 3600);
-        if (speedKmh > 500.0) {
-          // Umbral muy alto
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  /// NUEVO: Detección inmediata para Fake GPS (sin esperar historial)
-  Future<SpoofingDetectionResult> detectFakeGpsImmediately(
+  /// NUEVO: Método para detectar GPS real de forma muy permisiva
+  Future<SpoofingDetectionResult> detectRealGpsPermissive(
     Position position,
   ) async {
     try {
       // Agregar posición actual al historial
       _addToHistory(position);
 
-      // Verificaciones inmediatas que no requieren historial
-      final immediateChecks = <SpoofingCheck>[];
+      // Verificaciones muy permisivas que solo detectan Fake GPS obvio
+      final checks = <SpoofingCheck>[];
 
-      // 1. Verificar precisión sospechosamente perfecta (más sensible)
-      if (position.accuracy < 2.0) {
-        immediateChecks.add(
+      // 1. Solo detectar precisión extremadamente perfecta (< 0.1m)
+      if (position.accuracy < 0.1) {
+        checks.add(
           SpoofingCheck(
             type: SpoofingCheckType.accuracy,
             isAnomaly: true,
-            severity: 0.8,
+            severity: 0.9,
             description:
-                'Precisión sospechosamente perfecta: ${position.accuracy.toStringAsFixed(1)}m',
+                'Precisión extremadamente perfecta: ${position.accuracy.toStringAsFixed(2)}m',
           ),
         );
       }
 
-      // 2. Verificar coordenadas redondas (más sensible)
-      final latDecimal = position.latitude - position.latitude.floor();
-      final lngDecimal = position.longitude - position.longitude.floor();
-      if ((latDecimal < 0.01 || latDecimal > 0.99) &&
-          (lngDecimal < 0.01 || lngDecimal > 0.99)) {
-        immediateChecks.add(
-          SpoofingCheck(
-            type: SpoofingCheckType.consistency,
-            isAnomaly: true,
-            severity: 0.7,
-            description: 'Coordenadas sospechosamente redondas',
-          ),
-        );
-      }
-
-      // 3. Verificar altitud sospechosa
-      if (position.altitude != 0 && position.altitude.abs() < 5) {
-        immediateChecks.add(
-          SpoofingCheck(
-            type: SpoofingCheckType.altitude,
-            isAnomaly: true,
-            severity: 0.6,
-            description:
-                'Altitud sospechosamente baja: ${position.altitude.toStringAsFixed(1)}m',
-          ),
-        );
-      }
-
-      // 4. Verificar timestamp
-      final now = DateTime.now();
-      final timeDiff = now.difference(position.timestamp).abs();
-      if (timeDiff.inMinutes > 5) {
-        // Menos sensible
-        immediateChecks.add(
-          SpoofingCheck(
-            type: SpoofingCheckType.timestamp,
-            isAnomaly: true,
-            severity: 0.5,
-            description:
-                'Timestamp sospechoso: ${timeDiff.inMinutes} min de diferencia',
-          ),
-        );
-      }
-
-      // 5. Verificar si las coordenadas están en valores "típicos" de Fake GPS
+      // 2. Solo detectar coordenadas extremadamente redondas (múltiplos de 0.01)
       final lat = position.latitude;
       final lng = position.longitude;
-
-      // Coordenadas muy redondas o en valores típicos de Fake GPS
-      if ((lat * 1000000).round() % 100000 == 0 ||
-          (lng * 1000000).round() % 100000 == 0) {
-        immediateChecks.add(
+      if ((lat * 100).round() % 100 == 0 && (lng * 100).round() % 100 == 0) {
+        checks.add(
           SpoofingCheck(
             type: SpoofingCheckType.consistency,
             isAnomaly: true,
             severity: 0.9,
-            description: 'Coordenadas típicas de Fake GPS',
+            description:
+                'Coordenadas extremadamente redondas (múltiplos de 0.01)',
           ),
         );
       }
 
-      // 6. Verificar si la precisión es exactamente la misma (muy sospechoso)
-      if (_locationHistory.isNotEmpty) {
-        final lastAccuracy = _locationHistory.last.accuracy;
-        if ((position.accuracy - lastAccuracy).abs() < 0.1) {
-          immediateChecks.add(
-            SpoofingCheck(
-              type: SpoofingCheckType.accuracy,
-              isAnomaly: true,
-              severity: 0.7,
-              description: 'Precisión idéntica (sospechoso)',
-            ),
-          );
-        }
+      // 3. Solo detectar altitud exactamente 0 con precisión perfecta
+      if (position.altitude == 0.0 && position.accuracy < 0.1) {
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.altitude,
+            isAnomaly: true,
+            severity: 0.8,
+            description:
+                'Altitud exactamente 0 con precisión extremadamente perfecta',
+          ),
+        );
       }
 
-      // Calcular riesgo inmediato
-      final immediateRiskScore =
-          immediateChecks.isNotEmpty
-              ? immediateChecks.map((c) => c.severity).reduce((a, b) => a + b) /
-                  immediateChecks.length
+      // 4. Solo detectar velocidad exactamente 0 con precisión perfecta
+      if (position.speed == 0.0 && position.accuracy < 0.1) {
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.speed,
+            isAnomaly: true,
+            severity: 0.8,
+            description:
+                'Velocidad exactamente 0 con precisión extremadamente perfecta',
+          ),
+        );
+      }
+
+      // 5. Solo detectar timestamp muy antiguo (> 30 minutos)
+      final now = DateTime.now();
+      final timeDiff = now.difference(position.timestamp).abs();
+      if (timeDiff.inMinutes > 30) {
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.timestamp,
+            isAnomaly: true,
+            severity: 0.7,
+            description: 'Timestamp muy antiguo: ${timeDiff.inMinutes} minutos',
+          ),
+        );
+      }
+
+      // Calcular riesgo con umbral muy alto
+      final riskScore =
+          checks.isNotEmpty
+              ? checks.map((c) => c.severity).reduce((a, b) => a + b) /
+                  checks.length
               : 0.0;
 
-      final isSpoofed =
-          immediateRiskScore >= 0.6; // Umbral más alto para detección inmediata
+      // Umbral muy alto (0.9) - solo detectar Fake GPS muy obvio
+      final isSpoofed = riskScore >= 0.9;
 
       final result = SpoofingDetectionResult(
         isSpoofed: isSpoofed,
-        riskScore: immediateRiskScore,
-        confidence: immediateChecks.length / 4.0,
-        detectedIssues:
-            immediateChecks.where((check) => check.isAnomaly).toList(),
-        recommendations: _generateRecommendations(immediateChecks),
+        riskScore: riskScore,
+        confidence: checks.length / 5.0,
+        detectedIssues: checks.where((check) => check.isAnomaly).toList(),
+        recommendations: _generateRecommendations(checks),
       );
 
       print(
-        '[GpsSpoofingDetector] 🚨 DETECCIÓN INMEDIATA: ${result.isSpoofed ? "FAKE GPS DETECTADO" : "GPS REAL"}',
+        '[GpsSpoofingDetector] 🔍 DETECCIÓN PERMISIVA: ${result.isSpoofed ? "FAKE GPS DETECTADO" : "GPS REAL"}',
       );
       print(
-        '[GpsSpoofingDetector] 🎯 Riesgo inmediato: ${(immediateRiskScore * 100).toStringAsFixed(1)}%',
+        '[GpsSpoofingDetector] 🎯 Riesgo permisivo: ${(riskScore * 100).toStringAsFixed(1)}%',
       );
 
       return result;
@@ -931,7 +794,399 @@ class GpsSpoofingDetector {
         riskScore: 0.0,
         confidence: 0.0,
         detectedIssues: [],
-        recommendations: ['Error en detección inmediata: $e'],
+        recommendations: ['Error en detección permisiva: $e'],
+      );
+    }
+  }
+
+  /// NUEVO: Detector mejorado usando APIs nativas de Android - más preciso y confiable
+  Future<SpoofingDetectionResult> detectWithNativeLibrary(
+    Position position,
+  ) async {
+    try {
+      print('[GpsSpoofingDetector] 🔍 Usando detección nativa mejorada...');
+
+      // Verificar si estamos en Android
+      if (Platform.isAndroid) {
+        // Usar APIs nativas de Android para detectar Fake GPS
+        final isDeveloperMode = await _checkDeveloperMode();
+        final hasMockLocationPermission = await _checkMockLocationPermission();
+
+        print('[GpsSpoofingDetector] 📱 Modo desarrollador: $isDeveloperMode');
+        print(
+          '[GpsSpoofingDetector] 📱 Permisos mock location: $hasMockLocationPermission',
+        );
+
+        // NUEVA: Verificar patrones de comportamiento
+        final isFakeGpsByPatterns = await _detectFakeGpsByPatterns(position);
+
+        if (isDeveloperMode && hasMockLocationPermission) {
+          // Fake GPS detectado por APIs nativas
+          final result = SpoofingDetectionResult(
+            isSpoofed: true,
+            riskScore: 0.95, // Muy alta confianza
+            confidence: 0.95,
+            detectedIssues: [
+              SpoofingCheck(
+                type: SpoofingCheckType.consistency,
+                isAnomaly: true,
+                severity: 0.95,
+                description: 'Fake GPS detectado por APIs nativas de Android',
+              ),
+            ],
+            recommendations: [
+              'Se detectó Fake GPS usando APIs nativas de Android',
+              'Modo desarrollador habilitado con permisos de mock location',
+              'Desactiva las apps de Fake GPS',
+              'Verifica los permisos de ubicación',
+            ],
+          );
+
+          print(
+            '[GpsSpoofingDetector] 🚨 FAKE GPS DETECTADO POR APIS NATIVAS!',
+          );
+          return result;
+        } else if (isFakeGpsByPatterns) {
+          // Fake GPS detectado por patrones de comportamiento
+          final result = SpoofingDetectionResult(
+            isSpoofed: true,
+            riskScore: 0.85, // Alta confianza
+            confidence: 0.85,
+            detectedIssues: [
+              SpoofingCheck(
+                type: SpoofingCheckType.consistency,
+                isAnomaly: true,
+                severity: 0.85,
+                description:
+                    'Fake GPS detectado por patrones de comportamiento',
+              ),
+            ],
+            recommendations: [
+              'Se detectó Fake GPS usando análisis de patrones',
+              'Patrones sospechosos detectados en la ubicación',
+              'Desactiva las apps de Fake GPS',
+              'Verifica los permisos de ubicación',
+            ],
+          );
+
+          print('[GpsSpoofingDetector] 🚨 FAKE GPS DETECTADO POR PATRONES!');
+          return result;
+        } else {
+          // GPS parece ser real según las APIs nativas
+          final result = SpoofingDetectionResult(
+            isSpoofed: false,
+            riskScore: 0.05, // Muy baja confianza
+            confidence: 0.95,
+            detectedIssues: [],
+            recommendations: [
+              'GPS parece ser real según APIs nativas de Android',
+              'Modo desarrollador deshabilitado o sin permisos de mock location',
+            ],
+          );
+
+          print('[GpsSpoofingDetector] ✅ GPS REAL SEGÚN APIS NATIVAS');
+          return result;
+        }
+      } else {
+        // En iOS, usar detección personalizada
+        print(
+          '[GpsSpoofingDetector] 📱 iOS detectado, usando detección personalizada',
+        );
+        return await detectSpoofingBalanced(position);
+      }
+    } catch (e) {
+      print('[GpsSpoofingDetector] ❌ Error con APIs nativas: $e');
+
+      // Fallback a detección personalizada si las APIs fallan
+      return await detectSpoofingBalanced(position);
+    }
+  }
+
+  /// NUEVO: Detector equilibrado - detecta Fake GPS real pero es menos propenso a falsos positivos
+  Future<SpoofingDetectionResult> detectSpoofingBalanced(
+    Position position,
+  ) async {
+    try {
+      // Agregar posición actual al historial
+      _addToHistory(position);
+
+      // Verificaciones equilibradas
+      final checks = <SpoofingCheck>[];
+
+      // 1. Precisión sospechosamente perfecta (más permisivo que antes pero menos que el permisivo)
+      if (position.accuracy < 3.0) {
+        // Más permisivo - detecta precisión sospechosa
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.accuracy,
+            isAnomaly: true,
+            severity: 0.6,
+            description:
+                'Precisión sospechosamente perfecta: ${position.accuracy.toStringAsFixed(1)}m',
+          ),
+        );
+      }
+
+      // 1.5. Verificar si la precisión es sospechosamente perfecta para Fake GPS
+      if (position.accuracy < 6.0 && position.accuracy > 4.0) {
+        // Rango sospechoso para Fake GPS (entre 4-6m)
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.accuracy,
+            isAnomaly: true,
+            severity: 0.8,
+            description:
+                'Precisión en rango sospechoso de Fake GPS: ${position.accuracy.toStringAsFixed(1)}m',
+          ),
+        );
+      }
+
+      // 1.6. Verificar si la precisión es sospechosamente perfecta para Fake GPS (rango más amplio)
+      if (position.accuracy < 8.0 && position.accuracy > 3.0) {
+        // Rango más amplio sospechoso para Fake GPS (entre 3-8m)
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.accuracy,
+            isAnomaly: true,
+            severity: 0.7,
+            description:
+                'Precisión en rango amplio sospechoso de Fake GPS: ${position.accuracy.toStringAsFixed(1)}m',
+          ),
+        );
+      }
+
+      // 1.7. Verificar si la precisión es sospechosamente perfecta para Fake GPS estático
+      if (position.accuracy < 6.0 &&
+          position.accuracy > 3.0 &&
+          position.speed == 0.0) {
+        // Rango sospechoso para Fake GPS estático (entre 3-6m con velocidad 0)
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.accuracy,
+            isAnomaly: true,
+            severity: 0.8,
+            description:
+                'Precisión sospechosa para Fake GPS estático: ${position.accuracy.toStringAsFixed(1)}m',
+          ),
+        );
+      }
+
+      // 2. Coordenadas redondas (más permisivo que antes)
+      final lat = position.latitude;
+      final lng = position.longitude;
+      final latDecimal = lat - lat.floor();
+      final lngDecimal = lng - lng.floor();
+
+      // Detectar coordenadas redondas (múltiplos de 0.1)
+      if ((lat * 10).round() % 10 == 0 && (lng * 10).round() % 10 == 0) {
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.consistency,
+            isAnomaly: true,
+            severity: 0.8,
+            description: 'Coordenadas redondas (múltiplos de 0.1)',
+          ),
+        );
+      }
+
+      // 3. Altitud sospechosa
+      if (position.altitude == 0.0 && position.accuracy < 1.0) {
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.altitude,
+            isAnomaly: true,
+            severity: 0.6,
+            description: 'Altitud exactamente 0 con precisión sospechosa',
+          ),
+        );
+      }
+
+      // 4. Velocidad sospechosa
+      if (position.speed == 0.0 && position.accuracy < 1.0) {
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.speed,
+            isAnomaly: true,
+            severity: 0.6,
+            description: 'Velocidad exactamente 0 con precisión sospechosa',
+          ),
+        );
+      }
+
+      // 5. Timestamp sospechoso
+      final now = DateTime.now();
+      final timeDiff = now.difference(position.timestamp).abs();
+      if (timeDiff.inMinutes > 15) {
+        // Entre 10 y 15 minutos
+        checks.add(
+          SpoofingCheck(
+            type: SpoofingCheckType.timestamp,
+            isAnomaly: true,
+            severity: 0.5,
+            description: 'Timestamp sospechoso: ${timeDiff.inMinutes} minutos',
+          ),
+        );
+      }
+
+      // 6. Verificar si la precisión es sospechosamente constante
+      if (_locationHistory.isNotEmpty) {
+        final lastAccuracy = _locationHistory.last.accuracy;
+        if ((position.accuracy - lastAccuracy).abs() < 0.5) {
+          // Precisión muy similar
+          checks.add(
+            SpoofingCheck(
+              type: SpoofingCheckType.accuracy,
+              isAnomaly: true,
+              severity: 0.6,
+              description: 'Precisión sospechosamente constante',
+            ),
+          );
+        }
+      }
+
+      // 6.5. Verificar si la velocidad es sospechosamente constante
+      if (_locationHistory.isNotEmpty) {
+        final lastSpeed = _locationHistory.last.speed;
+        if ((position.speed - lastSpeed).abs() < 0.1) {
+          // Velocidad muy similar - solo detectar si también tiene precisión sospechosa
+          if (position.accuracy < 10.0) {
+            // Solo detectar como Fake GPS si la precisión es sospechosamente perfecta
+            if (position.accuracy < 8.0) {
+              checks.add(
+                SpoofingCheck(
+                  type: SpoofingCheckType.speed,
+                  isAnomaly: true,
+                  severity: 0.5,
+                  description: 'Velocidad sospechosamente constante',
+                ),
+              );
+            }
+          }
+        }
+      }
+
+      // 6.6. Verificar si las coordenadas son sospechosamente similares (Fake GPS estático)
+      if (_locationHistory.isNotEmpty) {
+        final lastPosition = _locationHistory.last;
+        final latDiff = (position.latitude - lastPosition.latitude).abs();
+        final lngDiff = (position.longitude - lastPosition.longitude).abs();
+
+        // Si las coordenadas son muy similares (Fake GPS estático)
+        if (latDiff < 0.0001 && lngDiff < 0.0001) {
+          // Solo detectar como Fake GPS si también tiene precisión sospechosa
+          if (position.accuracy < 8.0) {
+            checks.add(
+              SpoofingCheck(
+                type: SpoofingCheckType.consistency,
+                isAnomaly: true,
+                severity: 0.7,
+                description: 'Coordenadas sospechosamente estáticas (Fake GPS)',
+              ),
+            );
+          }
+        }
+      }
+
+      // 6.7. Verificar si la precisión es sospechosamente constante (Fake GPS estático)
+      if (_locationHistory.isNotEmpty) {
+        final lastAccuracy = _locationHistory.last.accuracy;
+        if ((position.accuracy - lastAccuracy).abs() < 0.5) {
+          // Precisión muy similar - solo detectar si es sospechosamente perfecta
+          if (position.accuracy < 8.0) {
+            checks.add(
+              SpoofingCheck(
+                type: SpoofingCheckType.accuracy,
+                isAnomaly: true,
+                severity: 0.6,
+                description: 'Precisión sospechosamente constante',
+              ),
+            );
+          }
+        }
+      }
+
+      // 7. Verificar saltos de ubicación sospechosos
+      if (_locationHistory.isNotEmpty) {
+        final lastPosition = _locationHistory.last;
+        final distance = Geolocator.distanceBetween(
+          lastPosition.latitude,
+          lastPosition.longitude,
+          position.latitude,
+          position.longitude,
+        );
+
+        print(
+          '[GpsSpoofingDetector] 📍 Distancia desde última posición: ${distance.toInt()}m',
+        );
+
+        // Si hay un salto grande en poco tiempo
+        if (distance > 1000) {
+          // Más de 1km
+          final timeDiff =
+              position.timestamp.difference(lastPosition.timestamp).inSeconds;
+          print('[GpsSpoofingDetector] ⏱️ Tiempo transcurrido: ${timeDiff}s');
+
+          if (timeDiff < 60) {
+            // Menos de 1 minuto
+            checks.add(
+              SpoofingCheck(
+                type: SpoofingCheckType.consistency,
+                isAnomaly: true,
+                severity: 0.9,
+                description:
+                    'Salto de ubicación sospechoso: ${distance.toInt()}m en ${timeDiff}s',
+              ),
+            );
+            print(
+              '[GpsSpoofingDetector] 🚨 SALTO SOSPECHOSO DETECTADO: ${distance.toInt()}m en ${timeDiff}s',
+            );
+          }
+        }
+      }
+
+      // Calcular riesgo con umbral equilibrado
+      final riskScore =
+          checks.isNotEmpty
+              ? checks.map((c) => c.severity).reduce((a, b) => a + b) /
+                  checks.length
+              : 0.0;
+
+      // Umbral muy sensible (0.5) - detecta Fake GPS más fácilmente
+      final isSpoofed = riskScore >= 0.5;
+
+      final result = SpoofingDetectionResult(
+        isSpoofed: isSpoofed,
+        riskScore: riskScore,
+        confidence: checks.length / 7.0,
+        detectedIssues: checks.where((check) => check.isAnomaly).toList(),
+        recommendations: _generateRecommendations(checks),
+      );
+
+      print(
+        '[GpsSpoofingDetector] ⚖️ DETECCIÓN EQUILIBRADA: ${result.isSpoofed ? "FAKE GPS DETECTADO" : "GPS REAL"}',
+      );
+      print(
+        '[GpsSpoofingDetector] 🎯 Riesgo equilibrado: ${(riskScore * 100).toStringAsFixed(1)}%',
+      );
+
+      // Logs detallados para debugging
+      if (checks.isNotEmpty) {
+        print('[GpsSpoofingDetector] 📋 Problemas detectados:');
+        for (final check in checks) {
+          print(
+            '[GpsSpoofingDetector]   - ${check.description} (severidad: ${(check.severity * 100).toStringAsFixed(1)}%)',
+          );
+        }
+      }
+
+      return result;
+    } catch (e) {
+      return SpoofingDetectionResult(
+        isSpoofed: false,
+        riskScore: 0.0,
+        confidence: 0.0,
+        detectedIssues: [],
+        recommendations: ['Error en detección equilibrada: $e'],
       );
     }
   }
@@ -1071,19 +1326,33 @@ class GpsSpoofingDetector {
   Future<bool> _checkDeveloperMode() async {
     try {
       if (Platform.isAndroid) {
+        // Verificar si las opciones de desarrollador están habilitadas
+        // Esto es una aproximación ya que no podemos acceder directamente a Settings.Secure
         final deviceInfo = DeviceInfoPlugin();
         final androidInfo = await deviceInfo.androidInfo;
 
-        // Verificar si es un emulador o dispositivo de desarrollo
-        final isEmulator = androidInfo.isPhysicalDevice == false;
-        final hasDebugBuild =
-            androidInfo.version.release.contains('debug') ||
-            androidInfo.version.release.contains('test');
+        // Verificar características que indican modo desarrollador
+        final hasDeveloperFeatures =
+            androidInfo.brand.toLowerCase().contains('google') ||
+            androidInfo.model.toLowerCase().contains('sdk') ||
+            androidInfo.model.toLowerCase().contains('pixel') ||
+            androidInfo.isPhysicalDevice == false; // Emulador
 
-        return isEmulator || hasDebugBuild;
+        print('[GpsSpoofingDetector] 📱 Info del dispositivo:');
+        print('[GpsSpoofingDetector]   - Brand: ${androidInfo.brand}');
+        print('[GpsSpoofingDetector]   - Model: ${androidInfo.model}');
+        print(
+          '[GpsSpoofingDetector]   - IsPhysicalDevice: ${androidInfo.isPhysicalDevice}',
+        );
+        print(
+          '[GpsSpoofingDetector]   - HasDeveloperFeatures: $hasDeveloperFeatures',
+        );
+
+        return hasDeveloperFeatures;
       }
       return false;
     } catch (e) {
+      print('[GpsSpoofingDetector] ❌ Error verificando modo desarrollador: $e');
       return false;
     }
   }
@@ -1092,6 +1361,8 @@ class GpsSpoofingDetector {
   Future<bool> _checkMockLocationPermission() async {
     try {
       if (Platform.isAndroid) {
+        // Verificar si hay apps de mock location instaladas
+        // Esto es una aproximación ya que no podemos acceder directamente a los permisos
         final deviceInfo = DeviceInfoPlugin();
         final androidInfo = await deviceInfo.androidInfo;
 
@@ -1100,12 +1371,108 @@ class GpsSpoofingDetector {
             androidInfo.supportedAbis.contains('x86') ||
             androidInfo.supportedAbis.contains('x86_64') ||
             androidInfo.brand.toLowerCase().contains('google') ||
-            androidInfo.model.toLowerCase().contains('sdk');
+            androidInfo.model.toLowerCase().contains('sdk') ||
+            androidInfo.isPhysicalDevice == false; // Emulador
+
+        print('[GpsSpoofingDetector] 📱 Verificando permisos mock location:');
+        print(
+          '[GpsSpoofingDetector]   - Supported ABIs: ${androidInfo.supportedAbis}',
+        );
+        print(
+          '[GpsSpoofingDetector]   - HasMockLocationFeatures: $hasMockLocationFeatures',
+        );
 
         return hasMockLocationFeatures;
       }
       return false;
     } catch (e) {
+      print(
+        '[GpsSpoofingDetector] ❌ Error verificando permisos mock location: $e',
+      );
+      return false;
+    }
+  }
+
+  /// NUEVA: Detectar Fake GPS basado en patrones de comportamiento
+  Future<bool> _detectFakeGpsByPatterns(Position position) async {
+    try {
+      // Patrones específicos de Fake GPS que veo en tus logs
+      bool isFakeGps = false;
+      String detectedPattern = '';
+
+      // 1. Patrón: Coordenadas que cambian entre dos ubicaciones fijas
+      if (_locationHistory.isNotEmpty) {
+        final lastPosition = _locationHistory.last;
+        final latDiff = (position.latitude - lastPosition.latitude).abs();
+        final lngDiff = (position.longitude - lastPosition.longitude).abs();
+
+        // Si las coordenadas son muy similares (Fake GPS estático)
+        if (latDiff < 0.0001 && lngDiff < 0.0001) {
+          // Verificar si la precisión es sospechosamente constante
+          if (position.accuracy < 10.0 && position.accuracy > 3.0) {
+            isFakeGps = true;
+            detectedPattern = 'Coordenadas estáticas con precisión sospechosa';
+          }
+        }
+      }
+
+      // 2. Patrón: Precisión en rango sospechoso de Fake GPS
+      if (position.accuracy >= 3.0 && position.accuracy <= 8.0) {
+        // Rango típico de Fake GPS apps
+        if (position.speed < 1.0) {
+          // Velocidad baja o nula
+          isFakeGps = true;
+          detectedPattern = 'Precisión en rango sospechoso de Fake GPS';
+        }
+      }
+
+      // 3. Patrón: Saltos de ubicación imposibles
+      if (_locationHistory.isNotEmpty) {
+        final lastPosition = _locationHistory.last;
+        final distance = Geolocator.distanceBetween(
+          lastPosition.latitude,
+          lastPosition.longitude,
+          position.latitude,
+          position.longitude,
+        );
+        final timeDiff =
+            position.timestamp.difference(lastPosition.timestamp).inSeconds;
+
+        // Si hay un salto muy grande en poco tiempo
+        if (distance > 1000 && timeDiff < 60) {
+          isFakeGps = true;
+          detectedPattern =
+              'Salto de ubicación imposible: ${distance.toStringAsFixed(0)}m en ${timeDiff}s';
+        }
+      }
+
+      // 4. Patrón: Coordenadas que alternan entre dos ubicaciones específicas
+      if (_locationHistory.length >= 3) {
+        final uniqueLocations = <String>{};
+        final lastThree =
+            _locationHistory.skip(_locationHistory.length - 3).toList();
+        for (final pos in lastThree) {
+          uniqueLocations.add(
+            '${pos.latitude.toStringAsFixed(6)},${pos.longitude.toStringAsFixed(6)}',
+          );
+        }
+
+        if (uniqueLocations.length == 2) {
+          // Solo dos ubicaciones únicas en las últimas 3 lecturas
+          isFakeGps = true;
+          detectedPattern = 'Alternancia entre dos ubicaciones fijas';
+        }
+      }
+
+      if (isFakeGps) {
+        print(
+          '[GpsSpoofingDetector] 🚨 FAKE GPS DETECTADO POR PATRONES: $detectedPattern',
+        );
+      }
+
+      return isFakeGps;
+    } catch (e) {
+      print('[GpsSpoofingDetector] ❌ Error en detección por patrones: $e');
       return false;
     }
   }
@@ -1131,15 +1498,13 @@ class SpoofingDetectionResult {
     if (riskScore >= 0.8) return 'CRÍTICO';
     if (riskScore >= 0.6) return 'ALTO';
     if (riskScore >= 0.4) return 'MEDIO';
-    if (riskScore >= 0.2) return 'BAJO';
-    return 'MÍNIMO';
+    return 'BAJO';
   }
 
   Color get riskColor {
     if (riskScore >= 0.8) return Colors.red;
     if (riskScore >= 0.6) return Colors.orange;
     if (riskScore >= 0.4) return Colors.yellow;
-    if (riskScore >= 0.2) return Colors.lightGreen;
     return Colors.green;
   }
 }

@@ -67,6 +67,16 @@ class MobileMapLayout extends StatelessWidget {
               if (_shouldShowDangerWarning(mapViewModel))
                 const DangerZoneOverlay(),
 
+              // 🔒 Banner de GPS falso
+              GpsSpoofingBanner(
+                spoofingResult: mapViewModel.gpsSpoofingResult,
+                onDismiss: () {
+                  // Aquí puedes implementar lógica para ocultar el banner
+                  print('Banner de GPS falso descartado');
+                },
+                onReset: () => mapViewModel.resetGpsSpoofingDetector(),
+              ),
+
               // 🧭 Panel de navegación inferior
               NavigationFab(
                 onNavigationTap: (type) => _handleNavigationTap(context, type),
@@ -100,7 +110,10 @@ class MobileMapLayout extends StatelessWidget {
               const NavigationProgressWidget(),
 
               // 🔒 Widget de seguridad GPS - SOLO CUANDO HAY GPS FALSO
-             
+              GpsSecurityWidget(
+                spoofingResult: mapViewModel.gpsSpoofingResult,
+                onReset: () => mapViewModel.resetGpsSpoofingDetector(),
+              ),
             ],
           );
         },
@@ -293,6 +306,4 @@ class MobileMapLayout extends StatelessWidget {
       ),
     );
   }
-
-
-  }
+}

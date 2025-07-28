@@ -93,6 +93,16 @@ class MapViewModel extends ChangeNotifier
   double get currentZoom => _currentZoom;
 
   // ============================================================================
+  // 🔒 PROPIEDADES DE SEGURIDAD GPS
+  // ============================================================================
+
+  // Getter para acceder al resultado de detección de GPS falso
+  SpoofingDetectionResult? get gpsSpoofingResult => lastSpoofingResult;
+
+  // Getter para verificar si el GPS está siendo falsificado
+  bool get isGpsBeingSpoofed => isGpsSpoofed;
+
+  // ============================================================================
   // TODOS LOS MARCADORES PARA EL MAPA
   // ============================================================================
 
@@ -677,6 +687,13 @@ class MapViewModel extends ChangeNotifier
     // El GPS falso se maneja solo con notificaciones, no como error del mapa
 
     // Notificar cambios
+    notifyListeners();
+  }
+
+  // 🔒 NUEVO: Método para resetear el detector de GPS falso
+  void resetGpsSpoofingDetector() {
+    print('[MapViewModel] 🔄 Reseteando detector de GPS falso...');
+    super.resetGpsSpoofingDetector();
     notifyListeners();
   }
 
