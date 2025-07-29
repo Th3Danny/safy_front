@@ -3,10 +3,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:safy/home/domain/entities/place.dart';
 import 'package:safy/home/domain/entities/location.dart';
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
+import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 
 /// Mixin para gestión de búsquedas de lugares
 mixin SearchMixin on ChangeNotifier {
-  
   // Propiedades para búsqueda
   bool _isSearching = false;
   bool get isSearching => _isSearching;
@@ -73,6 +73,15 @@ mixin SearchMixin on ChangeNotifier {
     _selectedDestination = place;
     final placeLatLng = LatLng(place.latitude, place.longitude);
 
+    // 🆕 NUEVO: Cargar predicciones automáticamente cuando se selecciona un lugar
+    if (this is MapViewModel) {
+      final mapViewModel = this as MapViewModel;
+      print(
+        '[SearchMixin] 🔮 Cargando predicciones para lugar seleccionado: ${place.displayName}',
+      );
+      mapViewModel.loadPredictionsForDestination(placeLatLng);
+    }
+
     onPlaceSelected(place, placeLatLng, currentLocation);
     notifyListeners();
   }
@@ -81,5 +90,9 @@ mixin SearchMixin on ChangeNotifier {
   void onSearchSuccess();
   void onSearchError(String error);
   void onSearchCleared();
-  void onPlaceSelected(Place place, LatLng placeLocation, LatLng currentLocation);
+  void onPlaceSelected(
+    Place place,
+    LatLng placeLocation,
+    LatLng currentLocation,
+  );
 }

@@ -214,6 +214,38 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_background_service:
+    dependency: "direct main"
+    description:
+      name: flutter_background_service
+      sha256: "70a1c185b1fa1a44f8f14ecd6c86f6e50366e3562f00b2fa5a54df39b3324d3d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.1.0"
+  flutter_background_service_android:
+    dependency: "direct main"
+    description:
+      name: flutter_background_service_android
+      sha256: ca0793d4cd19f1e194a130918401a3d0b1076c81236f7273458ae96987944a87
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.3.1"
+  flutter_background_service_ios:
+    dependency: transitive
+    description:
+      name: flutter_background_service_ios
+      sha256: "6037ffd45c4d019dab0975c7feb1d31012dd697e25edc05505a4a9b0c7dc9fba"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.3"
+  flutter_background_service_platform_interface:
+    dependency: transitive
+    description:
+      name: flutter_background_service_platform_interface
+      sha256: ca74aa95789a8304f4d3f57f07ba404faa86bed6e415f83e8edea6ad8b904a41
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.1.2"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -361,7 +393,7 @@ packages:
     source: hosted
     version: "15.2.4"
   http:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: http
       sha256: "2c11f3f94c687ee9bad77c171151672986360b2b001d109814ee7140b2cf261b"
@@ -380,10 +412,10 @@ packages:
     dependency: transitive
     description:
       name: intl
-      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
+      sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
       url: "https://pub.dev"
     source: hosted
-    version: "0.20.2"
+    version: "0.19.0"
   js:
     dependency: transitive
     description:
@@ -440,14 +472,38 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  location:
+    dependency: "direct main"
+    description:
+      name: location
+      sha256: "37ffdadcd4b1498b769824f45ebb4de8ed46663a4a67ac27b33a590ee486579f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.2"
+  location_platform_interface:
+    dependency: transitive
+    description:
+      name: location_platform_interface
+      sha256: "2ecde6bb0f88032b0bbbde37e18975b4468711dd92619c2235cc0c0ee93b4b8e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.0"
+  location_web:
+    dependency: transitive
+    description:
+      name: location_web
+      sha256: "15ad7b4c8a9f55abee513373755e093a40c04d7e24fc1b4f89676fe99523d034"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.1"
   logger:
     dependency: transitive
     description:
       name: logger
-      sha256: be4b23575aac7ebf01f225a241eb7f6b5641eeaf43c6a8613510fc2f8cf187d1
+      sha256: "55d6c23a6c15db14920e037fe7e0dc32e7cdaf3b64b4b25df2d541b5b6b81c0c"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "2.6.1"
   logging:
     dependency: transitive
     description:

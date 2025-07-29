@@ -22,6 +22,9 @@ class ApiConstants {
   static const String heatmap = '/map/heatmap';
   static const String safeRoutes = '/map/safe-routes';
 
+  // Prediction endpoints
+  static const String predictions = '/api/v1/predictions/predict';
+
   // Headers
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',

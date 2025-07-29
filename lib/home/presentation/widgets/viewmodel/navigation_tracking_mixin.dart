@@ -20,10 +20,6 @@ mixin NavigationTrackingMixin on ChangeNotifier {
 
   // Iniciar seguimiento de navegación
   void startNavigationTracking(List<LatLng> route, LatLng startPosition) {
-    print(
-      '[NavigationTrackingMixin] 🧭 Iniciando seguimiento de navegación...',
-    );
-
     _originalRoute = List.from(route);
     _remainingRoute = List.from(route);
     _currentPosition = startPosition;
@@ -37,10 +33,6 @@ mixin NavigationTrackingMixin on ChangeNotifier {
 
   // Detener seguimiento de navegación
   void stopNavigationTracking() {
-    print(
-      '[NavigationTrackingMixin] ⏹️ Deteniendo seguimiento de navegación...',
-    );
-
     _isNavigating = false;
     _originalRoute.clear();
     _remainingRoute.clear();
@@ -77,9 +69,6 @@ mixin NavigationTrackingMixin on ChangeNotifier {
 
       // Si estamos muy cerca del punto, considerarlo como "pasado"
       if (distanceToPoint <= _toleranceDistance) {
-        print(
-          '[NavigationTrackingMixin] ✅ Pasando punto ${i + 1}/${_remainingRoute.length}',
-        );
         routeUpdated = true;
         continue; // Saltar este punto
       }
@@ -93,13 +82,8 @@ mixin NavigationTrackingMixin on ChangeNotifier {
       _remainingRoute = updatedRemainingRoute;
       updateRouteDisplay(_remainingRoute);
 
-      print(
-        '[NavigationTrackingMixin] 📍 Ruta actualizada: ${_remainingRoute.length} puntos restantes',
-      );
-
       // Verificar si llegamos al destino
       if (_remainingRoute.isEmpty) {
-        print('[NavigationTrackingMixin] 🎯 ¡Destino alcanzado!');
         onDestinationReached();
       }
     }

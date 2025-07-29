@@ -11,10 +11,14 @@ import 'package:safy/core/network/domian/config/dio_config.dart';
 import 'package:safy/core/services/firebase/firebase_messaging_service.dart';
 import 'package:safy/core/services/device/device_info_service.dart';
 import 'package:safy/core/services/device/device_registration_service.dart';
+import 'package:safy/core/services/cluster_detection_service.dart';
+import 'package:safy/core/services/location_tracking_service.dart';
+import 'package:safy/core/services/movement_detection_service.dart';
 import 'package:safy/core/session/session_manager.dart';
 import 'package:safy/home/application/maps_injector.dart';
-import 'package:safy/home/domain/usecases/get_open_route_use_case.dart';
+
 import 'package:safy/home/domain/usecases/search_places_use_case.dart';
+import 'package:safy/home/domain/usecases/get_predictions_use_case.dart';
 import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:safy/report/application/report_di.dart';
 import 'package:safy/report/domain/repositories/report_repository.dart';
@@ -27,12 +31,20 @@ import 'package:dio/dio.dart';
 
 final sl = GetIt.instance;
 
-Future<void> setupDependencyInjection({SharedPreferences? sharedPreferences}) async {
+Future<void> setupDependencyInjection({
+  SharedPreferences? sharedPreferences,
+}) async {
   print('[DI] 🚀 Iniciando configuración de dependencias...');
 
   // ===== EXTERNAL DEPENDENCIES =====
   final prefs = sharedPreferences ?? await SharedPreferences.getInstance();
-  sl.registerLazySingleton<SharedPreferences>(() => prefs);
+
+  // Verificar si SharedPreferences ya está registrado
+  if (!sl.isRegistered<SharedPreferences>()) {
+    sl.registerLazySingleton<SharedPreferences>(() => prefs);
+  } else {
+    print('[DI] ⚠️ SharedPreferences ya registrado, omitiendo...');
+  }
 
   // ===== CORE DEPENDENCIES =====
   sl.registerLazySingleton<Dio>(
@@ -46,9 +58,7 @@ Future<void> setupDependencyInjection({SharedPreferences? sharedPreferences}) as
   );
 
   // Session Manager
-  sl.registerLazySingleton<SessionManager>(
-    () => SessionManager.instance,
-  );
+  sl.registerLazySingleton<SessionManager>(() => SessionManager.instance);
 
   // Firebase Messaging Service
   sl.registerLazySingleton<FirebaseMessagingService>(
@@ -56,13 +66,38 @@ Future<void> setupDependencyInjection({SharedPreferences? sharedPreferences}) as
   );
 
   // Device Services
-  sl.registerLazySingleton<DeviceInfoService>(
-    () => DeviceInfoService(),
-  );
+  sl.registerLazySingleton<DeviceInfoService>(() => DeviceInfoService());
 
   sl.registerLazySingleton<DeviceRegistrationService>(
     () => DeviceRegistrationService(),
   );
+
+  // Cluster Detection Service
+  if (!sl.isRegistered<ClusterDetectionService>()) {
+    sl.registerLazySingleton<ClusterDetectionService>(
+      () => ClusterDetectionService(),
+    );
+  }
+
+  // Location Tracking Service
+  if (!sl.isRegistered<LocationTrackingService>()) {
+    sl.registerLazySingleton<LocationTrackingService>(
+      () => LocationTrackingService(),
+    );
+  }
+
+  // Movement Detection Service
+  if (!sl.isRegistered<MovementDetectionService>()) {
+    sl.registerLazySingleton<MovementDetectionService>(
+      () => MovementDetectionService(),
+    );
+  }
+
+  // Map ViewModel (para acceso desde servicios)
+  // NO registrar como singleton aquí, se maneja en getAllProviders()
+  // if (!sl.isRegistered<MapViewModel>()) {
+  //   sl.registerLazySingleton<MapViewModel>(() => MapViewModel());
+  // }
 
   // ===== FEATURE DEPENDENCIES =====
   await setupAuthDependencies();
@@ -86,7 +121,9 @@ void _ensureCriticalDependencies() {
 
     // Verificar GetReportsForMapUseCase
     if (!sl.isRegistered<GetReportsForMapUseCase>()) {
-      print('[DI] ⚠️ GetReportsForMapUseCase no registrado, registrando ahora...');
+      print(
+        '[DI] ⚠️ GetReportsForMapUseCase no registrado, registrando ahora...',
+      );
       sl.registerLazySingleton<GetReportsForMapUseCase>(
         () => GetReportsForMapUseCase(sl<ReportRepository>()),
       );
@@ -110,9 +147,7 @@ void _ensureCriticalDependencies() {
 List<SingleChildWidget> getAllProviders() {
   return [
     // ===== AUTH PROVIDERS =====
-    ChangeNotifierProvider<LoginViewModel>(
-      create: (_) => sl<LoginViewModel>(),
-    ),
+    ChangeNotifierProvider<LoginViewModel>(create: (_) => sl<LoginViewModel>()),
     ChangeNotifierProvider<RegisterViewModel>(
       create: (_) => sl<RegisterViewModel>(),
     ),
@@ -133,20 +168,21 @@ List<SingleChildWidget> getAllProviders() {
       create: (_) {
         try {
           print('[DI] 🗺️ Creando MapViewModel...');
-          
+
           // Verificar dependencias antes de crear MapViewModel
           final searchPlacesUseCase = sl<SearchPlacesUseCase>();
-          final getOpenRouteUseCase = sl<GetOpenRouteUseCase>();
+
           final getReportsForMapUseCase = sl<GetReportsForMapUseCase>();
           final getClustersUseCase = sl<GetClustersUseCase>();
-          
+          final getPredictionsUseCase = sl<GetPredictionsUseCase>();
+
           print('[DI] ✅ Todas las dependencias disponibles para MapViewModel');
-          
+
           return MapViewModel(
             searchPlacesUseCase: searchPlacesUseCase,
-            getOpenRouteUseCase: getOpenRouteUseCase,
             getReportsForMapUseCase: getReportsForMapUseCase,
             getClustersUseCase: getClustersUseCase,
+            getPredictionsUseCase: getPredictionsUseCase,
           );
         } catch (e) {
           print('[DI] ❌ Error creando MapViewModel: $e');

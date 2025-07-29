@@ -4,6 +4,7 @@ import 'package:safy/core/router/domain/constants/app_routes_constant.dart';
 import 'package:safy/core/session/session_manager.dart';
 import 'package:safy/shared/widget/settings_section.dart';
 import 'package:safy/shared/widget/settings_tile.dart';
+import 'package:safy/core/services/background_danger_detection_service.dart';
 
 class SettingsList extends StatefulWidget {
   const SettingsList({super.key});
@@ -14,6 +15,19 @@ class SettingsList extends StatefulWidget {
 
 class _SettingsListState extends State<SettingsList> {
   bool _isLoggingOut = false;
+  bool _isBackgroundServiceRunning = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBackgroundServiceStatus();
+  }
+
+  void _checkBackgroundServiceStatus() {
+    setState(() {
+      _isBackgroundServiceRunning = BackgroundDangerDetectionService.isRunning;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +53,37 @@ class _SettingsListState extends State<SettingsList> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 24),
-        
+
+        // 🚨 NUEVA SECCIÓN: Servicio de Detección de Peligro
+        SettingsSection(
+          title: 'Seguridad',
+          children: [
+            SettingsTile(
+              title:
+                  _isBackgroundServiceRunning
+                      ? 'Detección Activa - Monitoreando zonas'
+                      : 'Detección Inactiva - Activar monitoreo',
+              icon: Icons.security,
+              iconColor:
+                  _isBackgroundServiceRunning ? Colors.green : Colors.grey,
+              onTap: () {
+                _toggleBackgroundService();
+              },
+            ),
+            SettingsTile(
+              title: 'Configurar Radio de Detección',
+              icon: Icons.radar,
+              onTap: () {
+                _showDetectionRadiusDialog(context);
+              },
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+
         // Sección Support & About
         SettingsSection(
           title: 'Support & About',
@@ -62,9 +104,9 @@ class _SettingsListState extends State<SettingsList> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         // Sección Actions
         SettingsSection(
           title: 'Actions',
@@ -96,43 +138,58 @@ class _SettingsListState extends State<SettingsList> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text('Cerrar Sesión'),
-              content: _isLoggingOut
-                  ? const Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Cerrando sesión...'),
-                      ],
-                    )
-                  : const Text('¿Estás seguro que quieres cerrar sesión?'),
-              actions: _isLoggingOut
-                  ? []
-                  : [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(dialogContext).pop();
-                        },
-                        child: const Text('Cancelar'),
+              content:
+                  _isLoggingOut
+                      ? const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Cerrando sesión...'),
+                        ],
+                      )
+                      : const Text(
+                        '¿Estás seguro de que quieres cerrar sesión?',
                       ),
-                      TextButton(
-                        onPressed: () async {
-                          //  CORRECCIÓN: Actualizar ambos estados
-                          setState(() {
-                            _isLoggingOut = true;
-                          });
-                          setDialogState(() {
-                            _isLoggingOut = true;
-                          });
-                          
-                          await _performSimpleLogout(dialogContext);
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
+              actions:
+                  _isLoggingOut
+                      ? []
+                      : [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(dialogContext).pop();
+                          },
+                          child: const Text('Cancelar'),
                         ),
-                        child: const Text('Cerrar Sesión'),
-                      ),
-                    ],
+                        TextButton(
+                          onPressed: () async {
+                            setDialogState(() {
+                              _isLoggingOut = true;
+                            });
+
+                            try {
+                              await SessionManager.instance.clearSession();
+                              if (mounted) {
+                                Navigator.of(dialogContext).pop();
+                                context.go(AppRoutesConstant.login);
+                              }
+                            } catch (e) {
+                              setDialogState(() {
+                                _isLoggingOut = false;
+                              });
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error al cerrar sesión: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: const Text('Cerrar Sesión'),
+                        ),
+                      ],
             );
           },
         );
@@ -140,60 +197,62 @@ class _SettingsListState extends State<SettingsList> {
     );
   }
 
-  Future<void> _performSimpleLogout(BuildContext dialogContext) async {
+  // 🚨 NUEVO: Método para alternar el servicio de detección de peligro
+  void _toggleBackgroundService() async {
     try {
-      print('[SettingsList]  Iniciando logout simple...');
-      
-      // Limpiar sesión directamente
-      await SessionManager.instance.clearSession();
-      
-      print('[SettingsList]  Logout simple exitoso');
-      
-      // Pequeña pausa para que se vea el loading
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Cerrar diálogo
-      if (Navigator.of(dialogContext).canPop()) {
-        Navigator.of(dialogContext).pop();
+      if (_isBackgroundServiceRunning) {
+        await BackgroundDangerDetectionService.stopMonitoring();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Servicio de detección detenido'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        await BackgroundDangerDetectionService.startMonitoring();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Servicio de detección iniciado'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
-      
-      // Navegar al login
-      if (mounted) {
-        context.go(AppRoutesConstant.login);
-      }
-      
+
+      _checkBackgroundServiceStatus();
     } catch (e) {
-      print('[SettingsList]  Error en logout simple: $e');
-      
-      if (Navigator.of(dialogContext).canPop()) {
-        Navigator.of(dialogContext).pop();
-      }
-      
-      if (mounted) {
-        _showErrorDialog('Error al cerrar sesión. Intenta nuevamente.');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoggingOut = false;
-        });
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 
-  void _showErrorDialog(String message) {
+  // 🚨 NUEVO: Método para mostrar diálogo de configuración de radio
+  void _showDetectionRadiusDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Error'),
-          content: Text(message),
+          title: const Text('Configurar Radio de Detección'),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('El radio de detección se ajusta automáticamente según:'),
+              SizedBox(height: 8),
+              Text('• Severidad del peligro'),
+              Text('• Cantidad de reportes'),
+              Text('• Distancia al cluster'),
+              SizedBox(height: 16),
+              Text('Radio base: 100m'),
+              Text('Máximo: 200m'),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
               },
-              child: const Text('OK'),
+              child: const Text('Entendido'),
             ),
           ],
         );

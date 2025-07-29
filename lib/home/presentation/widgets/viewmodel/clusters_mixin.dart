@@ -1,9 +1,10 @@
-// lib/features/home/presentation/widgets/viewmodel/clusters_mixin.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:safy/report/domain/entities/cluster_entity.dart';
 import 'package:safy/report/domain/usecases/get_clusters_use_case.dart';
+import 'dart:math' as math;
 
 /// Mixin para gestión de clusters de zonas peligrosas
 mixin ClustersMixin on ChangeNotifier {
@@ -76,6 +77,110 @@ mixin ClustersMixin on ChangeNotifier {
       _clustersLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Carga clusters para un área específica de la vista del mapa
+  Future<void> loadClustersForMapView(
+    LatLng mapCenter, {
+    double zoom = 15.0,
+    double radiusKm = 5.0, // Radio de búsqueda en km
+  }) async {
+    print('[ClustersMixin] 🚀 loadClustersForMapView iniciado');
+
+    if (_clustersLoading) {
+      print('[ClustersMixin] ⏳ Ya se están cargando clusters, saltando...');
+      return; // Evitar cargas múltiples
+    }
+
+    print(
+      '[ClustersMixin] 📍 Cargando clusters para: ${mapCenter.latitude}, ${mapCenter.longitude} (radio: ${radiusKm}km)',
+    );
+    _clustersLoading = true;
+    _clustersError = null;
+    notifyListeners();
+
+    try {
+      print(
+        '[ClustersMixin] 🗺️ Cargando clusters para vista del mapa: ${mapCenter.latitude}, ${mapCenter.longitude} (radio: ${radiusKm}km)',
+      );
+
+      if (getClustersUseCase != null) {
+        // Usar el mismo caso de uso pero con el centro del mapa
+        _clusters = await getClustersUseCase!.execute(
+          latitude: mapCenter.latitude,
+          longitude: mapCenter.longitude,
+        );
+
+        // Filtrar clusters que estén dentro del radio de la vista
+        _clusters =
+            _clusters.where((cluster) {
+              final distance = _calculateDistance(
+                mapCenter.latitude,
+                mapCenter.longitude,
+                cluster.centerLatitude,
+                cluster.centerLongitude,
+              );
+              return distance <= radiusKm;
+            }).toList();
+
+        print(
+          '[ClustersMixin] 📊 Cargados ${_clusters.length} clusters para vista del mapa',
+        );
+
+        if (_clusters.isNotEmpty) {
+          _createClusterMarkers(_clusters, zoom: zoom);
+          print(
+            '[ClustersMixin] ✅ Marcadores de clusters creados para vista del mapa',
+          );
+        } else {
+          print('[ClustersMixin] ℹ️ No hay clusters en esta área del mapa');
+          _clusterMarkers.clear();
+        }
+      } else {
+        print(
+          '[ClustersMixin] ⚠️ GetClustersUseCase no disponible, usando datos ficticios',
+        );
+        _loadFakeClustersForMapView(mapCenter, radiusKm);
+      }
+    } catch (e) {
+      print('[ClustersMixin] ❌ Error cargando clusters para vista: $e');
+      _clustersError = 'Error cargando zonas peligrosas: $e';
+      print('[ClustersMixin] 🔄 Fallback a datos ficticios');
+      _loadFakeClustersForMapView(mapCenter, radiusKm);
+    } finally {
+      _clustersLoading = false;
+      print('[ClustersMixin] ✅ loadClustersForMapView completado');
+      notifyListeners();
+    }
+  }
+
+  /// Calcula distancia entre dos puntos usando fórmula de Haversine
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const double earthRadius = 6371; // Radio de la Tierra en km
+
+    final dLat = _degreesToRadians(lat2 - lat1);
+    final dLon = _degreesToRadians(lon2 - lon1);
+
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(lat1)) *
+            math.cos(_degreesToRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  /// Convierte grados a radianes
+  double _degreesToRadians(double degrees) {
+    return degrees * (math.pi / 180);
   }
 
   void _createClusterMarkers(
@@ -347,6 +452,125 @@ mixin ClustersMixin on ChangeNotifier {
 
     print(
       '[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters ficticios',
+    );
+  }
+
+  /// Carga clusters ficticios para un área específica de la vista del mapa
+  void _loadFakeClustersForMapView(LatLng mapCenter, double radiusKm) {
+    _clusterMarkers.clear();
+
+    // Generar clusters ficticios alrededor del centro del mapa
+    final fakeClusters = [
+      (
+        mapCenter.latitude + 0.001,
+        mapCenter.longitude + 0.001,
+        Colors.red,
+        5,
+        'ROBBERY_ASSAULT',
+        'Asaltos/Robos',
+        3,
+      ),
+      (
+        mapCenter.latitude - 0.002,
+        mapCenter.longitude + 0.002,
+        Colors.orange,
+        3,
+        'STREET_HARASSMENT',
+        'Acoso Callejero',
+        2,
+      ),
+      (
+        mapCenter.latitude + 0.003,
+        mapCenter.longitude - 0.001,
+        Colors.red,
+        4,
+        'GANG_VIOLENCE',
+        'Violencia Pandillas',
+        4,
+      ),
+      (
+        mapCenter.latitude - 0.001,
+        mapCenter.longitude - 0.002,
+        Colors.yellow,
+        2,
+        'THEFT',
+        'Robos Menores',
+        1,
+      ),
+      (
+        mapCenter.latitude + 0.002,
+        mapCenter.longitude + 0.003,
+        Colors.orange,
+        3,
+        'DRUG_ACTIVITY',
+        'Actividad de Drogas',
+        2,
+      ),
+    ];
+
+    for (int i = 0; i < fakeClusters.length; i++) {
+      final cluster = fakeClusters[i];
+      final clusterPoint = LatLng(cluster.$1, cluster.$2);
+
+      // Verificar si el cluster está dentro del radio especificado
+      final distance = _calculateDistance(
+        mapCenter.latitude,
+        mapCenter.longitude,
+        clusterPoint.latitude,
+        clusterPoint.longitude,
+      );
+
+      if (distance <= radiusKm) {
+        _clusterMarkers.add(
+          Marker(
+            key: Key('fake_cluster_view_$i'),
+            point: clusterPoint,
+            width: _getClusterMarkerSize(cluster.$4) * _getZoomScale(15.0),
+            height: _getClusterMarkerSize(cluster.$4) * _getZoomScale(15.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: cluster.$3.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(color: cluster.$3, width: 4),
+              ),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Icon(Icons.dangerous, color: cluster.$3, size: 28),
+                  ),
+                  Positioned(
+                    bottom: 2,
+                    left: 2,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${cluster.$7}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    print(
+      '[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters ficticios para vista del mapa',
     );
   }
 
