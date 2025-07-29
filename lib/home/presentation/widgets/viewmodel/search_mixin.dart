@@ -76,9 +76,7 @@ mixin SearchMixin on ChangeNotifier {
     // 🆕 NUEVO: Cargar predicciones automáticamente cuando se selecciona un lugar
     if (this is MapViewModel) {
       final mapViewModel = this as MapViewModel;
-      print(
-        '[SearchMixin] 🔮 Cargando predicciones para lugar seleccionado: ${place.displayName}',
-      );
+      // Removed debug print
       mapViewModel.loadPredictionsForDestination(placeLatLng);
     }
 

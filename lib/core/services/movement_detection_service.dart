@@ -46,17 +46,11 @@ class MovementDetectionService {
       await _checkLocationPermissions();
 
       _isActive = true;
-      print(
-        '[MovementDetectionService] 🚀 Servicio de detección de movimiento iniciado',
-      );
-      print(
-        '[MovementDetectionService] 📏 Umbral de movimiento: ${_movementThreshold}m',
-      );
-      print(
-        '[MovementDetectionService] ⏱️ Timeout de inactividad: ${_movementTimeout.inSeconds}s',
-      );
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
     } catch (e) {
-      print('[MovementDetectionService] ❌ Error inicializando: $e');
+      // Removed debug print
       rethrow;
     }
   }
@@ -87,7 +81,7 @@ class MovementDetectionService {
     Function(LatLng)? onLocationUpdate,
   }) {
     if (!_isActive) {
-      print('[MovementDetectionService] ❌ Servicio no inicializado');
+      // Removed debug print
       return;
     }
 
@@ -95,7 +89,7 @@ class MovementDetectionService {
     _onMovementStateChanged = onMovementStateChanged;
     _onLocationUpdate = onLocationUpdate;
 
-    print('[MovementDetectionService] 📡 Iniciando detección de movimiento...');
+    // Removed debug print
 
     // Configuración conservadora para detección
     final locationSettings = LocationSettings(
@@ -108,18 +102,16 @@ class MovementDetectionService {
     Geolocator.getPositionStream(locationSettings: locationSettings).listen(
       _handlePositionUpdate,
       onError: (error) {
-        print('[MovementDetectionService] ❌ Error en stream: $error');
+        // Removed debug print
 
         // Manejar timeouts específicamente
         if (error.toString().contains('TimeoutException')) {
-          print(
-            '[MovementDetectionService] ⏰ Timeout detectado, reintentando en 5 segundos...',
-          );
+          // Removed debug print
 
           // Reintentar después de 5 segundos
           Future.delayed(Duration(seconds: 5), () {
             if (_isActive) {
-              print('[MovementDetectionService] 🔄 Reintentando detección...');
+              // Removed debug print
               startDetection(
                 onMovementStateChanged: _onMovementStateChanged,
                 onLocationUpdate: _onLocationUpdate,
@@ -133,7 +125,7 @@ class MovementDetectionService {
     // Iniciar timer para verificar inactividad
     _startInactivityTimer();
 
-    print('[MovementDetectionService] ✅ Detección iniciada');
+    // Removed debug print
   }
 
   /// Manejar actualización de posición
@@ -142,9 +134,7 @@ class MovementDetectionService {
     final now = DateTime.now();
 
     // Actualizar ubicación
-    print(
-      '[MovementDetectionService] 📍 Enviando actualización de ubicación al UI',
-    );
+    // Removed debug print
     _onLocationUpdate?.call(newLocation);
 
     // Calcular distancia movida
@@ -187,9 +177,7 @@ class MovementDetectionService {
       print(
         '[MovementDetectionService] 🚶 MOVIMIENTO DETECTADO: ${distance.toStringAsFixed(1)}m',
       );
-      print(
-        '[MovementDetectionService] 📊 Total de detecciones: $_movementDetections',
-      );
+      // Removed debug print
 
       // Notificar cambio de estado
       _onMovementStateChanged?.call(true);
@@ -208,9 +196,7 @@ class MovementDetectionService {
         if (timeSinceLastMovement > _movementTimeout) {
           _isMoving = false;
 
-          print(
-            '[MovementDetectionService] 🛑 INACTIVIDAD DETECTADA: ${timeSinceLastMovement.inSeconds}s sin movimiento',
-          );
+          // Removed debug print
 
           // Notificar cambio de estado
           _onMovementStateChanged?.call(false);
@@ -251,7 +237,7 @@ class MovementDetectionService {
       );
       // Aquí podrías mostrar una notificación al usuario
     } else {
-      print('[MovementDetectionService] 📱 Notificación: Usuario inactivo');
+      // Removed debug print
       // Aquí podrías mostrar una notificación al usuario
     }
   }
@@ -283,7 +269,7 @@ class MovementDetectionService {
     _isActive = false;
     _isMoving = false;
 
-    print('[MovementDetectionService] ⏹️ Detección detenida');
+    // Removed debug print
   }
 
   /// Obtener estado actual

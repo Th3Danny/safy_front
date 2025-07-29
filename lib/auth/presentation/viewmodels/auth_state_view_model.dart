@@ -37,24 +37,24 @@ class AuthStateViewModel extends ChangeNotifier {
 
   try {
     if (_sessionManager.isLoggedIn) {
-      print('[AuthStateVM] 🔄 Intentando cargar usuario...');
+      // Removed debug print
       
       try {
         _currentUser = await _getCurrentUserUseCase.execute();
-        print('[AuthStateVM] ✅ Usuario cargado: ${_currentUser?.username}');
+        // Removed debug print
       } catch (e) {
-        print('[AuthStateVM] ⚠️ Error cargando usuario, usando datos de sesión: $e');
+        // Removed debug print
         // 🔧 CAMBIO: Usar datos del SessionManager si falla la API
         _currentUser = _sessionManager.currentUser;
-        print('[AuthStateVM] 💾 Usuario tomado de SessionManager: ${_currentUser?.username}');
+        // Removed debug print
       }
     } else {
-      print('[AuthStateVM]  No hay usuario logueado');
+      // Removed debug print
     }
     _initialized = true;
   } catch (e, stackTrace) {
-    print('[AuthStateVM]  Error en initialize: $e');
-    print(stackTrace);
+    // Removed debug print
+    // Removed debug print
     
     // 🔧 CAMBIO: No limpiar sesión por errores de red
     if (e is UnauthorizedException) {
@@ -80,10 +80,10 @@ class AuthStateViewModel extends ChangeNotifier {
       await _signOutUseCase.execute();
       _currentUser = null;
       _initialized = false;
-      print('[AuthStateVM] Sesión cerrada correctamente');
+      // Removed debug print
     } catch (e, stackTrace) {
-      print('[AuthStateVM] Error cerrando sesión: $e');
-      print(stackTrace);
+      // Removed debug print
+      // Removed debug print
       _setError('Error cerrando sesión');
     } finally {
       _setLoading(false);
@@ -99,10 +99,10 @@ class AuthStateViewModel extends ChangeNotifier {
     try {
       _currentUser = await _getCurrentUserUseCase.execute();
       _clearError();
-      print('[AuthStateVM] Usuario refrescado');
+      // Removed debug print
     } catch (e, stackTrace) {
-      print('[AuthStateVM] Error refrescando usuario: $e');
-      print(stackTrace);
+      // Removed debug print
+      // Removed debug print
       _setError('Error actualizando datos');
     } finally {
       _setLoading(false);

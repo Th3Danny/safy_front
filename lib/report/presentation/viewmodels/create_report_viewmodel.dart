@@ -72,17 +72,13 @@ class CreateReportViewModel extends ChangeNotifier {
         isAnonymous: isAnonymous,
       );
       _errorMessage = null; // 👈 Asegurar que no hay error
-      print('[CreateReportViewModel] ✅ Reporte creado: $_reporterName');
     } on ReportValidationException catch (e) {
       _errorMessage =
           'Errores de validación: ${e.fieldErrors.values.expand((x) => x).join(', ')}';
-      print('[CreateReportViewModel] ❌ Validation error: $_errorMessage');
     } on ReportExceptions catch (e) {
       _errorMessage = e.message;
-      print('[CreateReportViewModel] ❌ Report error: $_errorMessage');
     } catch (e) {
       _errorMessage = 'Error inesperado: ${e.toString()}';
-      print('[CreateReportViewModel] ❌ Unexpected error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

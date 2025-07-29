@@ -178,7 +178,7 @@ class _RouteSuggestionsWidgetState extends State<RouteSuggestionsWidget> {
 
   // 🆕 MÉTODO PARA SELECCIONAR RUTA Y ACTUALIZAR INMEDIATAMENTE
   void _selectRoute(int routeIndex) {
-    print('🛣️ [RouteSuggestionsWidget] Seleccionando ruta: $routeIndex');
+    // Removed debug print
 
     setState(() {
       _selectedRouteIndex = routeIndex;
@@ -223,24 +223,16 @@ class _RouteSuggestionsWidgetState extends State<RouteSuggestionsWidget> {
         safetyLevel = widget.safeSafetyLevel;
     }
 
-    print('🛣️ [RouteSuggestionsWidget] Ruta seleccionada: $routeName');
-    print(
-      '🛣️ [RouteSuggestionsWidget] Puntos de ruta: ${selectedRoute.length}',
-    );
-    print(
-      '🛣️ [RouteSuggestionsWidget] Primer punto: ${selectedRoute.isNotEmpty ? selectedRoute.first : 'N/A'}',
-    );
-    print(
-      '🛣️ [RouteSuggestionsWidget] Último punto: ${selectedRoute.isNotEmpty ? selectedRoute.last : 'N/A'}',
-    );
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
 
     // 🆕 ACTUALIZAR LA RUTA INMEDIATAMENTE EN EL MAPA
     mapViewModel.setCurrentRouteWithName(selectedRoute, routeName);
 
-    print('🛣️ [RouteSuggestionsWidget] Ruta actualizada en ViewModel');
-    print(
-      '🛣️ [RouteSuggestionsWidget] Ruta actual en ViewModel: ${mapViewModel.currentRoute.length} puntos',
-    );
+    // Removed debug print
+    // Removed debug print
 
     // 🆕 MOSTRAR CONFIRMACIÓN VISUAL
     ScaffoldMessenger.of(context).showSnackBar(

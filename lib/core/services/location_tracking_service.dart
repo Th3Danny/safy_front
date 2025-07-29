@@ -62,15 +62,11 @@ class LocationTrackingService {
       _isActive = true;
       _startTime = DateTime.now();
 
-      print('[LocationTrackingService] 🚀 Servicio de tracking iniciado');
-      print(
-        '[LocationTrackingService] 📏 Distancia mínima: ${_minDistanceFilter}m',
-      );
-      print(
-        '[LocationTrackingService] ⏱️ Intervalo máximo: ${_updateInterval.inSeconds}s',
-      );
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
     } catch (e) {
-      print('[LocationTrackingService] ❌ Error inicializando: $e');
+      // Removed debug print
       rethrow;
     }
   }
@@ -103,7 +99,7 @@ class LocationTrackingService {
     Function()? getClustersCallback,
   }) {
     if (!_isActive) {
-      print('[LocationTrackingService] ❌ Servicio no inicializado');
+      // Removed debug print
       return;
     }
 
@@ -125,9 +121,7 @@ class LocationTrackingService {
       if (isAvailable) {
         _startPositionStream(locationSettings);
       } else {
-        print(
-          '[LocationTrackingService] ⚠️ GPS no disponible, usando configuración conservadora',
-        );
+        // Removed debug print
         _startPositionStream(_getConservativeSettings());
       }
     });
@@ -142,7 +136,7 @@ class LocationTrackingService {
       );
       return position != null;
     } catch (e) {
-      print('[LocationTrackingService] ⚠️ GPS lento o no disponible: $e');
+      // Removed debug print
       return false;
     }
   }
@@ -158,27 +152,23 @@ class LocationTrackingService {
 
   /// Iniciar stream de posición
   void _startPositionStream(LocationSettings settings) {
-    print('[LocationTrackingService] 📡 Iniciando stream de ubicación...');
+    // Removed debug print
 
     _positionStream = Geolocator.getPositionStream(
       locationSettings: settings,
     ).listen(
       _handlePositionUpdate,
       onError: (error) {
-        print('[LocationTrackingService] ❌ Error en stream: $error');
+        // Removed debug print
 
         // Manejar timeouts específicamente
         if (error.toString().contains('TimeoutException')) {
-          print(
-            '[LocationTrackingService] ⏰ Timeout detectado, reintentando en 3 segundos...',
-          );
+          // Removed debug print
 
           // Reintentar después de 3 segundos
           Future.delayed(Duration(seconds: 3), () {
             if (_isActive && _positionStream == null) {
-              print(
-                '[LocationTrackingService] 🔄 Reintentando conexión GPS...',
-              );
+              // Removed debug print
               startTracking(
                 onLocationUpdate: _onLocationUpdate,
                 onSignificantMovement: _onSignificantMovement,
@@ -193,7 +183,7 @@ class LocationTrackingService {
       },
     );
 
-    print('[LocationTrackingService] ✅ Tracking iniciado con alta precisión');
+    // Removed debug print
   }
 
   /// Manejar actualización de posición
@@ -256,10 +246,10 @@ class LocationTrackingService {
         final clusters = _getClustersCallback!();
         return clusters is List<ClusterEntity> ? clusters : [];
       }
-      print('[LocationTrackingService] ⚠️ Callback de clusters no configurado');
+      // Removed debug print
       return [];
     } catch (e) {
-      print('[LocationTrackingService] ⚠️ Error obteniendo clusters: $e');
+      // Removed debug print
       return [];
     }
   }
@@ -290,7 +280,7 @@ class LocationTrackingService {
     _positionStream = null;
     _isActive = false;
 
-    print('[LocationTrackingService] ⏹️ Tracking detenido');
+    // Removed debug print
   }
 
   /// Obtener estadísticas del servicio

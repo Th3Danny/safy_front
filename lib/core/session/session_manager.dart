@@ -14,24 +14,21 @@ class SessionManager {
   bool _isInitialized = false;
 
   Future<void> initialize({SharedPreferences? prefs}) async {
-    print('[SessionManager] 🚀 INICIANDO initialize()...');
-
     if (_isInitialized) {
-      print('[SessionManager] ⚠️ Ya está inicializado, saliendo...');
       return;
     }
 
     try {
       _prefs = prefs ?? await SharedPreferences.getInstance();
-      print('[SessionManager] ✅ SharedPreferences obtenido');
+      // Removed debug print
 
       await _loadStoredSession();
 
       _isInitialized = true;
-      print('[SessionManager] ✅ Inicialización completada');
-      print('[SessionManager] 📊 Estado final - isLoggedIn: $isLoggedIn');
+      // Removed debug print
+      // Removed debug print
     } catch (e) {
-      print('[SessionManager] ❌ Error en initialize: $e');
+      // Removed debug print
       _isInitialized = true; // Marcar como inicializado aún con error
     }
   }
@@ -44,10 +41,10 @@ class SessionManager {
     final isNotExpired = hasSession ? !_currentSession!.isExpired : false;
     final result = hasSession && isNotExpired;
 
-    print('[SessionManager] 🔍 isLoggedIn check:');
-    print('[SessionManager] 🔍   - hasSession: $hasSession');
-    print('[SessionManager] 🔍   - isNotExpired: $isNotExpired');
-    print('[SessionManager] 🔍   - result: $result');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
 
     return result;
   }
@@ -57,22 +54,15 @@ class SessionManager {
   String? get refreshToken => _currentSession?.refreshToken;
 
   void debugSessionState() {
-    print('[SessionManager] 🔍 ========== DEBUG SESSION STATE ==========');
-    print('[SessionManager] 🔍 _isInitialized: $_isInitialized');
-    print(
-      '[SessionManager] 🔍 _currentSession != null: ${_currentSession != null}',
-    );
-    print('[SessionManager] 🔍 isLoggedIn: $isLoggedIn');
-    print(
-      '[SessionManager] 🔍 currentUser: ${currentUser?.username ?? 'null'}',
-    );
-    print('[SessionManager] 🔍 accessToken presente: ${accessToken != null}');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
     if (_currentSession != null) {
-      print('[SessionManager] 🔍 isExpired: ${_currentSession!.isExpired}');
-      print('[SessionManager] 🔍 expiresAt: ${_currentSession!.expiresAt}');
-      print('[SessionManager] 🔍 now: ${DateTime.now()}');
+      // Session state available
     }
-    print('[SessionManager] 🔍 ==========================================');
   }
 
   Future<void> createSession({
@@ -82,13 +72,13 @@ class SessionManager {
     required int expiresIn,
     bool rememberMe = true,
   }) async {
-    print('[SessionManager] 🔐 CREANDO SESIÓN...');
-    print('[SessionManager] 👤 Usuario: ${user.username}');
-    print('[SessionManager] 💾 RememberMe: $rememberMe');
-    print('[SessionManager] ⏰ ExpiresIn: $expiresIn segundos');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
 
     final expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
-    print('[SessionManager] 📅 Expira en: $expiresAt');
+    // Removed debug print
 
     _currentSession = AuthSession(
       user: user,
@@ -98,13 +88,13 @@ class SessionManager {
       rememberMe: rememberMe,
     );
 
-    print('[SessionManager] ✅ Sesión creada en memoria');
+    // Removed debug print
 
     // SIEMPRE GUARDAR
     await _saveSessionToStorage();
 
-    print('[SessionManager] 🎉 Sesión completamente creada');
-    print('[SessionManager] 📊 isLoggedIn después de crear: $isLoggedIn');
+    // Removed debug print
+    // Removed debug print
   }
 
   Future<void> updateTokens({
@@ -125,7 +115,7 @@ class SessionManager {
     );
 
     await _saveSessionToStorage();
-    print('[SessionManager] Tokens actualizados');
+    // Removed debug print
   }
 
   Future<void> updateUser(UserInfoEntity user) async {
@@ -135,14 +125,14 @@ class SessionManager {
 
     _currentSession = _currentSession!.copyWith(user: user);
     await _saveSessionToStorage();
-    print('[SessionManager] Usuario actualizado: ${user.username}');
+    // Removed debug print
   }
 
   Future<void> clearSession() async {
-    print('[SessionManager] 🧹 LIMPIANDO SESIÓN...');
+    // Removed debug print
     _currentSession = null;
     await _clearStorageData();
-    print('[SessionManager] ✅ Sesión limpiada completamente');
+    // Removed debug print
   }
 
   bool isTokenExpired() {
@@ -161,7 +151,7 @@ class SessionManager {
 
       return jsonDecode(decoded) as Map<String, dynamic>;
     } catch (e) {
-      print('[SessionManager] Error al decodificar token: $e');
+      // Removed debug print
       return null;
     }
   }
@@ -178,101 +168,103 @@ class SessionManager {
   // ===== MÉTODOS PRIVADOS =====
 
   Future<void> _loadStoredSession() async {
-  print('[SessionManager] 📖 CARGANDO SESIÓN ALMACENADA...');
-  
-  try {
-    if (_prefs == null) {
-      print('[SessionManager] ❌ SharedPreferences es null');
-      return;
+    // Removed debug print
+
+    try {
+      if (_prefs == null) {
+        // Removed debug print
+        return;
+      }
+
+      final accessToken = _prefs!.getString(ApiConstants.accessTokenKey);
+      final refreshToken = _prefs!.getString(ApiConstants.refreshTokenKey);
+      final userDataString = _prefs!.getString(ApiConstants.userDataKey);
+
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+
+      if (accessToken == null ||
+          refreshToken == null ||
+          userDataString == null) {
+        // Removed debug print
+        return;
+      }
+
+      // Removed debug print
+      final userMap = jsonDecode(userDataString) as Map<String, dynamic>;
+      // Removed debug print // 👈 AGREGAR para debug
+
+      // 🔧 CORRECCIÓN: Usar nombres exactos de la API
+      final user = UserInfoEntity(
+        id: userMap['id']?.toString() ?? '',
+        name: userMap['name'] ?? '',
+        lastName: userMap['lastname'] ?? '',
+        secondLastName: userMap['second_lastname'],
+        username: userMap['username'] ?? '',
+        email: userMap['email'] ?? '',
+        job: userMap['job'] ?? '',
+        phoneNumber: userMap['phone_number'] ?? '',
+        role: userMap['role'] ?? '',
+        verified: userMap['verified'] ?? false,
+        isActive: userMap['active'] ?? true,
+      );
+
+      // Removed debug print
+
+      final tokenPayload = getTokenPayload(accessToken);
+      final exp = tokenPayload?['exp'] as int?;
+      final expiresAt =
+          exp != null
+              ? DateTime.fromMillisecondsSinceEpoch(exp * 1000)
+              : DateTime.now().add(const Duration(hours: 24));
+
+      // Removed debug print
+
+      _currentSession = AuthSession(
+        user: user,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        expiresAt: expiresAt,
+        rememberMe: true,
+      );
+
+      if (_currentSession!.isExpired) {
+        // Removed debug print
+        await clearSession();
+        return;
+      }
+
+      // Removed debug print
+      // Removed debug print
+    } catch (e, stackTrace) {
+      // Removed debug print
+      // Removed debug print
+      await _clearStorageData();
     }
-
-    final accessToken = _prefs!.getString(ApiConstants.accessTokenKey);
-    final refreshToken = _prefs!.getString(ApiConstants.refreshTokenKey);
-    final userDataString = _prefs!.getString(ApiConstants.userDataKey);
-
-    print('[SessionManager] 🔍 AccessToken encontrado: ${accessToken != null}');
-    print('[SessionManager] 🔍 RefreshToken encontrado: ${refreshToken != null}');
-    print('[SessionManager] 🔍 UserData encontrado: ${userDataString != null}');
-
-    if (accessToken == null || refreshToken == null || userDataString == null) {
-      print('[SessionManager] ⚠️ Datos incompletos - no hay sesión almacenada');
-      return;
-    }
-
-    print('[SessionManager] 📝 Parseando datos de usuario...');
-    final userMap = jsonDecode(userDataString) as Map<String, dynamic>;
-    print('[SessionManager] 📝 UserMap: $userMap'); // 👈 AGREGAR para debug
-
-    // 🔧 CORRECCIÓN: Usar nombres exactos de la API
-    final user = UserInfoEntity(
-      id: userMap['id']?.toString() ?? '',
-      name: userMap['name'] ?? '',
-      lastName: userMap['lastname'] ?? '', 
-      secondLastName: userMap['second_lastname'], 
-      username: userMap['username'] ?? '',
-      email: userMap['email'] ?? '',
-      job: userMap['job'] ?? '',
-      phoneNumber: userMap['phone_number'] ?? '',
-      role: userMap['role'] ?? '',
-      verified: userMap['verified'] ?? false,
-      isActive: userMap['active'] ?? true, 
-    );
-
-    print('[SessionManager] 👤 Usuario parseado: ${user.username}');
-
-    final tokenPayload = getTokenPayload(accessToken);
-    final exp = tokenPayload?['exp'] as int?;
-    final expiresAt = exp != null
-        ? DateTime.fromMillisecondsSinceEpoch(exp * 1000)
-        : DateTime.now().add(const Duration(hours: 24));
-
-    print('[SessionManager] ⏰ Token expira en: $expiresAt');
-
-    _currentSession = AuthSession(
-      user: user,
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-      expiresAt: expiresAt,
-      rememberMe: true,
-    );
-
-    if (_currentSession!.isExpired) {
-      print('[SessionManager] ⚠️ Sesión expirada, limpiando...');
-      await clearSession();
-      return;
-    }
-
-    print('[SessionManager] ✅ SESIÓN CARGADA EXITOSAMENTE para: ${user.username}');
-    print('[SessionManager] 📊 isLoggedIn después de cargar: $isLoggedIn');
-    
-  } catch (e, stackTrace) {
-    print('[SessionManager] ❌ Error cargando sesión: $e');
-    print('[SessionManager] 📍 StackTrace: $stackTrace');
-    await _clearStorageData();
   }
-}
 
   Future<void> _saveSessionToStorage() async {
-    print('[SessionManager] 💾 GUARDANDO SESIÓN EN STORAGE...');
+    // Removed debug print
 
     if (_currentSession == null) {
-      print('[SessionManager] ❌ No hay sesión para guardar');
+      // Removed debug print
       return;
     }
 
     if (_prefs == null) {
-      print('[SessionManager] ❌ SharedPreferences es null');
+      // Removed debug print
       return;
     }
 
     try {
-      print('[SessionManager] 🔑 Guardando access token...');
+      // Removed debug print
       await _prefs!.setString(
         ApiConstants.accessTokenKey,
         _currentSession!.accessToken,
       );
 
-      print('[SessionManager] 🔑 Guardando refresh token...');
+      // Removed debug print
       await _prefs!.setString(
         ApiConstants.refreshTokenKey,
         _currentSession!.refreshToken,
@@ -299,30 +291,26 @@ class SessionManager {
                 .isActive, // 👈 CAMBIO: 'active' (no is_active)
       };
 
-      print('[SessionManager] 👤 Guardando datos de usuario...');
-      print(
-        '[SessionManager] 📝 UserMap a guardar: $userMap',
-      ); // 👈 AGREGAR para debug
+      // Removed debug print
+      // Removed debug print // 👈 AGREGAR para debug
       await _prefs!.setString(ApiConstants.userDataKey, jsonEncode(userMap));
 
       // VERIFICAR QUE SE GUARDÓ
       final savedToken = _prefs!.getString(ApiConstants.accessTokenKey);
       final savedUser = _prefs!.getString(ApiConstants.userDataKey);
 
-      print('[SessionManager] ✅ GUARDADO VERIFICADO:');
-      print('[SessionManager] 🔍 Token guardado: ${savedToken != null}');
-      print('[SessionManager] 🔍 Usuario guardado: ${savedUser != null}');
-      print(
-        '[SessionManager] 📝 Usuario guardado data: $savedUser',
-      ); // 👈 AGREGAR para debug
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print // 👈 AGREGAR para debug
 
       if (savedToken != null && savedUser != null) {
-        print('[SessionManager] 🎉 SESIÓN GUARDADA EXITOSAMENTE');
+        // Removed debug print
       } else {
-        print('[SessionManager] ❌ ERROR: Datos no se guardaron correctamente');
+        // Removed debug print
       }
     } catch (e) {
-      print('[SessionManager] ❌ Error guardando sesión: $e');
+      // Removed debug print
     }
   }
 
@@ -335,9 +323,9 @@ class SessionManager {
         _prefs!.remove(ApiConstants.refreshTokenKey),
         _prefs!.remove(ApiConstants.userDataKey),
       ]);
-      print('[SessionManager] 🧹 Datos de almacenamiento limpiados');
+      // Removed debug print
     } catch (e) {
-      print('[SessionManager] ❌ Error limpiando almacenamiento: $e');
+      // Removed debug print
     }
   }
 }

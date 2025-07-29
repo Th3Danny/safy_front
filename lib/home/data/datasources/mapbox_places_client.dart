@@ -16,7 +16,7 @@ class MapboxPlacesClient {
     String language = 'es',
   }) async {
     try {
-      print('🔍 [MapboxPlacesClient] Buscando lugares: $query');
+      // Removed debug print
 
       // Construir parámetros de búsqueda
       final Map<String, String> queryParams = {
@@ -32,9 +32,7 @@ class MapboxPlacesClient {
       // Si tenemos coordenadas, hacer búsqueda bias hacia esa ubicación
       if (latitude != null && longitude != null) {
         queryParams['proximity'] = '${longitude},${latitude}';
-        print(
-          '🔍 [MapboxPlacesClient] Búsqueda con proximidad: $longitude, $latitude',
-        );
+        // Removed debug print
       }
 
       // Construir URL
@@ -57,49 +55,41 @@ class MapboxPlacesClient {
           );
 
       if (response.statusCode != 200) {
-        print(
-          '❌ [MapboxPlacesClient] Error HTTP ${response.statusCode}: ${response.body}',
-        );
+        // Removed debug print
         throw Exception('Error HTTP ${response.statusCode}: ${response.body}');
       }
 
       final data = json.decode(response.body);
 
-      print('🔍 [MapboxPlacesClient] Respuesta recibida de Mapbox');
-      print('🔍 [MapboxPlacesClient] Status: ${response.statusCode}');
-      print('🔍 [MapboxPlacesClient] Data type: ${data.runtimeType}');
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
 
       if (data['features'] == null) {
-        print('❌ [MapboxPlacesClient] Respuesta sin features: $data');
+        // Removed debug print
         return [];
       }
 
       final List<dynamic> features = data['features'];
-      print('🔍 [MapboxPlacesClient] Features encontradas: ${features.length}');
+      // Removed debug print
 
       // 🆕 LOG DETALLADO DE LA PRIMERA FEATURE PARA DEBUG
       if (features.isNotEmpty) {
         final firstFeature = features.first as Map<String, dynamic>;
-        print('🔍 [MapboxPlacesClient] Primera feature:');
-        print('🔍 [MapboxPlacesClient] - ID: ${firstFeature['id']}');
-        print(
-          '🔍 [MapboxPlacesClient] - Place name: ${firstFeature['place_name']}',
-        );
-        print('🔍 [MapboxPlacesClient] - Text: ${firstFeature['text']}');
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
 
         final geometry = firstFeature['geometry'] as Map<String, dynamic>?;
         if (geometry != null) {
           final coordinates = geometry['coordinates'] as List<dynamic>?;
-          print('🔍 [MapboxPlacesClient] - Coordinates: $coordinates');
+          // Removed debug print
           if (coordinates != null && coordinates.length >= 2) {
-            print(
-              '🔍 [MapboxPlacesClient] - Lng type: ${coordinates[0].runtimeType}',
-            );
-            print(
-              '🔍 [MapboxPlacesClient] - Lat type: ${coordinates[1].runtimeType}',
-            );
-            print('🔍 [MapboxPlacesClient] - Lng value: ${coordinates[0]}');
-            print('🔍 [MapboxPlacesClient] - Lat value: ${coordinates[1]}');
+            // Removed debug print
+            // Removed debug print
+            // Removed debug print
+            // Removed debug print
           }
         }
       }
@@ -112,7 +102,7 @@ class MapboxPlacesClient {
               )
               .toList();
 
-      print('✅ [MapboxPlacesClient] Encontrados ${places.length} lugares');
+      // Removed debug print
       for (final place in places) {
         print(
           '📍 [MapboxPlacesClient] - ${place.displayName} (${place.latitude}, ${place.longitude})',
@@ -121,10 +111,10 @@ class MapboxPlacesClient {
 
       return places;
     } on http.ClientException catch (e) {
-      print('❌ [MapboxPlacesClient] Error de conexión: $e');
+      // Removed debug print
       throw Exception('Error de conexión: $e');
     } catch (e) {
-      print('❌ [MapboxPlacesClient] Error inesperado: $e');
+      // Removed debug print
       throw Exception('Error inesperado: $e');
     }
   }
@@ -137,9 +127,7 @@ class MapboxPlacesClient {
     String language = 'es',
   }) async {
     try {
-      print(
-        '🔍 [MapboxPlacesClient] Buscando lugares cercanos a: $latitude, $longitude',
-      );
+      // Removed debug print
 
       final Map<String, String> queryParams = {
         'access_token': _accessToken,
@@ -170,7 +158,7 @@ class MapboxPlacesClient {
           )
           .toList();
     } catch (e) {
-      print('❌ [MapboxPlacesClient] Error buscando lugares cercanos: $e');
+      // Removed debug print
       return [];
     }
   }
@@ -178,7 +166,7 @@ class MapboxPlacesClient {
   /// Obtiene información detallada de un lugar por su ID
   Future<MapboxPlaceDto?> getPlaceDetails(String placeId) async {
     try {
-      print('🔍 [MapboxPlacesClient] Obteniendo detalles del lugar: $placeId');
+      // Removed debug print
 
       final uri = Uri.parse('$_baseUrl/mapbox.places/$placeId.json').replace(
         queryParameters: {'access_token': _accessToken, 'language': 'es'},
@@ -193,7 +181,7 @@ class MapboxPlacesClient {
       final data = json.decode(response.body);
       return MapboxPlaceDto.fromJson(data as Map<String, dynamic>);
     } catch (e) {
-      print('❌ [MapboxPlacesClient] Error obteniendo detalles: $e');
+      // Removed debug print
       return null;
     }
   }

@@ -26,19 +26,15 @@ class PredictionApiClient {
     required PredictionRequestDto request,
   }) async {
     try {
-      print(
-        '[PredictionApiClient] 🔮 Obteniendo predicciones para: ${request.latitude}, ${request.longitude}',
-      );
-      print('[PredictionApiClient] 📅 Timestamp: ${request.timestamp}');
+      // Removed debug print
+      // Removed debug print
 
       final response = await _predictionDio.post(
         '/api/v1/predictions/predict',
         data: [request.toJson()], // Enviar como array según la especificación
       );
 
-      print(
-        '[PredictionApiClient] ✅ Respuesta recibida: ${response.statusCode}',
-      );
+      // Removed debug print
 
       if (response.data is List) {
         final predictionsData = response.data as List;
@@ -54,10 +50,10 @@ class PredictionApiClient {
         );
       }
     } on DioException catch (e) {
-      print('[PredictionApiClient] ❌ Error en la petición: ${e.message}');
+      // Removed debug print
       throw _handleDioException(e);
     } catch (e) {
-      print('[PredictionApiClient] ❌ Error inesperado: $e');
+      // Removed debug print
       throw Exception('Error obteniendo predicciones: $e');
     }
   }
@@ -67,9 +63,7 @@ class PredictionApiClient {
     required List<PredictionRequestDto> requests,
   }) async {
     try {
-      print(
-        '[PredictionApiClient] 🔮 Obteniendo predicciones para ${requests.length} ubicaciones',
-      );
+      // Removed debug print
 
       final requestData = requests.map((req) => req.toJson()).toList();
       final response = await _predictionDio.post(
@@ -77,9 +71,7 @@ class PredictionApiClient {
         data: requestData,
       );
 
-      print(
-        '[PredictionApiClient] ✅ Respuesta recibida: ${response.statusCode}',
-      );
+      // Removed debug print
 
       if (response.data is List) {
         final predictionsData = response.data as List;
@@ -95,10 +87,10 @@ class PredictionApiClient {
         );
       }
     } on DioException catch (e) {
-      print('[PredictionApiClient] ❌ Error en la petición: ${e.message}');
+      // Removed debug print
       throw _handleDioException(e);
     } catch (e) {
-      print('[PredictionApiClient] ❌ Error inesperado: $e');
+      // Removed debug print
       throw Exception('Error obteniendo predicciones: $e');
     }
   }

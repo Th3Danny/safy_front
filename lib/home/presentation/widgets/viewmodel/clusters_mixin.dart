@@ -39,9 +39,7 @@ mixin ClustersMixin on ChangeNotifier {
     notifyListeners();
 
     try {
-      print(
-        '[ClustersMixin] 📍 Cargando clusters de zonas peligrosas cerca de: ${currentLocation.latitude}, ${currentLocation.longitude}',
-      );
+      // Removed debug print
 
       if (getClustersUseCase != null) {
         _clusters = await getClustersUseCase!.execute(
@@ -49,29 +47,23 @@ mixin ClustersMixin on ChangeNotifier {
           longitude: currentLocation.longitude,
         );
 
-        print(
-          '[ClustersMixin] 📊 Cargados ${_clusters.length} clusters desde API',
-        );
+        // Removed debug print
 
         if (_clusters.isNotEmpty) {
           _createClusterMarkers(_clusters, zoom: zoom);
-          print(
-            '[ClustersMixin] ✅ Marcadores de clusters creados exitosamente',
-          );
+          // Removed debug print
         } else {
-          print('[ClustersMixin] ℹ️ No hay clusters cercanos');
+          // Removed debug print
           _clusterMarkers.clear();
         }
       } else {
-        print(
-          '[ClustersMixin] ⚠️ GetClustersUseCase no disponible, usando datos ficticios',
-        );
+        // Removed debug print
         _loadFakeClusters();
       }
     } catch (e) {
-      print('[ClustersMixin] ❌ Error cargando clusters: $e');
+      // Removed debug print
       _clustersError = 'Error cargando zonas peligrosas: $e';
-      print('[ClustersMixin] 🔄 Fallback a datos ficticios');
+      // Removed debug print
       _loadFakeClusters();
     } finally {
       _clustersLoading = false;
@@ -85,10 +77,10 @@ mixin ClustersMixin on ChangeNotifier {
     double zoom = 15.0,
     double radiusKm = 5.0, // Radio de búsqueda en km
   }) async {
-    print('[ClustersMixin] 🚀 loadClustersForMapView iniciado');
+    // Removed debug print
 
     if (_clustersLoading) {
-      print('[ClustersMixin] ⏳ Ya se están cargando clusters, saltando...');
+      // Removed debug print
       return; // Evitar cargas múltiples
     }
 
@@ -123,33 +115,27 @@ mixin ClustersMixin on ChangeNotifier {
               return distance <= radiusKm;
             }).toList();
 
-        print(
-          '[ClustersMixin] 📊 Cargados ${_clusters.length} clusters para vista del mapa',
-        );
+        // Removed debug print
 
         if (_clusters.isNotEmpty) {
           _createClusterMarkers(_clusters, zoom: zoom);
-          print(
-            '[ClustersMixin] ✅ Marcadores de clusters creados para vista del mapa',
-          );
+          // Removed debug print
         } else {
-          print('[ClustersMixin] ℹ️ No hay clusters en esta área del mapa');
+          // Removed debug print
           _clusterMarkers.clear();
         }
       } else {
-        print(
-          '[ClustersMixin] ⚠️ GetClustersUseCase no disponible, usando datos ficticios',
-        );
+        // Removed debug print
         _loadFakeClustersForMapView(mapCenter, radiusKm);
       }
     } catch (e) {
-      print('[ClustersMixin] ❌ Error cargando clusters para vista: $e');
+      // Removed debug print
       _clustersError = 'Error cargando zonas peligrosas: $e';
-      print('[ClustersMixin] 🔄 Fallback a datos ficticios');
+      // Removed debug print
       _loadFakeClustersForMapView(mapCenter, radiusKm);
     } finally {
       _clustersLoading = false;
-      print('[ClustersMixin] ✅ loadClustersForMapView completado');
+      // Removed debug print
       notifyListeners();
     }
   }
@@ -288,9 +274,7 @@ mixin ClustersMixin on ChangeNotifier {
       );
     }
 
-    print(
-      '[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters',
-    );
+    // Removed debug print
   }
 
   // ✅ NUEVO: Función que calcula tamaño fijo basado en número de reportes
@@ -361,12 +345,12 @@ mixin ClustersMixin on ChangeNotifier {
   }
 
   void _onClusterTapped(ClusterEntity cluster) {
-    print('[ClustersMixin] 📍 Cluster de zona peligrosa seleccionado:');
-    print('[ClustersMixin] 🏷️ Tipo: ${cluster.dominantIncidentName}');
-    print('[ClustersMixin] 📊 Reportes: ${cluster.reportCount}');
-    print('[ClustersMixin] ⚠️ Severidad: ${cluster.severity}');
-    print('[ClustersMixin] 🌍 Zona: ${cluster.zone}');
-    print('[ClustersMixin] 📝 Descripción: ${cluster.description}');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
 
     onClusterSelected(cluster);
   }
@@ -450,9 +434,7 @@ mixin ClustersMixin on ChangeNotifier {
       );
     }
 
-    print(
-      '[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters ficticios',
-    );
+    // Removed debug print
   }
 
   /// Carga clusters ficticios para un área específica de la vista del mapa
@@ -569,9 +551,7 @@ mixin ClustersMixin on ChangeNotifier {
       }
     }
 
-    print(
-      '[ClustersMixin] 🗺️ Creados ${_clusterMarkers.length} marcadores de clusters ficticios para vista del mapa',
-    );
+    // Removed debug print
   }
 
   void toggleClusters() {

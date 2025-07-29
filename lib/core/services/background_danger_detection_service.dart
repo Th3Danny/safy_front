@@ -21,7 +21,7 @@ class BackgroundDangerDetectionService {
   /// Inicializa el servicio
   static Future<void> initialize() async {
     await _initializeNotifications();
-    print('✅ [BackgroundService] Servicio inicializado');
+    // Removed debug print
   }
 
   /// Inicializa las notificaciones locales
@@ -55,7 +55,7 @@ class BackgroundDangerDetectionService {
   /// Inicia el monitoreo en segundo plano
   static Future<void> startMonitoring() async {
     if (_isServiceRunning) {
-      print('⚠️ [BackgroundService] El servicio ya está ejecutándose');
+      // Removed debug print
       return;
     }
 
@@ -64,26 +64,26 @@ class BackgroundDangerDetectionService {
     if (locationPermission == LocationPermission.denied) {
       final permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        print('❌ [BackgroundService] Permisos de ubicación denegados');
+        // Removed debug print
         return;
       }
     }
 
     _isServiceRunning = true;
     await _startLocationMonitoring();
-    print('✅ [BackgroundService] Monitoreo iniciado');
+    // Removed debug print
   }
 
   /// Detiene el monitoreo
   static Future<void> stopMonitoring() async {
     _locationTimer?.cancel();
     _isServiceRunning = false;
-    print('🛑 [BackgroundService] Monitoreo detenido');
+    // Removed debug print
   }
 
   /// Inicia el monitoreo de ubicación
   static Future<void> _startLocationMonitoring() async {
-    print('📍 [BackgroundService] Iniciando monitoreo de ubicación');
+    // Removed debug print
 
     _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
       if (!_isServiceRunning) {
@@ -94,7 +94,7 @@ class BackgroundDangerDetectionService {
       try {
         await _checkCurrentLocation();
       } catch (e) {
-        print('❌ [BackgroundService] Error en monitoreo: $e');
+        // Removed debug print
       }
     });
 
@@ -111,7 +111,7 @@ class BackgroundDangerDetectionService {
         timeLimit: const Duration(seconds: 10),
       );
 
-      print('📍 [BackgroundService] Ubicación actual: ${position.latitude}, ${position.longitude}');
+      // Removed debug print
 
       // Actualizar clusters si es necesario
       await _updateClustersIfNeeded();
@@ -120,7 +120,7 @@ class BackgroundDangerDetectionService {
       await _checkNearbyClusters(position);
 
     } catch (e) {
-      print('❌ [BackgroundService] Error obteniendo ubicación: $e');
+      // Removed debug print
     }
   }
 
@@ -141,7 +141,7 @@ class BackgroundDangerDetectionService {
       final token = prefs.getString('auth_token');
 
       if (token == null) {
-        print('❌ [BackgroundService] No hay token de autenticación');
+        // Removed debug print
         return;
       }
 
@@ -157,11 +157,11 @@ class BackgroundDangerDetectionService {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
           _cachedClusters = List<Map<String, dynamic>>.from(data['data']['clusters'] ?? []);
-          print('✅ [BackgroundService] Clusters actualizados: ${_cachedClusters.length}');
+          // Removed debug print
         }
       }
     } catch (e) {
-      print('❌ [BackgroundService] Error obteniendo clusters: $e');
+      // Removed debug print
     }
   }
 
@@ -276,10 +276,10 @@ class BackgroundDangerDetectionService {
       }),
     );
 
-    print('🚨 [BackgroundService] Notificación de peligro enviada');
+    // Removed debug print
     print('   📍 Distancia: ${distance.toInt()}m');
     print('   ⚠️ Severidad: $severityText ($severity)');
-    print('   📊 Reportes: $reportCount');
+    // Removed debug print
   }
 
   /// Obtiene las notificaciones ya mostradas hoy

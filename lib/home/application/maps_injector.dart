@@ -18,7 +18,7 @@ import 'package:safy/home/presentation/viewmodels/map_view_model.dart';
 import 'package:safy/report/domain/repositories/report_repository.dart';
 
 Future<void> setupMapsDependencies() async {
-  print('[MapsDI] 🗺️ Configurando dependencias de mapas...');
+  // Removed debug print
 
   // ===== DATA LAYER =====
 
@@ -89,5 +89,5 @@ Future<void> setupMapsDependencies() async {
     ),
   );
 
-  print('[MapsDI] ✅ Dependencias de mapas registradas exitosamente');
+  // Removed debug print
 }

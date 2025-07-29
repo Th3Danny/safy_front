@@ -34,16 +34,11 @@ mixin ReportsMixin on ChangeNotifier {
           pageSize: 50,
         );
 
-        print('[ReportsMixin] 📊 Cargados ${reports.length} reportes reales');
         _createReportMarkers(reports, zoom: zoom);
       } else {
-        print(
-          '[ReportsMixin] ⚠️ GetReportsForMapUseCase no disponible, usando datos ficticios',
-        );
         _loadFakeDangerZones();
       }
     } catch (e) {
-      print('[ReportsMixin] ❌ Error cargando reportes: $e');
       _loadFakeDangerZones();
     }
   }
@@ -56,9 +51,6 @@ mixin ReportsMixin on ChangeNotifier {
 
     if (zoom < 12.0) {
       // No mostrar reportes si el zoom es muy bajo
-      print(
-        '[ReportsMixin] 🔍 Zoom demasiado alejado (<12), no se muestran reportes.',
-      );
       return;
     }
 
@@ -128,9 +120,7 @@ mixin ReportsMixin on ChangeNotifier {
       );
     }
 
-    print(
-      '[ReportsMixin] 🗺️ Creados ${_dangerMarkers.length} marcadores reales',
-    );
+    // Removed debug print
   }
 
   (Color, IconData) _getReportStyle(String incidentType, int severity) {
@@ -176,7 +166,6 @@ mixin ReportsMixin on ChangeNotifier {
   }
 
   void _onReportTapped(ReportInfoEntity report) {
-    print('[ReportsMixin] 📍 Reporte seleccionado: ${report.title}');
     onReportSelected(report);
   }
 
@@ -224,9 +213,6 @@ mixin ReportsMixin on ChangeNotifier {
       final dangerousClusters = mapViewModel.clusters;
 
       if (dangerousClusters.isEmpty) {
-        print(
-          '[ReportsMixin] ⚠️ No hay datos de clusters de peligros disponibles',
-        );
         return false;
       }
 
@@ -241,16 +227,12 @@ mixin ReportsMixin on ChangeNotifier {
         final clusterRadius = _calculateClusterRadius(cluster);
 
         if (distance <= clusterRadius) {
-          print(
-            '[ReportsMixin] ⚠️ Punto en zona peligrosa: ${point.latitude}, ${point.longitude} (distancia: ${distance.toInt()}m, radio: ${clusterRadius.toInt()}m)',
-          );
           return true;
         }
       }
 
       return false;
     } catch (e) {
-      print('[ReportsMixin] ❌ Error verificando zona peligrosa: $e');
       return false;
     }
   }
@@ -391,7 +373,6 @@ mixin ReportsMixin on ChangeNotifier {
 
     return baseRadius;
   }
-
 
   // Callbacks abstractos
   void onReportSelected(ReportInfoEntity report);

@@ -39,11 +39,12 @@ class _LocationFieldState extends State<LocationField> {
       widget.controller.text = location;
       widget.onLocationSelected(location);
     } catch (e) {
-      print('❌ Error al obtener ubicación: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error al obtener ubicación: $e'),
-        backgroundColor: Colors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al obtener ubicación: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -51,9 +52,10 @@ class _LocationFieldState extends State<LocationField> {
 
   @override
   Widget build(BuildContext context) {
-    final locationText = widget.controller.text.isEmpty
-        ? 'Haz clic en + para obtener ubicación'
-        : widget.controller.text;
+    final locationText =
+        widget.controller.text.isEmpty
+            ? 'Haz clic en + para obtener ubicación'
+            : widget.controller.text;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,9 +70,14 @@ class _LocationFieldState extends State<LocationField> {
             ),
             const Spacer(),
             IconButton(
-              icon: _isLoading
-                  ? const CircularProgressIndicator(strokeWidth: 2)
-                  : const Icon(Icons.add, color: Color(0xFF2196F3), size: 20),
+              icon:
+                  _isLoading
+                      ? const CircularProgressIndicator(strokeWidth: 2)
+                      : const Icon(
+                        Icons.add,
+                        color: Color(0xFF2196F3),
+                        size: 20,
+                      ),
               onPressed: _isLoading ? null : _getCurrentLocation,
             ),
           ],
@@ -88,7 +95,8 @@ class _LocationFieldState extends State<LocationField> {
             locationText,
             style: TextStyle(
               fontSize: 14,
-              color: widget.controller.text.isEmpty ? Colors.grey : Colors.black87,
+              color:
+                  widget.controller.text.isEmpty ? Colors.grey : Colors.black87,
             ),
           ),
         ),
@@ -96,4 +104,3 @@ class _LocationFieldState extends State<LocationField> {
     );
   }
 }
-

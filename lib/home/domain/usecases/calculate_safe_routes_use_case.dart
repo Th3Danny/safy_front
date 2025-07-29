@@ -47,7 +47,7 @@ class CalculateSafeRoutesUseCase {
             radiusKm: 10.0,
           );
         } catch (e) {
-          print('Error obteniendo clusters: $e');
+          // Removed debug print
         }
       }
 
@@ -148,7 +148,7 @@ class CalculateSafeRoutesUseCase {
           ),
         );
       } catch (e) {
-        print('Error calculando ruta con waypoints seguros: $e');
+        // Removed debug print
       }
     }
 
@@ -173,7 +173,7 @@ class CalculateSafeRoutesUseCase {
         ),
       );
     } catch (e) {
-      print('Error calculando ruta perimetral: $e');
+      // Removed debug print
     }
 
     // 4. Calcular ruta con desvío amplio
@@ -194,7 +194,7 @@ class CalculateSafeRoutesUseCase {
         ),
       );
     } catch (e) {
-      print('Error calculando ruta con desvío: $e');
+      // Removed debug print
     }
 
     return alternativeRoutes;

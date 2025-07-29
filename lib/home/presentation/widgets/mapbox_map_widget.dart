@@ -279,13 +279,6 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
       final fastRoute = routes['fast'] ?? [];
       final extraSafeRoute = routes['extraSafe'] ?? [];
 
-      print('🛣️ [MapboxMapWidget] Rutas calculadas:');
-      print('🛣️ [MapboxMapWidget] Segura: ${safeRoute.length} puntos');
-      print('🛣️ [MapboxMapWidget] Rápida: ${fastRoute.length} puntos');
-      print(
-        '🛣️ [MapboxMapWidget] Extra Segura: ${extraSafeRoute.length} puntos',
-      );
-
       // Si todas las rutas están vacías, mostrar error
       if (safeRoute.isEmpty && fastRoute.isEmpty && extraSafeRoute.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -331,8 +324,6 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
             ),
       );
     } catch (e) {
-      print('❌ Error calculando rutas: $e');
-
       // Fallback con ruta original
       showModalBottomSheet(
         context: context,
@@ -377,15 +368,11 @@ class _MapboxMapWidgetState extends State<MapboxMapWidget> {
     return points.where((point) {
       // Validar que las coordenadas estén en rangos válidos
       if (point.latitude < -90 || point.latitude > 90) {
-        print(
-          '❌ [MapboxMapWidget] Latitud inválida filtrada: ${point.latitude}',
-        );
+        // Removed debug print
         return false;
       }
       if (point.longitude < -180 || point.longitude > 180) {
-        print(
-          '❌ [MapboxMapWidget] Longitud inválida filtrada: ${point.longitude}',
-        );
+        // Removed debug print
         return false;
       }
       return true;

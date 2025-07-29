@@ -36,7 +36,7 @@ class _SafetyEducationScreenState extends State<SafetyEducationScreen>
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
     } else {
-      print('Could not launch $phoneNumber');
+      // Removed debug print
       // Mostrar un SnackBar al usuario
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo realizar la llamada.')),

@@ -33,7 +33,7 @@ class _RegisterForm01State extends State<RegisterForm01> {
     super.initState();
     
     _registerViewModel = GetIt.instance<RegisterViewModel>();
-    print('[RegisterForm01] ViewModel hashCode: ${_registerViewModel.hashCode}');
+    // Removed debug print
     
     _registerViewModel.addListener(_onViewModelChanged);
 
@@ -73,10 +73,10 @@ class _RegisterForm01State extends State<RegisterForm01> {
       _ageController.text = '';
     }
     
-    print('[RegisterForm01] Datos cargados del ViewModel:');
-    print('  Name: "${_registerViewModel.name}"');
-    print('  LastName: "${_registerViewModel.lastName}"');
-    print('  Username: "${_registerViewModel.username}"');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
   }
 
   void _onViewModelChanged() {
@@ -105,7 +105,7 @@ class _RegisterForm01State extends State<RegisterForm01> {
     _registerViewModel.setUsername(username);
     _registerViewModel.setAge(age);
     
-    print('[RegisterForm01] Datos sincronizados al ViewModel');
+    // Removed debug print
   }
 
   // ✅ Validar y sincronizar datos antes de continuar
@@ -115,31 +115,31 @@ class _RegisterForm01State extends State<RegisterForm01> {
       _syncAllDataToViewModel();
       
       // 🔍 Debug: imprimir datos para verificar
-      print('=== DEBUG FORM 1 ANTES DE NAVEGAR ===');
-      print('Form1 ViewModel hashCode: ${_registerViewModel.hashCode}');
-      print('Name Controller: "${_nameController.text}"');
-      print('Name ViewModel: "${_registerViewModel.name}"');
-      print('LastName Controller: "${_lastNameController.text}"');
-      print('LastName ViewModel: "${_registerViewModel.lastName}"');
-      print('Username Controller: "${_usernameController.text}"');
-      print('Username ViewModel: "${_registerViewModel.username}"');
-      print('Age Controller: "${_ageController.text}"');
-      print('Age ViewModel: ${_registerViewModel.age}');
-      print('Gender ViewModel: ${_registerViewModel.selectedGender.value}');
-      print('canGoToNextPage: ${_registerViewModel.canGoToNextPage}');
-      print('=====================================');
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
 
       // Verificar que todos los campos requeridos estén llenos
       if (_registerViewModel.canGoToNextPage) {
         _registerViewModel.nextPage();
         
         // 🔍 Verificar datos después de nextPage()
-        print('=== DEBUG FORM 1 DESPUÉS DE NEXTPAGE ===');
-        print('Name: "${_registerViewModel.name}"');
-        print('LastName: "${_registerViewModel.lastName}"');
-        print('Username: "${_registerViewModel.username}"');
-        print('Page: ${_registerViewModel.currentPage}');
-        print('=======================================');
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
         
         context.go(AppRoutesConstant.registerStep2);
       } else {

@@ -83,7 +83,7 @@ class MobileMapLayout extends StatelessWidget {
                 spoofingResult: mapViewModel.gpsSpoofingResult,
                 onDismiss: () {
                   // Aquí puedes implementar lógica para ocultar el banner
-                  print('Banner de GPS falso descartado');
+                  // Removed debug print
                 },
                 onReset: () => mapViewModel.resetGpsSpoofingDetector(),
               ),

@@ -32,14 +32,14 @@ class TokenRefreshService {
       _checkAndRefreshToken();
     });
     
-    print('[TokenRefreshService] Monitoreo de tokens iniciado');
+    // Removed debug print
   }
 
   /// Detener el monitoreo
   void stopTokenRefreshMonitoring() {
     _refreshTimer?.cancel();
     _refreshTimer = null;
-    print('[TokenRefreshService] Monitoreo de tokens detenido');
+    // Removed debug print
   }
 
   /// Forzar refresh del token
@@ -69,7 +69,7 @@ class TokenRefreshService {
       final refreshToken = sessionManager.refreshToken;
       if (refreshToken == null) return false;
 
-      print('[TokenRefreshService] Refrescando token...');
+      // Removed debug print
       
       final response = await _authApiClient.refreshToken(
         RefreshTokenRequestDto(refreshToken: refreshToken),
@@ -81,11 +81,11 @@ class TokenRefreshService {
         expiresIn: response.expiresIn,
       );
 
-      print('[TokenRefreshService] Token refrescado exitosamente');
+      // Removed debug print
       return true;
 
     } catch (e) {
-      print('[TokenRefreshService] Error refrescando token: $e');
+      // Removed debug print
       
       await SessionManager.instance.clearSession();
       stopTokenRefreshMonitoring();

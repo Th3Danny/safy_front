@@ -114,7 +114,7 @@ class AuthRepositoryImpl implements AuthRepository {
         await _apiClient.signOut(accessToken);
       }
     } catch (e) {
-      print('Error during server logout: $e');
+      // Removed debug print
     } finally {
       await _sessionManager.clearSession();
     }

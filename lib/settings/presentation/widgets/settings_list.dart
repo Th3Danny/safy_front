@@ -48,7 +48,7 @@ class _SettingsListState extends State<SettingsList> {
               title: 'Notificaciones',
               icon: Icons.notifications,
               onTap: () {
-                print('Navigate to Notifications');
+                // Navigate to Notifications
               },
             ),
           ],
@@ -92,14 +92,14 @@ class _SettingsListState extends State<SettingsList> {
               title: 'Help and support',
               icon: Icons.help_outline,
               onTap: () {
-                print('Navigate to Help');
+                // Navigate to Help
               },
             ),
             SettingsTile(
               title: 'Terms and Policies',
               icon: Icons.description,
               onTap: () {
-                print('Navigate to Terms');
+                // Navigate to Terms
               },
             ),
           ],

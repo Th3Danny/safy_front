@@ -152,15 +152,11 @@ class MapViewModel extends ChangeNotifier
 
   // Método para establecer la ruta con nombre
   void setCurrentRouteWithName(List<LatLng> route, String name) {
-    print('🛣️ [MapViewModel] setCurrentRouteWithName llamado');
-    print('🛣️ [MapViewModel] Nombre de ruta: $name');
-    print('🛣️ [MapViewModel] Puntos de ruta: ${route.length}');
-    print(
-      '🛣️ [MapViewModel] Primer punto: ${route.isNotEmpty ? route.first : 'N/A'}',
-    );
-    print(
-      '🛣️ [MapViewModel] Último punto: ${route.isNotEmpty ? route.last : 'N/A'}',
-    );
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
 
     _currentRouteName = name;
     final routeOption = RouteOption(
@@ -172,21 +168,19 @@ class MapViewModel extends ChangeNotifier
       isRecommended: name.contains('Segura'),
     );
 
-    print('🛣️ [MapViewModel] Llamando a selectRoute...');
+    // Removed debug print
     selectRoute(routeOption);
 
     // 🆕 NUEVO: Cargar predicciones automáticamente para la ruta
     if (route.isNotEmpty) {
-      print('[MapViewModel] 🔮 Cargando predicciones para ruta establecida');
+      // Removed debug print
       loadPredictionsForRouteAutomatically(route);
     }
 
-    print(
-      '🛣️ [MapViewModel] Ruta actual después de selectRoute: ${currentRoute.length} puntos',
-    );
-    print('🛣️ [MapViewModel] Notificando listeners...');
+    // Removed debug print
+    // Removed debug print
     notifyListeners();
-    print('🛣️ [MapViewModel] setCurrentRouteWithName completado');
+    // Removed debug print
   }
 
   // Getter para verificar si el GPS está siendo falsificado
@@ -216,9 +210,7 @@ class MapViewModel extends ChangeNotifier
     // 🆕 NUEVO: Agregar marcadores de predicciones si están activados
     if (showPredictions) {
       allMarkers.addAll(predictionMarkers);
-      print(
-        '[MapViewModel] 🔮 Agregando ${predictionMarkers.length} marcadores de predicciones al mapa',
-      );
+      // Removed debug print
     }
 
     return allMarkers;
@@ -285,7 +277,7 @@ class MapViewModel extends ChangeNotifier
     _moveToCurrentLocation();
 
     // Inicializar clusters cuando el mapa está listo
-    print('[MapViewModel] 🗺️ Mapa listo, inicializando clusters...');
+    // Removed debug print
     initializeMapClusters();
   }
 
@@ -336,9 +328,9 @@ class MapViewModel extends ChangeNotifier
     try {
       final clusterDetectionService = GetIt.instance<ClusterDetectionService>();
       clusterDetectionService.setAlertCallback(_onDangerZoneDetected);
-      print('[MapViewModel] ✅ Callback de alertas configurado');
+      // Removed debug print
     } catch (e) {
-      print('[MapViewModel] ❌ Error configurando callback de alertas: $e');
+      // Removed debug print
     }
   }
 
@@ -349,7 +341,7 @@ class MapViewModel extends ChangeNotifier
     _showDangerAlert = true;
     notifyListeners();
 
-    print('[MapViewModel] 🚨 Alerta de zona peligrosa mostrada');
+    // Removed debug print
   }
 
   // 🚨 NUEVO: Ocultar alerta de zona peligrosa
@@ -364,7 +356,7 @@ class MapViewModel extends ChangeNotifier
   void navigateToSafeRoute() {
     if (_currentDangerZone != null) {
       // Aquí podrías implementar la lógica para calcular una ruta que evite la zona peligrosa
-      print('[MapViewModel] 🛡️ Calculando ruta segura...');
+      // Removed debug print
       hideDangerAlert();
     }
   }
@@ -373,7 +365,7 @@ class MapViewModel extends ChangeNotifier
   void reportIncident() {
     if (_currentDangerZone != null) {
       // Aquí podrías navegar a la pantalla de reportes
-      print('[MapViewModel] 📝 Navegando a reportes...');
+      // Removed debug print
       hideDangerAlert();
     }
   }
@@ -420,7 +412,7 @@ class MapViewModel extends ChangeNotifier
 
   @override
   void onClustersToggled(bool visible) {
-    print('[MapViewModel] 👁️ Clusters ${visible ? 'mostrados' : 'ocultados'}');
+    // Removed debug print
     notifyListeners(); // Importante para actualizar allMapMarkers
   }
 
@@ -480,7 +472,7 @@ class MapViewModel extends ChangeNotifier
   void onRouteSelected(RouteOption route) {
     // 🆕 NUEVO: Cargar predicciones automáticamente cuando se selecciona una ruta
     if (route.points.isNotEmpty) {
-      print('[MapViewModel] 🔮 Cargando predicciones para ruta seleccionada');
+      // Removed debug print
       loadPredictionsForRouteAutomatically(route.points);
     }
   }
@@ -539,22 +531,16 @@ class MapViewModel extends ChangeNotifier
     LatLng placeLocation,
     LatLng currentLocation,
   ) {
-    print(
-      '[MapViewModel] 🔍 Lugar seleccionado: ${place.displayName}',
-    ); // Debug print
+    // Removed debug print // Debug print
     _mapController.move(placeLocation, 15.0);
     addDestinationMarker(placeLocation, place.displayName);
     setEndPoint(placeLocation);
 
     if (startPoint == null) {
-      print(
-        '[MapViewModel] 📍 Estableciendo punto de inicio en ubicación actual.',
-      ); // Debug print
+      // Removed debug print // Debug print
       setStartPoint(currentLocation);
     } else {
-      print(
-        '[MapViewModel] 📍 Ya existe un punto de inicio. Recalculando rutas.',
-      ); // Debug print
+      // Removed debug print // Debug print
       // No necesitas llamar a calculateRoutes() aquí, ya que setEndPoint() o setStartPoint() lo harán automáticamente
       // si ambos puntos están definidos.
     }
@@ -599,9 +585,9 @@ class MapViewModel extends ChangeNotifier
         300; // Reducido a 300 metros
 
     if (zoomChanged || centerChanged) {
-      print('[MapViewModel] 🔄 Cambio detectado en el mapa:');
-      print('[MapViewModel] 📍 Zoom: $_lastZoom → $newZoom');
-      print('[MapViewModel] 📍 Centro: $_lastCenter → $newCenter');
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
       print(
         '[MapViewModel] 🔍 Distancia movida: ${_calculateDistance(newCenter, _lastCenter).toInt()}m',
       );
@@ -624,7 +610,7 @@ class MapViewModel extends ChangeNotifier
 
     try {
       _isUpdatingClusters = true;
-      print('[MapViewModel] 🔄 Actualizando clusters para nueva posición...');
+      // Removed debug print
 
       // Solo actualizar si los clusters están visibles
       if (showClusters) {
@@ -704,7 +690,7 @@ class MapViewModel extends ChangeNotifier
       return;
     }
 
-    print('🧭 Iniciando navegación con seguimiento...');
+    // Removed debug print
 
     // Iniciar navegación normal
     startNavigation();
@@ -715,7 +701,7 @@ class MapViewModel extends ChangeNotifier
 
   // ⏹️ NUEVO: Método para detener navegación
   void stopNavigation() {
-    print('⏹️ Deteniendo navegación...');
+    // Removed debug print
 
     // Detener navegación del LocationMixin
     super.stopNavigation();
@@ -756,17 +742,13 @@ class MapViewModel extends ChangeNotifier
         prediction.location.longitude,
       );
       _mapController.move(predictionLocation, 17.0);
-      print(
-        '[MapViewModel] 🔮 Predicción seleccionada: ${prediction.riskLevel}',
-      );
+      // Removed debug print
     }
   }
 
   @override
   void onPredictionsToggled(bool visible) {
-    print(
-      '[MapViewModel] 👁️ Predicciones ${visible ? 'mostradas' : 'ocultadas'}',
-    );
+    // Removed debug print
     notifyListeners();
   }
 
@@ -776,7 +758,7 @@ class MapViewModel extends ChangeNotifier
 
   @override
   void updateRouteDisplay(List<LatLng> route) {
-    print('🛣️ Actualizando visualización de ruta: ${route.length} puntos');
+    // Removed debug print
     // Actualizar la ruta actual del RouteMixin
     selectRoute(
       RouteOption(
@@ -793,10 +775,10 @@ class MapViewModel extends ChangeNotifier
 
   @override
   void onDestinationReached() {
-    print('🎯 ¡Destino alcanzado!');
+    // Removed debug print
 
     // Detener navegación automáticamente sin recursión
-    print('⏹️ Deteniendo navegación por destino alcanzado...');
+    // Removed debug print
 
     // Detener navegación del LocationMixin
     super.stopNavigation();
@@ -855,7 +837,7 @@ class MapViewModel extends ChangeNotifier
 
   /// Método para inicializar clusters cuando el mapa está listo
   void initializeMapClusters() {
-    print('[MapViewModel] 🗺️ Inicializando clusters del mapa...');
+    // Removed debug print
     if (_mapController.camera.center != null) {
       _loadClustersForMapView();
     }
@@ -863,9 +845,9 @@ class MapViewModel extends ChangeNotifier
 
   /// Método público para cargar clusters desde el widget del mapa
   void loadClustersForMapViewFromWidget(LatLng center, double zoom) {
-    print('[MapViewModel] 📞 Llamado desde widget del mapa');
-    print('[MapViewModel] 📍 Centro: ${center.latitude}, ${center.longitude}');
-    print('[MapViewModel] 🔍 Zoom: $zoom');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
 
     // Actualizar propiedades del ViewModel
     _currentZoom = zoom;
@@ -876,9 +858,9 @@ class MapViewModel extends ChangeNotifier
 
   /// Método de prueba para verificar que el listener funciona
   void testMapListener() {
-    print('[MapViewModel] 🧪 Probando listener del mapa...');
-    print('[MapViewModel] 📍 Centro actual: ${_mapController.camera.center}');
-    print('[MapViewModel] 🔍 Zoom actual: ${_mapController.camera.zoom}');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
 
     // Forzar una carga de clusters para probar
     _loadClustersForMapView();
@@ -887,7 +869,7 @@ class MapViewModel extends ChangeNotifier
   /// Carga clusters dinámicamente según la vista actual del mapa
   void _loadClustersForMapView() {
     if (_isLoadingClusters) {
-      print('[MapViewModel] ⏳ Ya se están cargando clusters, saltando...');
+      // Removed debug print
       return;
     }
 
@@ -912,7 +894,7 @@ class MapViewModel extends ChangeNotifier
 
       // Solo recargar si se movió más de 0.5km o cambió el zoom significativamente
       if (distance < 0.5 && (currentZoom - _lastMapZoom).abs() < 1.0) {
-        print('[MapViewModel] ⏭️ Cambio insuficiente, saltando carga...');
+        // Removed debug print
         return;
       }
     }
@@ -922,7 +904,7 @@ class MapViewModel extends ChangeNotifier
 
     // Usar debounce más corto para respuesta más rápida
     _clusterLoadDebounceTimer = Timer(const Duration(milliseconds: 200), () {
-      print('[MapViewModel] ⏰ Ejecutando carga de clusters...');
+      // Removed debug print
       _performClusterLoad(currentCenter, currentZoom);
     });
   }
@@ -930,11 +912,11 @@ class MapViewModel extends ChangeNotifier
   /// Realiza la carga efectiva de clusters
   void _performClusterLoad(LatLng center, double zoom) async {
     if (_isLoadingClusters) {
-      print('[MapViewModel] ⏳ Ya se están cargando clusters, saltando...');
+      // Removed debug print
       return;
     }
 
-    print('[MapViewModel] 🚀 Iniciando carga de clusters...');
+    // Removed debug print
     _isLoadingClusters = true;
     _lastMapCenter = center;
     _lastMapZoom = zoom;
@@ -945,16 +927,16 @@ class MapViewModel extends ChangeNotifier
 
     try {
       // Cargar clusters para el centro de la vista del mapa
-      print('[MapViewModel] 📞 Llamando a loadClustersForMapView...');
+      // Removed debug print
       await loadClustersForMapView(center, zoom: zoom, radiusKm: 5.0);
 
-      print('[MapViewModel] ✅ Clusters cargados dinámicamente');
+      // Removed debug print
       notifyListeners(); // Asegurar que la UI se actualice
     } catch (e) {
-      print('[MapViewModel] ❌ Error cargando clusters dinámicamente: $e');
+      // Removed debug print
     } finally {
       _isLoadingClusters = false;
-      print('[MapViewModel] ✅ Carga de clusters completada');
+      // Removed debug print
     }
   }
 

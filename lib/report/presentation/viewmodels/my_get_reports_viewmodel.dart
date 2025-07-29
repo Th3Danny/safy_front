@@ -37,13 +37,10 @@ class GetReportsViewModel extends ChangeNotifier {
         // ✅ NO pasar latitude/longitude para obtener MIS reportes
       );
             
-      print('[GetReportsViewModel] MIS reportes cargados: ${_reports.length}');
     } on ReportExceptions catch (e) {
       _setError(e.message);
-      print('[GetReportsViewModel] Error de dominio: ${e.message}');
     } catch (e) {
       _setError('Ocurrió un error inesperado al cargar mis reportes.');
-      print('[GetReportsViewModel] Error inesperado: $e');
     } finally {
       _setLoading(false);
     }

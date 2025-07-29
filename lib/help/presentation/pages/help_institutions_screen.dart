@@ -19,7 +19,7 @@ class HelpInstitutionsScreen extends StatelessWidget {
       await launchUrl(launchUri);
     } else {
       // Manejar el error si no se puede lanzar la URL (ej. no hay app de teléfono)
-      print('Could not launch $phoneNumber');
+      // Removed debug print
       
     }
   }

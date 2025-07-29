@@ -19,7 +19,7 @@ class FirebaseMessagingService {
 
     // Obtener token
     final token = await _messaging.getToken();
-    print('[🔐 FirebaseMessagingService] Token: $token');
+    // Removed debug print
 
     // Inicializar notificaciones locales
     const AndroidInitializationSettings androidInitSettings =
@@ -39,7 +39,7 @@ class FirebaseMessagingService {
   }
 
   void _onForegroundMessage(RemoteMessage message) {
-    print('[📩 Foreground] Mensaje recibido: ${message.messageId}');
+    // Removed debug print
 
     final notification = message.notification;
     final android = message.notification?.android;
@@ -50,7 +50,7 @@ class FirebaseMessagingService {
   }
 
   void _onNotificationTap(RemoteMessage message) {
-    print('[📲 Notification Tap] Mensaje: ${message.messageId}');
+    // Removed debug print
     // Puedes navegar o realizar acciones aquí
   }
 

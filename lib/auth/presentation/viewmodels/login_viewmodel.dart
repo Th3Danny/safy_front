@@ -93,24 +93,24 @@ class LoginViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      print('[LoginViewModel] 🌐 Llamando a SignInUseCase...');
+      // Removed debug print
       final session = await _signInUseCase.execute(
         email: _email,
         password: _password,
       );
 
-      print('[LoginViewModel] ✅ SignInUseCase exitoso');
-      print('[LoginViewModel] 👤 Usuario recibido: ${session.user.username}');
+      // Removed debug print
+      // Removed debug print
       print(
         '[LoginViewModel] 🔑 Token recibido: ${session.accessToken.substring(0, 20)}...',
       );
-      print('[LoginViewModel] ⏰ Expira en: ${session.expiresAt}');
+      // Removed debug print
 
       // Calcular expiresIn en segundos
       final expiresIn = session.expiresAt.difference(DateTime.now()).inSeconds;
-      print('[LoginViewModel] ⏰ ExpiresIn calculado: $expiresIn segundos');
+      // Removed debug print
 
-      print('[LoginViewModel] 💾 Creando sesión con SessionManager...');
+      // Removed debug print
       await SessionManager.instance.createSession(
         user: session.user,
         accessToken: session.accessToken,
@@ -119,18 +119,14 @@ class LoginViewModel extends ChangeNotifier {
         rememberMe: _rememberMe,
       );
 
-      print('[LoginViewModel] ✅ Sesión creada en SessionManager');
+      // Removed debug print
 
       // Verificar inmediatamente el estado del SessionManager
       final sessionManager = SessionManager.instance;
-      print('[LoginViewModel] 🔍 Verificación inmediata:');
-      print('[LoginViewModel] 🔍   - isLoggedIn: ${sessionManager.isLoggedIn}');
-      print(
-        '[LoginViewModel] 🔍   - currentUser: ${sessionManager.currentUser?.username}',
-      );
-      print(
-        '[LoginViewModel] 🔍   - accessToken presente: ${sessionManager.accessToken != null}',
-      );
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
 
       _lastSuccessfulSession = session;
 
@@ -140,29 +136,27 @@ class LoginViewModel extends ChangeNotifier {
         _email = '';
       }
 
-      print('[LoginViewModel] 🎉 ========== LOGIN COMPLETADO ==========');
-      print(
-        '[LoginViewModel] 🎉 Estado final - isLoggedIn: ${sessionManager.isLoggedIn}',
-      );
+      // Removed debug print
+      // Removed debug print
 
       // 📱 Registrar dispositivo después del login exitoso
       await _registerDeviceAfterLogin();
 
       return true;
     } on ValidationException catch (e) {
-      print('[LoginViewModel] ❌ ValidationException: ${e.message}');
+      // Removed debug print
       _setError(_formatValidationError(e));
       return false;
     } on InvalidCredentialsException catch (e) {
-      print('[LoginViewModel] ❌ InvalidCredentialsException: ${e.message}');
+      // Removed debug print
       _setError(e.message);
       return false;
     } on AuthException catch (e) {
-      print('[LoginViewModel] ❌ AuthException: ${e.message}');
+      // Removed debug print
       _setError(e.message);
       return false;
     } catch (e) {
-      print('[LoginViewModel] ❌ Error inesperado: $e');
+      // Removed debug print
       _setError('Error inesperado. Intenta nuevamente.');
       return false;
     } finally {
@@ -173,11 +167,11 @@ class LoginViewModel extends ChangeNotifier {
   // Método para obtener la ubicación actual
   Future<Location?> _getCurrentLocation() async {
     try {
-      print('[LoginViewModel] 📍 Obteniendo ubicación actual...');
+      // Removed debug print
 
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('[LoginViewModel] ⚠️ Servicios de ubicación deshabilitados');
+        // Removed debug print
         return null;
       }
 
@@ -185,15 +179,13 @@ class LoginViewModel extends ChangeNotifier {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          print('[LoginViewModel] ⚠️ Permisos de ubicación denegados');
+          // Removed debug print
           return null;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        print(
-          '[LoginViewModel] ⚠️ Permisos de ubicación denegados permanentemente',
-        );
+        // Removed debug print
         return null;
       }
 
@@ -208,12 +200,10 @@ class LoginViewModel extends ChangeNotifier {
         timestamp: DateTime.now(),
       );
 
-      print(
-        '[LoginViewModel] ✅ Ubicación obtenida: ${location.latitude}, ${location.longitude}',
-      );
+      // Removed debug print
       return location;
     } catch (e) {
-      print('[LoginViewModel] ❌ Error obteniendo ubicación: $e');
+      // Removed debug print
       return null;
     }
   }
@@ -221,12 +211,12 @@ class LoginViewModel extends ChangeNotifier {
   // Método para registrar el dispositivo después del login
   Future<void> _registerDeviceAfterLogin() async {
     try {
-      print('[LoginViewModel] 📱 Registrando dispositivo después del login...');
+      // Removed debug print
 
       // Obtener FCM token
       final fcmToken = await _firebaseMessagingService.getToken();
       if (fcmToken == null || fcmToken.isEmpty) {
-        print('[LoginViewModel] ⚠️ No hay FCM token disponible');
+        // Removed debug print
         return;
       }
 
@@ -249,7 +239,7 @@ class LoginViewModel extends ChangeNotifier {
         );
       }
     } catch (e) {
-      print('[LoginViewModel] ❌ Error registrando dispositivo: $e');
+      // Removed debug print
       // No lanzar excepción para no interrumpir el flujo de login
     }
   }

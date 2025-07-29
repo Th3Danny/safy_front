@@ -956,8 +956,6 @@ class _ReportFormState extends State<ReportForm> {
   }
 
   void _handleSubmitReport(CreateReportViewModel viewModel) async {
-    print('[ReportForm] 🚀 Iniciando creación de reporte...');
-
     try {
       await viewModel.createReport(
         title: _titleController.text.trim(),
@@ -983,14 +981,8 @@ class _ReportFormState extends State<ReportForm> {
       );
 
       if (mounted) {
-        print('[ReportForm] 🔍 Verificando resultado...');
-        print('[ReportForm] Error message: ${viewModel.errorMessage}');
-        print('[ReportForm] Is loading: ${viewModel.isLoading}');
-
         if (viewModel.errorMessage == null) {
           // ✅ ÉXITO
-          print('[ReportForm] ✅ ¡Reporte creado exitosamente!');
-
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Row(
@@ -1030,8 +1022,6 @@ class _ReportFormState extends State<ReportForm> {
           }
         } else {
           // ❌ ERROR
-          print('[ReportForm] ❌ Error: ${viewModel.errorMessage}');
-
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -1054,8 +1044,6 @@ class _ReportFormState extends State<ReportForm> {
         }
       }
     } catch (e) {
-      print('[ReportForm] 💥 Exception capturada: $e');
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
