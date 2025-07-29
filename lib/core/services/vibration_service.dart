@@ -14,9 +14,9 @@ class VibrationService {
   Future<void> init() async {
     try {
       _hasVibrator = true; // Asumir que está disponible
-      print('[VibrationService] 📳 Vibrador disponible: $_hasVibrator');
+      // Removed debug print
     } catch (e) {
-      print('[VibrationService] ❌ Error inicializando vibración: $e');
+      // Removed debug print
       _hasVibrator = false;
     }
   }
@@ -32,9 +32,9 @@ class VibrationService {
       HapticFeedback.heavyImpact();
       await Future.delayed(const Duration(milliseconds: 200));
       HapticFeedback.heavyImpact();
-      print('[VibrationService] 🚨 Vibración de alerta de zona peligrosa');
+      // Removed debug print
     } catch (e) {
-      print('[VibrationService] ❌ Error en vibración de alerta: $e');
+      // Removed debug print
     }
   }
 
@@ -45,9 +45,9 @@ class VibrationService {
     try {
       // Vibración simple de notificación
       HapticFeedback.lightImpact();
-      print('[VibrationService] 📳 Vibración de notificación');
+      // Removed debug print
     } catch (e) {
-      print('[VibrationService] ❌ Error en vibración de notificación: $e');
+      // Removed debug print
     }
   }
 
@@ -58,9 +58,9 @@ class VibrationService {
     try {
       // Vibración corta de confirmación
       HapticFeedback.selectionClick();
-      print('[VibrationService] ✅ Vibración de confirmación');
+      // Removed debug print
     } catch (e) {
-      print('[VibrationService] ❌ Error en vibración de confirmación: $e');
+      // Removed debug print
     }
   }
 
@@ -73,9 +73,9 @@ class VibrationService {
       HapticFeedback.heavyImpact();
       await Future.delayed(const Duration(milliseconds: 300));
       HapticFeedback.heavyImpact();
-      print('[VibrationService] ❌ Vibración de error');
+      // Removed debug print
     } catch (e) {
-      print('[VibrationService] ❌ Error en vibración de error: $e');
+      // Removed debug print
     }
   }
 
@@ -92,9 +92,9 @@ class VibrationService {
       HapticFeedback.mediumImpact();
       await Future.delayed(const Duration(milliseconds: 100));
       HapticFeedback.mediumImpact();
-      print('[VibrationService] 🔒 Vibración de alerta GPS falso');
+      // Removed debug print
     } catch (e) {
-      print('[VibrationService] ❌ Error en vibración GPS falso: $e');
+      // Removed debug print
     }
   }
 
@@ -104,9 +104,9 @@ class VibrationService {
 
     try {
       // flutter_vibrate no tiene método de cancel, pero podemos simular
-      print('[VibrationService] ⏹️ Vibración detenida');
+      // Removed debug print
     } catch (e) {
-      print('[VibrationService] ❌ Error deteniendo vibración: $e');
+      // Removed debug print
     }
   }
 }

@@ -34,7 +34,7 @@ final sl = GetIt.instance;
 Future<void> setupDependencyInjection({
   SharedPreferences? sharedPreferences,
 }) async {
-  print('[DI] 🚀 Iniciando configuración de dependencias...');
+  // Removed debug print
 
   // ===== EXTERNAL DEPENDENCIES =====
   final prefs = sharedPreferences ?? await SharedPreferences.getInstance();
@@ -43,7 +43,7 @@ Future<void> setupDependencyInjection({
   if (!sl.isRegistered<SharedPreferences>()) {
     sl.registerLazySingleton<SharedPreferences>(() => prefs);
   } else {
-    print('[DI] ⚠️ SharedPreferences ya registrado, omitiendo...');
+    // Removed debug print
   }
 
   // ===== CORE DEPENDENCIES =====
@@ -108,7 +108,7 @@ Future<void> setupDependencyInjection({
   // Asegurar que las dependencias críticas estén registradas
   _ensureCriticalDependencies();
 
-  print('[DI] ✅ Todas las dependencias configuradas exitosamente');
+  // Removed debug print
 }
 
 void _ensureCriticalDependencies() {
@@ -121,9 +121,7 @@ void _ensureCriticalDependencies() {
 
     // Verificar GetReportsForMapUseCase
     if (!sl.isRegistered<GetReportsForMapUseCase>()) {
-      print(
-        '[DI] ⚠️ GetReportsForMapUseCase no registrado, registrando ahora...',
-      );
+      // Removed debug print
       sl.registerLazySingleton<GetReportsForMapUseCase>(
         () => GetReportsForMapUseCase(sl<ReportRepository>()),
       );
@@ -131,15 +129,15 @@ void _ensureCriticalDependencies() {
 
     // Verificar GetClustersUseCase
     if (!sl.isRegistered<GetClustersUseCase>()) {
-      print('[DI] ⚠️ GetClustersUseCase no registrado, registrando ahora...');
+      // Removed debug print
       sl.registerLazySingleton<GetClustersUseCase>(
         () => GetClustersUseCase(sl<ReportRepository>()),
       );
     }
 
-    print('[DI] ✅ Todas las dependencias críticas verificadas');
+    // Removed debug print
   } catch (e) {
-    print('[DI] ❌ Error verificando dependencias: $e');
+    // Removed debug print
     rethrow;
   }
 }
@@ -167,7 +165,7 @@ List<SingleChildWidget> getAllProviders() {
     ChangeNotifierProvider<MapViewModel>(
       create: (_) {
         try {
-          print('[DI] 🗺️ Creando MapViewModel...');
+          // Removed debug print
 
           // Verificar dependencias antes de crear MapViewModel
           final searchPlacesUseCase = sl<SearchPlacesUseCase>();
@@ -176,7 +174,7 @@ List<SingleChildWidget> getAllProviders() {
           final getClustersUseCase = sl<GetClustersUseCase>();
           final getPredictionsUseCase = sl<GetPredictionsUseCase>();
 
-          print('[DI] ✅ Todas las dependencias disponibles para MapViewModel');
+          // Removed debug print
 
           return MapViewModel(
             searchPlacesUseCase: searchPlacesUseCase,
@@ -185,7 +183,7 @@ List<SingleChildWidget> getAllProviders() {
             getPredictionsUseCase: getPredictionsUseCase,
           );
         } catch (e) {
-          print('[DI] ❌ Error creando MapViewModel: $e');
+          // Removed debug print
           rethrow;
         }
       },

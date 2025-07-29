@@ -12,18 +12,18 @@ class WebSocketService {
 
   void connect(String url) {
     _channel = WebSocketChannel.connect(Uri.parse(url));
-    print('WebSocket conectado a $url');
+    // Removed debug print
 
     _channel.stream.listen(
       (message) {
-        print('Mensaje recibido: $message');
+        // Removed debug print
         // Aquí puedes notificar a un ViewModel o usar streams para UI
       },
       onDone: () {
-        print('Conexión cerrada');
+        // Removed debug print
       },
       onError: (error) {
-        print('Error WebSocket: $error');
+        // Removed debug print
       },
     );
   }

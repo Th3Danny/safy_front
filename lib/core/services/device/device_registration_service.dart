@@ -21,10 +21,8 @@ class DeviceRegistrationService {
     required Location location,
   }) async {
     try {
-      print('[DeviceRegistrationService] 📱 Registrando dispositivo...');
-      print(
-        '[DeviceRegistrationService] 📍 Ubicación: ${location.latitude}, ${location.longitude}',
-      );
+      // Removed debug print
+      // Removed debug print
       print(
         '[DeviceRegistrationService] 🔧 Tipo de dispositivo: ${_deviceInfoService.getDeviceType()}',
       );
@@ -32,13 +30,11 @@ class DeviceRegistrationService {
       // Obtener el token de acceso
       final accessToken = _sessionManager.accessToken;
       if (accessToken == null) {
-        print(
-          '[DeviceRegistrationService] ⚠️ No hay token de acceso disponible',
-        );
+        // Removed debug print
         return;
       }
 
-      print('[DeviceRegistrationService] 🔐 Token de acceso obtenido');
+      // Removed debug print
 
       final deviceDto = DeviceRegisterDto(
         fcmToken: fcmToken,
@@ -57,19 +53,15 @@ class DeviceRegistrationService {
         options: Options(headers: headers),
       );
 
-      print(
-        '[DeviceRegistrationService] ✅ Dispositivo registrado exitosamente',
-      );
-      print('[DeviceRegistrationService] 📊 Status: ${response.statusCode}');
+      // Removed debug print
+      // Removed debug print
     } on DioException catch (e) {
-      print(
-        '[DeviceRegistrationService] ❌ Error registrando dispositivo: ${e.message}',
-      );
-      print('[DeviceRegistrationService] ❌ Status: ${e.response?.statusCode}');
-      print('[DeviceRegistrationService] ❌ Data: ${e.response?.data}');
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
       // No lanzar excepción para no interrumpir el flujo de registro
     } catch (e) {
-      print('[DeviceRegistrationService] ❌ Error inesperado: $e');
+      // Removed debug print
       // No lanzar excepción para no interrumpir el flujo de registro
     }
   }

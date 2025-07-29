@@ -15,11 +15,11 @@ import 'package:safy/core/services/background_danger_detection_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 Inicializar Firebase
+  //  Inicializar Firebase
   await Firebase.initializeApp();
   await FirebaseMessagingService().init();
 
-  // 👂 Escuchar mensajes en segundo plano
+  // Escuchar mensajes en segundo plano
   FirebaseMessaging.onBackgroundMessage(firebaseBackgroundMessageHandler);
 
   try {
@@ -27,40 +27,24 @@ void main() async {
 
     final prefs = await SharedPreferences.getInstance();
 
-    // DEBUG: Verificar si hay datos almacenados
-    final storedToken = prefs.getString('access_token');
-    final storedUser = prefs.getString('user_data');
-
-    if (storedToken != null) {
-      print('[Main] 🔍 Token preview: ${storedToken.substring(0, 20)}...');
-    }
-
     // 2. Inicializar SessionManager
 
     await SessionManager.instance.initialize(prefs: prefs);
 
-    // DEBUG: Verificar estado del SessionManager después de initialize
-
-    SessionManager.instance.debugSessionState();
-
     // 3. Configurar dependencias
     await setupDependencyInjection(sharedPreferences: prefs);
 
-    // 👇 Iniciar el servicio de notificaciones
+    //  Iniciar el servicio de notificaciones
     await sl<FirebaseMessagingService>().init();
 
-    // 🚨 NUEVO: Inicializar servicio de detección de clusters
+    //   Inicializar servicio de detección de clusters
     await sl<ClusterDetectionService>().init();
 
-    // 🚨 NUEVO: Inicializar servicio de detección de peligro en segundo plano
+    // NUEVO: Inicializar servicio de detección de peligro en segundo plano
     await BackgroundDangerDetectionService.initialize();
 
     runApp(const MyApp());
   } catch (e, stackTrace) {
-    print('[Main]  ========== ERROR CRÍTICO ==========');
-    print('[Main]  Error: $e');
-    print('[Main]  StackTrace: $stackTrace');
-
     runApp(ErrorApp(error: e.toString()));
   }
 }

@@ -41,9 +41,7 @@ mixin PredictionsMixin on ChangeNotifier {
     notifyListeners();
 
     try {
-      print(
-        '[PredictionsMixin] 🔮 Cargando predicciones para: ${location.latitude}, ${location.longitude}',
-      );
+      // Removed debug print
       print('[PredictionsMixin] 📅 Timestamp: ${timestamp.toIso8601String()}');
 
       if (getPredictionsUseCase != null) {
@@ -58,16 +56,14 @@ mixin PredictionsMixin on ChangeNotifier {
           timestamp: timestamp,
         );
 
-        print(
-          '[PredictionsMixin] ✅ Predicciones cargadas: ${_predictions.length}',
-        );
+        // Removed debug print
         _createPredictionMarkers();
       } else {
-        print('[PredictionsMixin] ⚠️ GetPredictionsUseCase no disponible');
+        // Removed debug print
         _predictionsError = 'Servicio de predicciones no disponible';
       }
     } catch (e) {
-      print('[PredictionsMixin] ❌ Error cargando predicciones: $e');
+      // Removed debug print
       _predictionsError = 'Error cargando predicciones: $e';
     } finally {
       _predictionsLoading = false;
@@ -87,9 +83,7 @@ mixin PredictionsMixin on ChangeNotifier {
     notifyListeners();
 
     try {
-      print(
-        '[PredictionsMixin] 🔮 Cargando predicciones para ruta con ${waypoints.length} waypoints',
-      );
+      // Removed debug print
       print(
         '[PredictionsMixin] 📅 Tiempo estimado de llegada: ${estimatedArrivalTime.toIso8601String()}',
       );
@@ -111,16 +105,14 @@ mixin PredictionsMixin on ChangeNotifier {
           estimatedArrivalTime: estimatedArrivalTime,
         );
 
-        print(
-          '[PredictionsMixin] ✅ Predicciones de ruta cargadas: ${_predictions.length}',
-        );
+        // Removed debug print
         _createPredictionMarkers();
       } else {
-        print('[PredictionsMixin] ⚠️ GetPredictionsUseCase no disponible');
+        // Removed debug print
         _predictionsError = 'Servicio de predicciones no disponible';
       }
     } catch (e) {
-      print('[PredictionsMixin] ❌ Error cargando predicciones de ruta: $e');
+      // Removed debug print
       _predictionsError = 'Error cargando predicciones de ruta: $e';
     } finally {
       _predictionsLoading = false;
@@ -172,18 +164,14 @@ mixin PredictionsMixin on ChangeNotifier {
       _predictionMarkers.add(marker);
     }
 
-    print(
-      '[PredictionsMixin] 📍 Marcadores de predicciones creados: ${_predictionMarkers.length}',
-    );
+    // Removed debug print
   }
 
   // Manejar selección de predicción
   void _onPredictionSelected(Prediction prediction) {
     _selectedPrediction = prediction;
     notifyListeners();
-    print(
-      '[PredictionsMixin] 🔮 Predicción seleccionada: ${prediction.riskLevel}',
-    );
+    // Removed debug print
   }
 
   // Ocultar predicción seleccionada
@@ -196,9 +184,7 @@ mixin PredictionsMixin on ChangeNotifier {
   void togglePredictions() {
     _showPredictions = !_showPredictions;
     notifyListeners();
-    print(
-      '[PredictionsMixin] 👁️ Predicciones ${_showPredictions ? 'mostradas' : 'ocultadas'}',
-    );
+    // Removed debug print
   }
 
   // 🆕 NUEVO: Cargar predicciones automáticamente cuando se establece una ruta
@@ -207,9 +193,7 @@ mixin PredictionsMixin on ChangeNotifier {
   ) async {
     if (routePoints.isEmpty) return;
 
-    print(
-      '[PredictionsMixin] 🔮 Cargando predicciones automáticamente para ruta con ${routePoints.length} puntos',
-    );
+    // Removed debug print
 
     try {
       // Tomar puntos estratégicos de la ruta (inicio, medio, fin)
@@ -245,9 +229,7 @@ mixin PredictionsMixin on ChangeNotifier {
           timestamp: DateTime.now().add(const Duration(hours: 2)),
         );
 
-        print(
-          '[PredictionsMixin] ✅ Predicciones automáticas cargadas: ${_predictions.length}',
-        );
+        // Removed debug print
         _createPredictionMarkers();
 
         // Mostrar predicciones automáticamente
@@ -255,15 +237,13 @@ mixin PredictionsMixin on ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('[PredictionsMixin] ❌ Error cargando predicciones automáticas: $e');
+      // Removed debug print
     }
   }
 
   // 🆕 NUEVO: Cargar predicciones para un destino específico
   Future<void> loadPredictionsForDestination(LatLng destination) async {
-    print(
-      '[PredictionsMixin] 🔮 Cargando predicciones para destino: ${destination.latitude}, ${destination.longitude}',
-    );
+    // Removed debug print
 
     try {
       final location = Location(
@@ -278,9 +258,7 @@ mixin PredictionsMixin on ChangeNotifier {
           timestamp: DateTime.now().add(const Duration(hours: 2)),
         );
 
-        print(
-          '[PredictionsMixin] ✅ Predicciones para destino cargadas: ${_predictions.length}',
-        );
+        // Removed debug print
         _createPredictionMarkers();
 
         // Mostrar predicciones automáticamente
@@ -288,9 +266,7 @@ mixin PredictionsMixin on ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print(
-        '[PredictionsMixin] ❌ Error cargando predicciones para destino: $e',
-      );
+      // Removed debug print
     }
   }
 

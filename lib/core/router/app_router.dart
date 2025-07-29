@@ -34,32 +34,32 @@ class AppRouter {
         final isLoggedIn = sessionManager.isLoggedIn;
         final isNonSecure = routesNonSecure.contains(state.matchedLocation);
 
-        print('[Router] 🔍 Ruta: ${state.matchedLocation}');
-        print('[Router] 🔍 LoggedIn: $isLoggedIn');
-        print('[Router] 🔍 NonSecure: $isNonSecure');
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
 
         // 🔧 CAMBIO: Permitir AuthWrapper manejar la navegación inicial
         if (state.matchedLocation == '/') {
-          print('[Router] 🏠 AuthWrapper manejará la navegación');
+          // Removed debug print
           return null;
         }
 
         // 🔧 CAMBIO: Solo redirigir si realmente no hay sesión válida
         if (!isLoggedIn && !isNonSecure) {
-          print('[Router] 🚫 Redirigiendo a login - no autenticado');
+          // Removed debug print
           return AppRoutesConstant.login;
         }
 
         // 🔧 CAMBIO: Solo redirigir si hay sesión válida Y está en login
         if (isLoggedIn && state.matchedLocation == AppRoutesConstant.login) {
-          print('[Router] ✅ Redirigiendo a home - ya autenticado');
+          // Removed debug print
           return AppRoutesConstant.home;
         }
 
-        print('[Router] ✅ No redirect necesario');
+        // Removed debug print
         return null;
       } catch (e) {
-        print('[Router] ❌ Error en redirect: $e');
+        // Removed debug print
         // 🔧 CAMBIO: No redirigir en caso de error de red
         return null;
       }
@@ -243,23 +243,21 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   void _checkAndNavigate() {
-    print('[AuthWrapper] 🚀 Verificando navegación...');
+    // Removed debug print
 
     // Usar WidgetsBinding para asegurar que el widget esté montado
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _hasNavigated) return;
 
       final sessionManager = SessionManager.instance;
-      print(
-        '[AuthWrapper] 🔍 SessionManager isLoggedIn: ${sessionManager.isLoggedIn}',
-      );
+      // Removed debug print
 
       if (sessionManager.isLoggedIn) {
-        print('[AuthWrapper] ✅ Navegando a home - sesión válida');
+        // Removed debug print
         _hasNavigated = true;
         context.go(AppRoutesConstant.home);
       } else {
-        print('[AuthWrapper] 🚫 Navegando a login - sin sesión');
+        // Removed debug print
         _hasNavigated = true;
         context.go(AppRoutesConstant.login);
       }

@@ -68,9 +68,6 @@ mixin RouteMixin on ChangeNotifier {
     // 🆕 NUEVO: Cargar predicciones automáticamente cuando se establece un destino
     if (this is MapViewModel) {
       final mapViewModel = this as MapViewModel;
-      print(
-        '[RouteMixin] 🔮 Cargando predicciones para destino establecido: ${point.latitude}, ${point.longitude}',
-      );
       mapViewModel.loadPredictionsForDestination(point);
     }
 
@@ -138,8 +135,6 @@ mixin RouteMixin on ChangeNotifier {
 
       // 🛡️ NUEVO: Calcular múltiples rutas con diferentes niveles de seguridad
       final routes = await _calculateMultipleRoutes(_startPoint!, _endPoint!);
-
-      print('✅ Calculadas ${routes.length} rutas');
 
       // Agregar rutas calculadas
       for (final route in routes) {
@@ -313,9 +308,7 @@ mixin RouteMixin on ChangeNotifier {
         if (safeRouteDangerousPoints == 0) {
           return safeRoute;
         } else {
-          print(
-            '[RouteMixin] ⚠️ Ruta segura aún tiene $safeRouteDangerousPoints puntos peligrosos',
-          );
+          // Removed debug print
         }
       }
 
@@ -328,18 +321,14 @@ mixin RouteMixin on ChangeNotifier {
       );
 
       if (waypointRoute != null) {
-        print(
-          '[RouteMixin]  Ruta con waypoints creada con ${waypointRoute.length} puntos',
-        );
+        // Removed debug print
         return waypointRoute;
       }
 
-      print(
-        '[RouteMixin]  No se pudo crear ruta segura, usando ruta directa como fallback',
-      );
+      // Removed debug print
       return directRoute;
     } catch (e) {
-      print('[RouteMixin]  Error en cálculo de ruta segura: $e');
+      // Removed debug print
       return null;
     }
   }
@@ -350,7 +339,7 @@ mixin RouteMixin on ChangeNotifier {
     LatLng end,
   ) async {
     try {
-      print('[RouteMixin] 🔄 Calculando ruta alternativa...');
+      // Removed debug print
 
       // Obtener zonas peligrosas para evitar
       final dangerZones = _getNearbyDangerZones(start, end);
@@ -371,9 +360,7 @@ mixin RouteMixin on ChangeNotifier {
       );
 
       if (safeDetourPoint != null) {
-        print(
-          '[RouteMixin]  Punto de desvío seguro encontrado: ${safeDetourPoint.latitude}, ${safeDetourPoint.longitude}',
-        );
+        // Removed debug print
 
         // Calcular ruta por segmentos usando API real
         final route = <LatLng>[];
@@ -410,9 +397,7 @@ mixin RouteMixin on ChangeNotifier {
           // Agregar segmento 2 (excluyendo el primer punto para evitar duplicados)
           route.addAll(segment2Route.skip(1));
 
-          print(
-            '[RouteMixin]  Ruta alternativa calculada con ${route.length} puntos usando API real',
-          );
+          // Removed debug print
 
           // Verificar que la ruta sea segura
           int dangerousPoints = 0;
@@ -423,22 +408,22 @@ mixin RouteMixin on ChangeNotifier {
           }
 
           if (dangerousPoints == 0) {
-            print('[RouteMixin]  Ruta alternativa es segura');
+            // Removed debug print
             return route;
           } else {
-            print('[RouteMixin]  Ruta alternativa aún tiene puntos peligrosos');
+            // Removed debug print
             return null;
           }
         } catch (e) {
-          print('[RouteMixin] Error calculando ruta alternativa con API: $e');
+          // Removed debug print
           return null;
         }
       } else {
-        print('[RouteMixin]  No se pudo encontrar punto de desvío seguro');
+        // Removed debug print
         return null;
       }
     } catch (e) {
-      print('[RouteMixin]  Error en cálculo de ruta alternativa: $e');
+      // Removed debug print
       return null;
     }
   }
@@ -501,14 +486,14 @@ mixin RouteMixin on ChangeNotifier {
             )
             .toList();
       } else {
-        print('[RouteMixin] ⚠️ No se encontraron clusters de peligro');
+        // Removed debug print
       }
     } catch (e) {
-      print('[RouteMixin] ❌ Error obteniendo clusters: $e');
+      // Removed debug print
     }
 
     // Datos ficticios como fallback para testing
-    print('[RouteMixin] 🔄 Usando zonas peligrosas de prueba');
+    // Removed debug print
     return [
       LatLng(16.7569, -93.1292), // Ejemplo de zona peligrosa
       LatLng(16.7570, -93.1293), // Ejemplo de zona peligrosa
@@ -522,18 +507,14 @@ mixin RouteMixin on ChangeNotifier {
     List<LatLng> dangerZones,
   ) async {
     try {
-      print('[RouteMixin] 🛡️ Calculando ruta que evita zonas peligrosas...');
+      // Removed debug print
 
       // 1. Encontrar waypoints seguros
       final safeWaypoints = _findSafeWaypoints(start, end, dangerZones);
-      print(
-        '[RouteMixin] 📍 Waypoints seguros encontrados: ${safeWaypoints.length}',
-      );
+      // Removed debug print
 
       if (safeWaypoints.isEmpty) {
-        print(
-          '[RouteMixin] ⚠️ No hay waypoints seguros, intentando desvío amplio...',
-        );
+        // Removed debug print
         // Si no hay waypoints seguros, intentar con desvíos más amplios
         return await _calculateDetourRoute(start, end, dangerZones);
       }
@@ -543,7 +524,7 @@ mixin RouteMixin on ChangeNotifier {
       route.addAll(safeWaypoints);
       route.add(end);
 
-      print('[RouteMixin] 📊 Ruta construida con ${route.length} puntos');
+      // Removed debug print
 
       // 3. Verificar que la ruta final sea segura
       int dangerousPoints = 0;
@@ -553,23 +534,19 @@ mixin RouteMixin on ChangeNotifier {
         }
       }
 
-      print(
-        '[RouteMixin] 📊 Puntos peligrosos en ruta con waypoints: $dangerousPoints',
-      );
+      // Removed debug print
 
       if (dangerousPoints == 0) {
-        print('[RouteMixin] ✅ Ruta con waypoints es segura');
+        // Removed debug print
         return route;
       }
 
-      print(
-        '[RouteMixin] ⚠️ Ruta con waypoints aún tiene puntos peligrosos, intentando desvío amplio...',
-      );
+      // Removed debug print
 
       // 4. Si aún no es segura, usar desvío más amplio
       return await _calculateDetourRoute(start, end, dangerZones);
     } catch (e) {
-      print('[RouteMixin] ❌ Error calculando ruta que evita zonas: $e');
+      // Removed debug print
       return null;
     }
   }
@@ -624,16 +601,14 @@ mixin RouteMixin on ChangeNotifier {
     List<LatLng> dangerZones,
   ) async {
     try {
-      print('[RouteMixin] 🛡️ Calculando ruta con waypoints seguros...');
+      // Removed debug print
 
       // Encontrar waypoints seguros
       final safeWaypoints = _findSafeWaypoints(start, end, dangerZones);
-      print(
-        '[RouteMixin] 📍 Waypoints seguros encontrados: ${safeWaypoints.length}',
-      );
+      // Removed debug print
 
       if (safeWaypoints.isEmpty) {
-        print('[RouteMixin] ⚠️ No se encontraron waypoints seguros');
+        // Removed debug print
         return null;
       }
 
@@ -713,7 +688,7 @@ mixin RouteMixin on ChangeNotifier {
         }
       }
 
-      print(' Ruta con waypoints calculada: ${route.length} puntos');
+      // Removed debug print
 
       // Verificar que la ruta sea segura
       int dangerousPoints = 0;
@@ -787,9 +762,7 @@ mixin RouteMixin on ChangeNotifier {
     final totalDistance = Distance().as(LengthUnit.Meter, start, end);
     final numPoints = (totalDistance / 300).ceil();
 
-    print(
-      '[RouteMixin] 🔍 Buscando waypoints seguros en $numPoints puntos intermedios...',
-    );
+    // Removed debug print
 
     for (int i = 1; i < numPoints; i++) {
       final ratio = i / numPoints;
@@ -817,9 +790,7 @@ mixin RouteMixin on ChangeNotifier {
 
       if (isSafe) {
         waypoints.add(midPoint);
-        print(
-          '[RouteMixin] ✅ Waypoint seguro encontrado: ${midPoint.latitude}, ${midPoint.longitude}',
-        );
+        // Removed debug print
       } else {
         print(
           '[RouteMixin] ⚠️ Waypoint peligroso: ${midPoint.latitude}, ${midPoint.longitude} - Distancia mínima: ${minDistanceToDanger.toInt()}m',
@@ -832,16 +803,12 @@ mixin RouteMixin on ChangeNotifier {
         );
         if (safePoint != null) {
           waypoints.add(safePoint);
-          print(
-            '[RouteMixin] ✅ Punto seguro alternativo encontrado: ${safePoint.latitude}, ${safePoint.longitude}',
-          );
+          // Removed debug print
         }
       }
     }
 
-    print(
-      '[RouteMixin] 📊 Total waypoints seguros encontrados: ${waypoints.length}',
-    );
+    // Removed debug print
     return waypoints;
   }
 
@@ -894,22 +861,20 @@ mixin RouteMixin on ChangeNotifier {
   }
 
   void selectRoute(RouteOption route) {
-    print('🛣️ [RouteMixin] selectRoute llamado');
-    print('🛣️ [RouteMixin] Nombre de ruta: ${route.name}');
-    print('🛣️ [RouteMixin] Puntos de ruta: ${route.points.length}');
-    print('🛣️ [RouteMixin] Ruta actual antes: ${_currentRoute.length} puntos');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
 
     _currentRoute = route.points;
 
-    print(
-      '🛣️ [RouteMixin] Ruta actual después: ${_currentRoute.length} puntos',
-    );
-    print('🛣️ [RouteMixin] Llamando a onRouteSelected...');
+    // Removed debug print
+    // Removed debug print
     onRouteSelected(route);
 
-    print('🛣️ [RouteMixin] Notificando listeners...');
+    // Removed debug print
     notifyListeners();
-    print('🛣️ [RouteMixin] selectRoute completado');
+    // Removed debug print
   }
 
   void clearRoute() {
@@ -952,9 +917,7 @@ mixin RouteMixin on ChangeNotifier {
           final clusterRadius = _calculateClusterRadius(cluster);
 
           if (distance <= clusterRadius) {
-            print(
-              '[RouteMixin] 🚨 Punto en zona peligrosa: ${point.latitude}, ${point.longitude}',
-            );
+            // Removed debug print
             print(
               '[RouteMixin] 🚨 Distancia al cluster: ${distance.toInt()}m, Radio: ${clusterRadius.toInt()}m',
             );
@@ -963,7 +926,7 @@ mixin RouteMixin on ChangeNotifier {
         }
       }
     } catch (e) {
-      print('[RouteMixin] ❌ Error verificando zona peligrosa: $e');
+      // Removed debug print
     }
 
     return false;

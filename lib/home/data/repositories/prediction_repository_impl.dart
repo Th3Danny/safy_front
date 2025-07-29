@@ -16,9 +16,7 @@ class PredictionRepositoryImpl implements PredictionRepository {
     required DateTime timestamp,
   }) async {
     try {
-      print(
-        '[PredictionRepository] 🔮 Obteniendo predicciones para ubicación: ${location.latitude}, ${location.longitude}',
-      );
+      // Removed debug print
       print(
         '[PredictionRepository] 📅 Timestamp: ${timestamp.toIso8601String()}',
       );
@@ -34,9 +32,7 @@ class PredictionRepositoryImpl implements PredictionRepository {
       final predictions =
           predictionDtos.map((dto) => dto.toDomainEntity()).toList();
 
-      print(
-        '[PredictionRepository] ✅ Predicciones obtenidas: ${predictions.length}',
-      );
+      // Removed debug print
       for (final prediction in predictions) {
         print(
           '[PredictionRepository] 📍 Predicción: ${prediction.riskLevel} (${prediction.confidenceDescription})',
@@ -45,7 +41,7 @@ class PredictionRepositoryImpl implements PredictionRepository {
 
       return predictions;
     } catch (e) {
-      print('[PredictionRepository] ❌ Error obteniendo predicciones: $e');
+      // Removed debug print
       throw ServerFailure('Error obteniendo predicciones: $e');
     }
   }
@@ -56,9 +52,7 @@ class PredictionRepositoryImpl implements PredictionRepository {
     required DateTime timestamp,
   }) async {
     try {
-      print(
-        '[PredictionRepository] 🔮 Obteniendo predicciones para ${locations.length} ubicaciones',
-      );
+      // Removed debug print
 
       final requests =
           locations
@@ -77,15 +71,11 @@ class PredictionRepositoryImpl implements PredictionRepository {
       final predictions =
           predictionDtos.map((dto) => dto.toDomainEntity()).toList();
 
-      print(
-        '[PredictionRepository] ✅ Predicciones obtenidas: ${predictions.length}',
-      );
+      // Removed debug print
 
       return predictions;
     } catch (e) {
-      print(
-        '[PredictionRepository] ❌ Error obteniendo predicciones múltiples: $e',
-      );
+      // Removed debug print
       throw ServerFailure('Error obteniendo predicciones múltiples: $e');
     }
   }
@@ -96,9 +86,7 @@ class PredictionRepositoryImpl implements PredictionRepository {
     required DateTime estimatedArrivalTime,
   }) async {
     try {
-      print(
-        '[PredictionRepository] 🔮 Obteniendo predicciones para ruta con ${waypoints.length} waypoints',
-      );
+      // Removed debug print
       print(
         '[PredictionRepository] 📅 Tiempo estimado de llegada: ${estimatedArrivalTime.toIso8601String()}',
       );
@@ -123,15 +111,11 @@ class PredictionRepositoryImpl implements PredictionRepository {
       final predictions =
           predictionDtos.map((dto) => dto.toDomainEntity()).toList();
 
-      print(
-        '[PredictionRepository] ✅ Predicciones de ruta obtenidas: ${predictions.length}',
-      );
+      // Removed debug print
 
       return predictions;
     } catch (e) {
-      print(
-        '[PredictionRepository] ❌ Error obteniendo predicciones de ruta: $e',
-      );
+      // Removed debug print
       throw ServerFailure('Error obteniendo predicciones de ruta: $e');
     }
   }

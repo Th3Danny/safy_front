@@ -15,7 +15,7 @@ class MapboxDirectionsClient {
     List<LatLng>? waypoints,
   }) async {
     try {
-      print('🗺️ Mapbox: Calculando ruta...');
+      // Removed debug print
 
       // Construir coordenadas para la URL
       String coordinates =
@@ -84,7 +84,7 @@ class MapboxDirectionsClient {
             return [coord[1].toDouble(), coord[0].toDouble()]; // [lat, lon]
           }).toList();
 
-      print('🗺️ Mapbox: Ruta calculada con ${routePoints.length} puntos');
+      // Removed debug print
 
       return routePoints;
     } catch (e) {

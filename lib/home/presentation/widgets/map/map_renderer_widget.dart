@@ -21,13 +21,9 @@ class _MapRendererWidgetState extends State<MapRendererWidget> {
   Widget build(BuildContext context) {
     return Consumer<MapViewModel>(
       builder: (context, mapViewModel, child) {
-        print('🗺️ [MapRendererWidget] Widget reconstruido');
-        print(
-          '🗺️ [MapRendererWidget] Ruta actual: ${mapViewModel.currentRoute.length} puntos',
-        );
-        print(
-          '🗺️ [MapRendererWidget] Nombre de ruta: ${mapViewModel.currentRouteName ?? 'N/A'}',
-        );
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
 
         return Stack(
           children: [
@@ -79,11 +75,9 @@ class _MapRendererWidgetState extends State<MapRendererWidget> {
     }
 
     if (hasGesture) {
-      print('[MapRendererWidget] 🗺️ Mapa movido por el usuario');
-      print(
-        '[MapRendererWidget] 📍 Nueva posición: ${position.center.latitude}, ${position.center.longitude}',
-      );
-      print('[MapRendererWidget] 🔍 Nuevo zoom: ${position.zoom}');
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
 
       // Cargar clusters dinámicamente
       mapViewModel.loadClustersForMapViewFromWidget(

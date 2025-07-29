@@ -1,5 +1,5 @@
-
 import 'package:safy/report/domain/entities/cluster_entity.dart';
+
 class ClusterResponseDto {
   final String clusterId;
   final String clusterType;
@@ -71,8 +71,6 @@ class ClusterResponseDto {
         tags: parseTags(json['tags']),
       );
     } catch (e) {
-      print('[ClusterResponseDto] ❌ Error parsing cluster: $e');
-      
       // Retornar cluster por defecto en caso de error
       return ClusterResponseDto(
         clusterId: 'error',

@@ -638,12 +638,12 @@ class GpsSpoofingDetector {
 
   /// NUEVO: Método para debugging - muestra información detallada de la posición
   void debugPosition(Position position) {
-    print('=== DEBUG GPS POSITION ===');
-    print('📍 Coordenadas: ${position.latitude}, ${position.longitude}');
-    print('🎯 Precisión: ${position.accuracy}m');
-    print('📏 Altitud: ${position.altitude}m');
-    print('🏃 Velocidad: ${position.speed}m/s');
-    print('⏰ Timestamp: ${position.timestamp}');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
     print(
       '🕐 Diferencia de tiempo: ${DateTime.now().difference(position.timestamp).abs().inMinutes} minutos',
     );
@@ -654,7 +654,7 @@ class GpsSpoofingDetector {
     final latDecimal = lat - lat.floor();
     final lngDecimal = lng - lng.floor();
 
-    print('🔢 Análisis de coordenadas:');
+    // Removed debug print
     print('   Lat decimal: ${latDecimal.toStringAsFixed(6)}');
     print('   Lng decimal: ${lngDecimal.toStringAsFixed(6)}');
     print('   Lat redondeada (0.1): ${(lat * 10).round() / 10}');
@@ -663,12 +663,12 @@ class GpsSpoofingDetector {
     print('   Lng redondeada (0.01): ${(lng * 100).round() / 100}');
 
     // Verificaciones
-    print('🔍 Verificaciones:');
-    print('   Precisión < 0.1m: ${position.accuracy < 0.1}');
-    print('   Precisión < 0.5m: ${position.accuracy < 0.5}');
-    print('   Precisión < 2.0m: ${position.accuracy < 2.0}');
-    print('   Altitud == 0: ${position.altitude == 0.0}');
-    print('   Velocidad == 0: ${position.speed == 0.0}');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
     print(
       '   Coordenadas muy redondas: ${(latDecimal < 0.001 || latDecimal > 0.999) && (lngDecimal < 0.001 || lngDecimal > 0.999)}',
     );
@@ -681,7 +681,7 @@ class GpsSpoofingDetector {
     print(
       '   Timestamp > 30min: ${DateTime.now().difference(position.timestamp).abs().inMinutes > 30}',
     );
-    print('========================');
+    // Removed debug print
   }
 
   /// NUEVO: Método para detectar GPS real de forma muy permisiva
@@ -781,9 +781,7 @@ class GpsSpoofingDetector {
         recommendations: _generateRecommendations(checks),
       );
 
-      print(
-        '[GpsSpoofingDetector] 🔍 DETECCIÓN PERMISIVA: ${result.isSpoofed ? "FAKE GPS DETECTADO" : "GPS REAL"}',
-      );
+      // Removed debug print
       print(
         '[GpsSpoofingDetector] 🎯 Riesgo permisivo: ${(riskScore * 100).toStringAsFixed(1)}%',
       );
@@ -805,7 +803,7 @@ class GpsSpoofingDetector {
     Position position,
   ) async {
     try {
-      print('[GpsSpoofingDetector] 🔍 Usando detección nativa mejorada...');
+      // Removed debug print
 
       // Verificar si estamos en Android
       if (Platform.isAndroid) {
@@ -813,10 +811,8 @@ class GpsSpoofingDetector {
         final isDeveloperMode = await _checkDeveloperMode();
         final hasMockLocationPermission = await _checkMockLocationPermission();
 
-        print('[GpsSpoofingDetector] 📱 Modo desarrollador: $isDeveloperMode');
-        print(
-          '[GpsSpoofingDetector] 📱 Permisos mock location: $hasMockLocationPermission',
-        );
+        // Removed debug print
+        // Removed debug print
 
         // NUEVA: Verificar patrones de comportamiento
         final isFakeGpsByPatterns = await _detectFakeGpsByPatterns(position);
@@ -843,9 +839,7 @@ class GpsSpoofingDetector {
             ],
           );
 
-          print(
-            '[GpsSpoofingDetector] 🚨 FAKE GPS DETECTADO POR APIS NATIVAS!',
-          );
+          // Removed debug print
           return result;
         } else if (isFakeGpsByPatterns) {
           // Fake GPS detectado por patrones de comportamiento
@@ -870,7 +864,7 @@ class GpsSpoofingDetector {
             ],
           );
 
-          print('[GpsSpoofingDetector] 🚨 FAKE GPS DETECTADO POR PATRONES!');
+          // Removed debug print
           return result;
         } else {
           // GPS parece ser real según las APIs nativas
@@ -885,18 +879,16 @@ class GpsSpoofingDetector {
             ],
           );
 
-          print('[GpsSpoofingDetector] ✅ GPS REAL SEGÚN APIS NATIVAS');
+          // Removed debug print
           return result;
         }
       } else {
         // En iOS, usar detección personalizada
-        print(
-          '[GpsSpoofingDetector] 📱 iOS detectado, usando detección personalizada',
-        );
+        // Removed debug print
         return await detectSpoofingBalanced(position);
       }
     } catch (e) {
-      print('[GpsSpoofingDetector] ❌ Error con APIs nativas: $e');
+      // Removed debug print
 
       // Fallback a detección personalizada si las APIs fallan
       return await detectSpoofingBalanced(position);
@@ -1125,7 +1117,7 @@ class GpsSpoofingDetector {
           // Más de 1km
           final timeDiff =
               position.timestamp.difference(lastPosition.timestamp).inSeconds;
-          print('[GpsSpoofingDetector] ⏱️ Tiempo transcurrido: ${timeDiff}s');
+          // Removed debug print
 
           if (timeDiff < 60) {
             // Menos de 1 minuto
@@ -1163,16 +1155,14 @@ class GpsSpoofingDetector {
         recommendations: _generateRecommendations(checks),
       );
 
-      print(
-        '[GpsSpoofingDetector] ⚖️ DETECCIÓN EQUILIBRADA: ${result.isSpoofed ? "FAKE GPS DETECTADO" : "GPS REAL"}',
-      );
+      // Removed debug print
       print(
         '[GpsSpoofingDetector] 🎯 Riesgo equilibrado: ${(riskScore * 100).toStringAsFixed(1)}%',
       );
 
       // Logs detallados para debugging
       if (checks.isNotEmpty) {
-        print('[GpsSpoofingDetector] 📋 Problemas detectados:');
+        // Removed debug print
         for (final check in checks) {
           print(
             '[GpsSpoofingDetector]   - ${check.description} (severidad: ${(check.severity * 100).toStringAsFixed(1)}%)',
@@ -1206,9 +1196,7 @@ class GpsSpoofingDetector {
         isAnomaly = true;
         severity = 0.8;
         description = 'Timestamp muy antiguo: ${timeDiff.inMinutes} minutos';
-        print(
-          '[GpsSpoofingDetector] 🚨 TIMESTAMP SOSPECHOSO: ${timeDiff.inMinutes} minutos',
-        );
+        // Removed debug print
       }
 
       // 2. Verificar si está en modo de desarrollador (Android)
@@ -1225,15 +1213,11 @@ class GpsSpoofingDetector {
               severity = 0.9;
               description =
                   'Permisos de mock location habilitados en modo desarrollador';
-              print(
-                '[GpsSpoofingDetector] 🚨 MOCK LOCATION PERMISSIONS HABILITADOS!',
-              );
+              // Removed debug print
             }
           }
         } catch (e) {
-          print(
-            '[GpsSpoofingDetector] ⚠️ No se pudo verificar modo desarrollador: $e',
-          );
+          // Removed debug print
         }
       }
 
@@ -1255,9 +1239,7 @@ class GpsSpoofingDetector {
         severity = 0.8;
         description =
             'Velocidad exactamente 0 con precisión perfecta (sospechoso)';
-        print(
-          '[GpsSpoofingDetector] 🚨 VELOCIDAD EXACTA 0 CON PRECISIÓN PERFECTA',
-        );
+        // Removed debug print
       }
 
       // 5. Verificar si la altitud es exactamente 0 con precisión perfecta
@@ -1266,9 +1248,7 @@ class GpsSpoofingDetector {
         severity = 0.8;
         description =
             'Altitud exactamente 0 con precisión perfecta (sospechoso)';
-        print(
-          '[GpsSpoofingDetector] 🚨 ALTITUD EXACTA 0 CON PRECISIÓN PERFECTA',
-        );
+        // Removed debug print
       }
 
       // 6. Verificar coordenadas "redondas" (típicas de Fake GPS)
@@ -1284,9 +1264,7 @@ class GpsSpoofingDetector {
         isAnomaly = true;
         severity = 0.7;
         description = 'Coordenadas sospechosamente redondas (Fake GPS típico)';
-        print(
-          '[GpsSpoofingDetector] 🚨 COORDENADAS SOSPECHOSAMENTE REDONDAS: $lat, $lng',
-        );
+        // Removed debug print
       }
 
       // 7. Verificar si la velocidad es constante (típico de Fake GPS)
@@ -1299,9 +1277,7 @@ class GpsSpoofingDetector {
           isAnomaly = true;
           severity = 0.6;
           description = 'Velocidad sospechosamente constante (Fake GPS)';
-          print(
-            '[GpsSpoofingDetector] 🚨 VELOCIDAD SOSPECHOSAMENTE CONSTANTE: ${position.speed}m/s',
-          );
+          // Removed debug print
         }
       }
 
@@ -1313,7 +1289,7 @@ class GpsSpoofingDetector {
             description.isEmpty ? 'Sin anomalías nativas' : description,
       );
     } catch (e) {
-      print('[GpsSpoofingDetector] ❌ Error en verificación nativa: $e');
+      // Removed debug print
       return SpoofingCheck(
         type: SpoofingCheckType.provider,
         isAnomaly: false,
@@ -1339,21 +1315,17 @@ class GpsSpoofingDetector {
             androidInfo.model.toLowerCase().contains('pixel') ||
             androidInfo.isPhysicalDevice == false; // Emulador
 
-        print('[GpsSpoofingDetector] 📱 Info del dispositivo:');
-        print('[GpsSpoofingDetector]   - Brand: ${androidInfo.brand}');
-        print('[GpsSpoofingDetector]   - Model: ${androidInfo.model}');
-        print(
-          '[GpsSpoofingDetector]   - IsPhysicalDevice: ${androidInfo.isPhysicalDevice}',
-        );
-        print(
-          '[GpsSpoofingDetector]   - HasDeveloperFeatures: $hasDeveloperFeatures',
-        );
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
 
         return hasDeveloperFeatures;
       }
       return false;
     } catch (e) {
-      print('[GpsSpoofingDetector] ❌ Error verificando modo desarrollador: $e');
+      // Removed debug print
       return false;
     }
   }
@@ -1375,21 +1347,15 @@ class GpsSpoofingDetector {
             androidInfo.model.toLowerCase().contains('sdk') ||
             androidInfo.isPhysicalDevice == false; // Emulador
 
-        print('[GpsSpoofingDetector] 📱 Verificando permisos mock location:');
-        print(
-          '[GpsSpoofingDetector]   - Supported ABIs: ${androidInfo.supportedAbis}',
-        );
-        print(
-          '[GpsSpoofingDetector]   - HasMockLocationFeatures: $hasMockLocationFeatures',
-        );
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
 
         return hasMockLocationFeatures;
       }
       return false;
     } catch (e) {
-      print(
-        '[GpsSpoofingDetector] ❌ Error verificando permisos mock location: $e',
-      );
+      // Removed debug print
       return false;
     }
   }
@@ -1466,14 +1432,12 @@ class GpsSpoofingDetector {
       }
 
       if (isFakeGps) {
-        print(
-          '[GpsSpoofingDetector] 🚨 FAKE GPS DETECTADO POR PATRONES: $detectedPattern',
-        );
+        // Removed debug print
       }
 
       return isFakeGps;
     } catch (e) {
-      print('[GpsSpoofingDetector] ❌ Error en detección por patrones: $e');
+      // Removed debug print
       return false;
     }
   }

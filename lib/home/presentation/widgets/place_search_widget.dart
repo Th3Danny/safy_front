@@ -77,7 +77,7 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                   _debounceTimer?.cancel();
                   _debounceTimer = Timer(const Duration(milliseconds: 500), () {
                     if (value.length >= 3) {
-                      print('🔍 [PlaceSearchWidget] Buscando: $value');
+                      // Removed debug print
                       mapViewModel.searchPlaces(
                         value.trim(),
                         mapViewModel.currentLocation,
@@ -89,7 +89,7 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                 },
                 onSubmitted: (value) {
                   if (value.isNotEmpty) {
-                    print('🔍 [PlaceSearchWidget] Búsqueda enviada: $value');
+                    // Removed debug print
                     mapViewModel.searchPlaces(
                       value.trim(),
                       mapViewModel.currentLocation,
@@ -170,9 +170,7 @@ class _PlaceSearchWidgetState extends State<PlaceSearchWidget> {
                         size: 16,
                       ),
                       onTap: () {
-                        print(
-                          '🎯 [PlaceSearchWidget] Lugar seleccionado: ${place.displayName}',
-                        );
+                        // Removed debug print
 
                         // 🎯 NUEVO: Establecer automáticamente la posición actual como punto de inicio
                         mapViewModel.setCurrentLocationAsStart();

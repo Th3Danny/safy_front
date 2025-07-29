@@ -202,7 +202,7 @@ class _LoginFormState extends State<LoginForm> {
 
                         // La navegación se maneja en _onViewModelChanged
                         if (success) {
-                          print('Login exitoso!');
+                          // Removed debug print
                         }
                       }
                     }

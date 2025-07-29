@@ -61,7 +61,7 @@ class MapLayers {
         final severity = cluster.severityNumber ?? 1;
         final reportCount = cluster.reportCount ?? 0;
 
-        // 🎯 NUEVA LÓGICA: Tamaño dinámico basado en reportes y severidad
+        // : Tamaño dinámico basado en reportes y severidad
         double baseSize = 30.0; // Tamaño base más pequeño
 
         // Factor de tamaño por cantidad de reportes (más reportes = más grande)
@@ -125,7 +125,7 @@ class MapLayers {
           colorIntensity.clamp(0.6, 1.0),
         );
 
-        // 🎯 NUEVO: Radio dinámico basado en reportes
+        //  Radio dinámico basado en reportes
         double clusterRadius = 50.0; // Radio base
         if (reportCount >= 5) clusterRadius += 20;
         if (reportCount >= 10) clusterRadius += 30;
@@ -143,16 +143,16 @@ class MapLayers {
 
         // 📊 Logs para debugging
         print(
-          '🎯 [MapLayers] Cluster: ${cluster.centerLatitude.toStringAsFixed(4)}, ${cluster.centerLongitude.toStringAsFixed(4)}',
+          ' [MapLayers] Cluster: ${cluster.centerLatitude.toStringAsFixed(4)}, ${cluster.centerLongitude.toStringAsFixed(4)}',
         );
-        print('   📍 Reportes: $reportCount, Severidad: $severity');
+        // Removed debug print
         print(
-          '   📏 Tamaño: ${finalSize.toStringAsFixed(1)}px (Base: $baseSize, Report: ${reportMultiplier.toStringAsFixed(2)}, Severidad: ${severityMultiplier.toStringAsFixed(2)})',
+          '    Tamaño: ${finalSize.toStringAsFixed(1)}px (Base: $baseSize, Report: ${reportMultiplier.toStringAsFixed(2)}, Severidad: ${severityMultiplier.toStringAsFixed(2)})',
         );
         print(
-          '   🎨 Color: ${clusterColor.toString()}, Intensidad: ${colorIntensity.toStringAsFixed(2)}',
+          '   Color: ${clusterColor.toString()}, Intensidad: ${colorIntensity.toStringAsFixed(2)}',
         );
-        print('   🔴 Radio: ${clusterRadius.toStringAsFixed(0)}m');
+        print('   Radio: ${clusterRadius.toStringAsFixed(0)}m');
 
         markers.add(
           Marker(
@@ -332,9 +332,7 @@ class MapLayers {
     final markers = <Marker>[];
 
     if (mapViewModel.showPredictions && mapViewModel.predictions.isNotEmpty) {
-      print(
-        '[MapLayers] 🔮 Construyendo capa de predicciones con ${mapViewModel.predictions.length} predicciones',
-      );
+      // Removed debug print
 
       for (final prediction in mapViewModel.predictions) {
         // 🟡 PREDICCIONES EN COLOR AMARILLO
@@ -347,9 +345,7 @@ class MapLayers {
           height: 50,
           child: GestureDetector(
             onTap: () {
-              print(
-                '[MapLayers] 🔮 Predicción seleccionada: ${prediction.riskLevel}',
-              );
+              // Removed debug print
               // Aquí podrías mostrar información de la predicción
             },
             child: Container(
@@ -377,9 +373,7 @@ class MapLayers {
         );
 
         markers.add(marker);
-        print(
-          '[MapLayers] 🔮 Marcador de predicción agregado: ${prediction.location.latitude}, ${prediction.location.longitude}',
-        );
+        // Removed debug print
       }
     }
 
@@ -388,10 +382,8 @@ class MapLayers {
 
   // 🆕 NUEVO: Capa de todos los marcadores del mapa
   static MarkerLayer buildAllMarkersLayer(MapViewModel mapViewModel) {
-    print('[MapLayers] 🎯 Construyendo capa de todos los marcadores');
-    print(
-      '[MapLayers] 📍 Marcadores totales: ${mapViewModel.allMapMarkers.length}',
-    );
+    // Removed debug print
+    // Removed debug print
 
     return MarkerLayer(markers: mapViewModel.allMapMarkers);
   }

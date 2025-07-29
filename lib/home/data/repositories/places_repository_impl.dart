@@ -15,7 +15,7 @@ class PlacesRepositoryImpl implements PlacesRepository {
     int limit = 8,
   }) async {
     try {
-      print('🔍 [PlacesRepositoryImpl] Buscando lugares: $query');
+      // Removed debug print
 
       final placeDtos = await _apiClient.searchPlaces(
         query,
@@ -26,14 +26,14 @@ class PlacesRepositoryImpl implements PlacesRepository {
 
       final places = placeDtos.map((dto) => dto.toDomainEntity()).toList();
 
-      print('✅ [PlacesRepositoryImpl] Encontrados ${places.length} lugares');
+      // Removed debug print
       for (final place in places) {
-        print('📍 [PlacesRepositoryImpl] - ${place.displayName}');
+        // Removed debug print
       }
 
       return places;
     } catch (e) {
-      print('❌ [PlacesRepositoryImpl] Error al buscar lugares: $e');
+      // Removed debug print
       throw Exception('Error al buscar lugares: $e');
     }
   }

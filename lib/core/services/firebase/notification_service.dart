@@ -68,9 +68,7 @@ class NotificationService {
       await showNotification(id: 1, title: title, body: body);
       _lastDangerZoneNotification = now;
     } else {
-      print(
-        '[NotificationService] Notificación de zona peligrosa ignorada por cooldown',
-      );
+      // Removed debug print
     }
   }
 }

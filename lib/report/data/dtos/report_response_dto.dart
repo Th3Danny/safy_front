@@ -126,9 +126,6 @@ class ReportResponseDto {
               : 0), // milisegundos de nanosegundos
         );
       } catch (e) {
-        print(
-          '[ReportResponseDto] Error parsing date from array: $dateValue -> $e',
-        );
         return null;
       }
     }
@@ -138,9 +135,6 @@ class ReportResponseDto {
       try {
         return DateTime.parse(dateValue);
       } catch (e) {
-        print(
-          '[ReportResponseDto] Error parsing date from string: $dateValue -> $e',
-        );
         return null;
       }
     }

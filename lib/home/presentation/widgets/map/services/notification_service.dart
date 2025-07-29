@@ -76,13 +76,13 @@ class NotificationService {
     }
 
     // Aquí podrías usar un sistema de notificaciones real
-    print('🚨 [NotificationService] Zona Peligrosa Cercana');
+    // Removed debug print
     print(
       '🚨 [NotificationService] Distancia: ${distance.toStringAsFixed(0)}m',
     );
-    print('🚨 [NotificationService] Severidad: $severityText');
-    print('🚨 [NotificationService] Reportes: $reportCount');
-    print('🚨 [NotificationService] Tipo: ${cluster.dominantIncidentType}');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
   }
 
   /// Calcula distancia entre dos puntos

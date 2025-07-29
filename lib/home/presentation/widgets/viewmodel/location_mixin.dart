@@ -83,9 +83,7 @@ mixin LocationMixin on ChangeNotifier {
 
   // Seguimiento de ubicación
   void startLocationTracking() {
-    print(
-      '[LocationMixin] 🚀 Iniciando tracking de ubicación en tiempo real...',
-    );
+    // Removed debug print
 
     // Configuración de ubicación
     final locationSettings = LocationSettings(
@@ -98,11 +96,11 @@ mixin LocationMixin on ChangeNotifier {
       locationSettings: locationSettings,
     ).listen(
       (Position position) {
-        print('[LocationMixin] 📡 Nueva posición recibida del GPS');
+        // Removed debug print
         updateCurrentPosition(position);
       },
       onError: (error) {
-        print('[LocationMixin] ❌ Error en tracking de ubicación: $error');
+        // Removed debug print
         onLocationError('Error en tracking: $error');
       },
     );
@@ -111,9 +109,7 @@ mixin LocationMixin on ChangeNotifier {
     _movementDetectionService = GetIt.instance<MovementDetectionService>();
     _locationTrackingService = GetIt.instance<LocationTrackingService>();
 
-    print(
-      '[LocationMixin] ✅ Tracking de ubicación iniciado - Actualizando cada 5 metros',
-    );
+    // Removed debug print
   }
 
   void setDangerZones(List<LatLng> zones) {
@@ -163,7 +159,7 @@ mixin LocationMixin on ChangeNotifier {
   // 🔒 NUEVO: Método para detectar GPS falso
   Future<void> _detectGpsSpoofing(Position position) async {
     try {
-      print('[LocationMixin] 🔍 Verificando GPS falso...');
+      // Removed debug print
 
       // Debug de la posición para entender qué está causando la detección
       _gpsDetector.debugPosition(position);
@@ -175,11 +171,11 @@ mixin LocationMixin on ChangeNotifier {
       _lastSpoofingResult = result;
 
       if (result.isSpoofed) {
-        print('[LocationMixin] 🚨 GPS FALSO DETECTADO!');
+        // Removed debug print
         print(
           '[LocationMixin] 🎯 Riesgo: ${(result.riskScore * 100).toStringAsFixed(1)}%',
         );
-        print('[LocationMixin] 📋 Problemas: ${result.detectedIssues.length}');
+        // Removed debug print
 
         // Mostrar detalles de los problemas detectados
         for (final issue in result.detectedIssues) {
@@ -194,18 +190,16 @@ mixin LocationMixin on ChangeNotifier {
         // Callback para el ViewModel principal
         onGpsSpoofingDetected(result);
       } else {
-        print('[LocationMixin] ✅ GPS parece ser real');
+        // Removed debug print
 
         // Si antes estaba detectado como falso y ahora es real, limpiar
         if (_lastSpoofingResult?.isSpoofed == true) {
-          print(
-            '[LocationMixin] 🔄 GPS ahora parece ser real - limpiando alertas',
-          );
+          // Removed debug print
           _gpsDetector.clearHistoryForRealGps();
         }
       }
     } catch (e) {
-      print('[LocationMixin] ❌ Error en detección de GPS falso: $e');
+      // Removed debug print
     }
   }
 
@@ -348,7 +342,7 @@ mixin LocationMixin on ChangeNotifier {
   /// Forzar actualización de ubicación (para el botón de recargar)
   Future<void> forceLocationUpdate() async {
     try {
-      print('[LocationMixin] 🔄 Forzando actualización de ubicación...');
+      // Removed debug print
 
       final position = await _determinePosition();
       final newLocation = LatLng(position.latitude, position.longitude);
@@ -361,7 +355,7 @@ mixin LocationMixin on ChangeNotifier {
       onLocationUpdated(newLocation);
       notifyListeners();
     } catch (e) {
-      print('[LocationMixin] ❌ Error forzando actualización: $e');
+      // Removed debug print
       onLocationError('Error actualizando ubicación: $e');
     }
   }

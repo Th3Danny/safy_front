@@ -9,7 +9,7 @@ class RegisterViewModel extends ChangeNotifier {
   final SignUpUseCase _signUpUseCase;
 
   RegisterViewModel(this._signUpUseCase) {
-    print('[RegisterViewModel] Constructor llamado - hashCode: ${hashCode}');
+    // Removed debug print
   }
 
   // Estado del formulario - Página 1 (Datos personales)
@@ -91,7 +91,6 @@ class RegisterViewModel extends ChangeNotifier {
     if (_name != trimmedName) {
       _name = trimmedName;
       _clearFieldError('name');
-      print('[RegisterViewModel] setName: "$_name" (hashCode: ${hashCode})');
       notifyListeners();
     }
   }
@@ -205,7 +204,7 @@ class RegisterViewModel extends ChangeNotifier {
 
   void setFcmToken(String? token) {
     _fcmToken = token;
-    print('[RegisterViewModel] FCM Token seteado: $_fcmToken');
+    // Removed debug print
   }
 
   // 🔧 Navegación entre páginas - SIN notifyListeners automático
@@ -305,21 +304,21 @@ class RegisterViewModel extends ChangeNotifier {
   // 🔍 Método para imprimir estado actual (debug)
   void printCurrentState() {
     print('=== REGISTER VIEWMODEL STATE (hashCode: ${hashCode}) ===');
-    print('Page: $_currentPage');
-    print('Name: "$_name"');
-    print('LastName: "$_lastName"');
-    print('SecondLastName: "$_secondLastName"');
-    print('Username: "$_username"');
-    print('Age: $_age');
-    print('Gender: ${_selectedGender.value}');
-    print('JobType: ${_selectedJobType.value}');
-    print('Email: "$_email"');
-    print('FCM Token: "${_fcmToken ?? ""}"');
-    print('Password: "${_password.isNotEmpty ? "***" : ""}"');
-    print('ConfirmPassword: "${_confirmPassword.isNotEmpty ? "***" : ""}"');
-    print('canGoToNextPage: $canGoToNextPage');
-    print('canSubmit: $canSubmit');
-    print('===============================');
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
+    // Removed debug print
   }
 
   // Método principal de registro
@@ -341,7 +340,7 @@ class RegisterViewModel extends ChangeNotifier {
         '[RegisterViewModel] Intentando registrar con los siguientes datos (hashCode:  [${hashCode}):',
       );
       printCurrentState();
-      print('[RegisterViewModel] FCM Token a enviar:  [${_fcmToken}]');
+      // Removed debug print
 
       final session = await _signUpUseCase.execute(
         name: _name,

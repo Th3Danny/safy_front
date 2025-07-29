@@ -11,7 +11,7 @@ class MapHandlers {
       MapboxDirectionsClient();
 
   static void handleMapTap(BuildContext context, LatLng coordinates) {
-    print('🗺️ [MapHandlers] Tap en coordenadas: $coordinates');
+    // Removed debug print
 
     // Mostrar selector de ubicación
     _showLocationSelector(context, coordinates);
@@ -139,9 +139,9 @@ class MapHandlers {
     if (endPoint == null) return;
 
     try {
-      print('🗺️ Calculando ruta segura con Mapbox...');
-      print('📍 Inicio: ${startPoint.latitude}, ${startPoint.longitude}');
-      print('🎯 Destino: ${endPoint.latitude}, ${endPoint.longitude}');
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
 
       // Calcular ruta básica
       final routeCoordinates = await _directionsClient.getRoute(
@@ -164,9 +164,9 @@ class MapHandlers {
         mapViewModel.setCurrentRoute(route);
         mapViewModel.setStartPoint(startPoint);
 
-        print('🗺️ Ruta calculada con ${route.length} puntos');
-        print('🗺️ Primer punto: ${route.first}');
-        print('🗺️ Último punto: ${route.last}');
+        // Removed debug print
+        // Removed debug print
+        // Removed debug print
 
         // Verificar que el contexto aún esté montado antes de mostrar SnackBar
         if (context.mounted) {
@@ -187,7 +187,7 @@ class MapHandlers {
         }
       }
     } catch (e) {
-      print('❌ Error calculando ruta: $e');
+      // Removed debug print
 
       // Verificar que el contexto aún esté montado antes de mostrar SnackBar
       if (context.mounted) {

@@ -34,9 +34,7 @@ class _RegisterForm02State extends State<RegisterForm02> {
 
     // 🔧 Obtener la MISMA instancia de GetIt
     _registerViewModel = GetIt.instance<RegisterViewModel>();
-    print(
-      '[RegisterForm02] ViewModel hashCode: ${_registerViewModel.hashCode}',
-    );
+    // Removed debug print
 
     _registerViewModel.addListener(_onViewModelChanged);
 
@@ -71,21 +69,21 @@ class _RegisterForm02State extends State<RegisterForm02> {
 
   // 🔍 Debug: imprimir datos del primer formulario
   void _debugPrintForm1Data() {
-    print('=== DEBUG FORM 2 - VERIFICACIÓN DE DATOS ===');
-    print('Form2 ViewModel hashCode: ${_registerViewModel.hashCode}');
+    // Removed debug print
+    // Removed debug print
     _registerViewModel.printCurrentState();
 
     // Si los datos están vacíos, hay un problema
     if (_registerViewModel.name.isEmpty) {
-      print(' ERROR: Los datos del Form1 se perdieron!');
-      print(' Posibles causas:');
-      print('   1. GetIt no está configurado como singleton');
-      print('   2. Se está creando una nueva instancia');
-      print('   3. Los datos se están limpiando en algún lugar');
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
+      // Removed debug print
     } else {
-      print(' Los datos del Form1 están presentes');
+      // Removed debug print
     }
-    print('===========================================');
+    // Removed debug print
   }
 
   void _onViewModelChanged() {
@@ -132,25 +130,25 @@ class _RegisterForm02State extends State<RegisterForm02> {
 
       // Obtener el FCM token antes de registrar
       final fcmToken = await FirebaseMessagingService().getToken();
-      print('[RegisterForm02] FCM Token obtenido para registro: $fcmToken');
+      // Removed debug print
       _registerViewModel.setFcmToken(fcmToken);
 
       // 🔍 Debug: imprimir estado final antes del registro
-      print('=== DEBUG FORM 2 - ANTES DEL REGISTRO ===');
+      // Removed debug print
       _registerViewModel.printCurrentState();
-      print('=======================================');
+      // Removed debug print
 
       //  Verificar que se puede enviar
       if (_registerViewModel.canSubmit) {
         final success = await _registerViewModel.signUp();
 
         if (success) {
-          print(' Registro exitoso desde register_form_02.dart');
+          // Removed debug print
         } else {
-          print(' Error en el registro desde register_form_02.dart');
+          // Removed debug print
         }
       } else {
-        print(' No se puede enviar: canSubmit = false');
+        // Removed debug print
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Por favor completa todos los campos correctamente'),

@@ -48,9 +48,7 @@ class ClusterDetectionService {
       '[ClusterDetectionService] 🧪 Test distancia: ${testDistance.toStringAsFixed(1)}m (esperado ~111m)',
     );
 
-    print(
-      '[ClusterDetectionService] 🚀 Servicio de detección de clusters inicializado',
-    );
+    // Removed debug print
   }
 
   /// Configurar callback para mostrar alertas
@@ -141,15 +139,11 @@ class ClusterDetectionService {
       _showAlertCallback!(cluster, distance);
     }
 
-    print(
-      '[ClusterDetectionService] 🚨 Usuario entró en zona peligrosa: ${cluster.clusterId}',
-    );
+    // Removed debug print
     print(
       '[ClusterDetectionService] 📍 Distancia: ${distance.toStringAsFixed(0)}m (Radio de detección: ${_dangerZoneRadius.toInt()}m)',
     );
-    print(
-      '[ClusterDetectionService] ⚠️ Severidad: $severity, Reportes: $reportCount',
-    );
+    // Removed debug print
     print(
       '[ClusterDetectionService] 🎯 Radio visual del cluster: ${cluster.calculatedRadius.toStringAsFixed(0)}m',
     );
@@ -177,9 +171,7 @@ class ClusterDetectionService {
       _lastAlertTime['warning_$clusterId'] = now;
       _showWarningZoneAlert(cluster, distance);
 
-      print(
-        '[ClusterDetectionService] ⚠️ Usuario cerca de zona peligrosa: ${cluster.clusterId}',
-      );
+      // Removed debug print
       print(
         '[ClusterDetectionService] 📍 Distancia: ${distance.toStringAsFixed(0)}m',
       );
@@ -225,9 +217,7 @@ class ClusterDetectionService {
           '$message\n\nDistancia: ${distance.toStringAsFixed(0)}m\nRadio de detección: ${_dangerZoneRadius.toInt()}m\nSeveridad: $severityText\nReportes: $reportCount',
     );
 
-    print(
-      '[ClusterDetectionService] 📳 Alerta enviada: $severityText - $incidentType',
-    );
+    // Removed debug print
   }
 
   /// Mostrar alerta de zona de advertencia
@@ -242,9 +232,7 @@ class ClusterDetectionService {
           'Estás acercándote a una zona con reportes recientes.\n\nDistancia: ${distance.toStringAsFixed(0)}m',
     );
 
-    print(
-      '[ClusterDetectionService] ⚠️ Advertencia enviada para cluster: ${cluster.clusterId}',
-    );
+    // Removed debug print
   }
 
   /// Calcular distancia entre dos puntos usando la fórmula de Haversine
@@ -271,16 +259,14 @@ class ClusterDetectionService {
   void clearHistory() {
     _visitedClusters.clear();
     _lastAlertTime.clear();
-    print('[ClusterDetectionService] 🧹 Historial de clusters limpiado');
+    // Removed debug print
   }
 
   /// Detener el servicio
   void stop() {
     _isActive = false;
     clearHistory();
-    print(
-      '[ClusterDetectionService] ⏹️ Servicio de detección de clusters detenido',
-    );
+    // Removed debug print
   }
 
   /// Obtener estadísticas del servicio

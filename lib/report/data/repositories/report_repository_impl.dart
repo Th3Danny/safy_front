@@ -27,10 +27,6 @@ class ReportRepositoryImpl implements ReportRepository {
     int? maxHoursAgo,
   }) async {
     try {
-      print(
-        '[ClusterRepository] 📍 Obteniendo clusters cerca de: $latitude, $longitude',
-      );
-
       final clusterDtos = await _apiClient.getClusters(
         latitude: latitude,
         longitude: longitude,
@@ -38,11 +34,8 @@ class ReportRepositoryImpl implements ReportRepository {
 
       final clusters = clusterDtos.map((dto) => dto.toDomainEntity()).toList();
 
-      print('[ClusterRepository] ✅ Procesados ${clusters.length} clusters');
-
       return clusters;
     } catch (e) {
-      print('[ClusterRepository] ❌ Error: $e');
       throw Exception('Error al obtener los clusters: $e');
     }
   }
@@ -60,10 +53,6 @@ class ReportRepositoryImpl implements ReportRepository {
 
       // 🔧 Si NO hay coordenadas → obtener MIS reportes
       if (latitude == null || longitude == null) {
-        print(
-          '[ReportRepository] 📋 Obteniendo MIS reportes para usuario: $userId',
-        );
-
         responseDtos = await _apiClient.getMyReports(
           page: page,
           pageSize: pageSize,
@@ -71,10 +60,6 @@ class ReportRepositoryImpl implements ReportRepository {
       }
       // 🔧 Si HAY coordenadas → obtener reportes cercanos
       else {
-        print(
-          '[ReportRepository] 📍 Obteniendo reportes cercanos en: $latitude, $longitude',
-        );
-
         responseDtos = await _apiClient.getMyReports(
           page: page,
           pageSize: pageSize,
@@ -83,13 +68,10 @@ class ReportRepositoryImpl implements ReportRepository {
 
       final reports = responseDtos.map((dto) => dto.toDomainEntity()).toList();
 
-      print('[ReportRepository] ✅ Procesados ${reports.length} reportes');
-
       return reports;
     } on ReportExceptions {
       rethrow;
     } catch (e) {
-      print('[ReportRepository] ❌ Error: $e');
       throw ReportExceptions('Error al obtener los reportes: $e');
     }
   }

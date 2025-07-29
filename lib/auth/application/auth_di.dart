@@ -71,7 +71,7 @@ Future<void> setupAuthDependencies() async {
     ), // 👈 NO LLAMAR .initialize() AQUÍ
   );
 
-  print('[AuthDI] ✅ Dependencias de autenticación registradas');
+  // Removed debug print
 }
 
 // 🧹 Método opcional para limpiar después del registro exitoso
@@ -79,6 +79,6 @@ void resetRegisterViewModelAfterSuccess() {
   if (sl.isRegistered<RegisterViewModel>()) {
     final registerViewModel = sl<RegisterViewModel>();
     registerViewModel.clearForm();
-    print('[AuthDI] 🧹 RegisterViewModel limpiado después del registro exitoso');
+    // Removed debug print
   }
 }
